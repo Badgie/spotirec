@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import requests
 import webbrowser
 import json
@@ -133,14 +135,24 @@ def print_choices(data: list) -> str:
     print(line.strip('\n'))
     input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to include:\n')
     seed_string = ""
+    print('Selection:')
     for x in input_string.split(' '):
+        print(f'\t{data[int(x)]}')
         seed_string += f'{data[int(x)]},'
     return seed_string.strip(',')
 
 
 def convert_top_to_string(data: json) -> str:
     line = ""
+    print('Selection:')
     for x in data['items']:
+        try:
+            selection = f'\t{x["name"]} - '
+            for y in x['artists']:
+                selection += f'{y["name"]}, '
+            print(selection.strip(', '))
+        except KeyError:
+            print(f'\t{x["name"]}')
         line += f'{x["id"]},'
     return line.strip(',')
 
