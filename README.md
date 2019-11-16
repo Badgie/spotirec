@@ -1,5 +1,5 @@
 # Spotirec
-Script that creates a playlist of recommendations based on genres extracted from the user's top artists. A sort of Discover Weekly on demand.
+Script that creates a playlist of recommendations based on the user's top artists or tracks, or genres extracted from top artists. A sort of Discover Weekly on demand.
 
 ## Setup
 Install dependencies with `pip`
@@ -25,6 +25,23 @@ Optionally you can add a limit as an integer value
 $ python /path/to/spotirec.py 50
 ```
 This option determines how many tracks should be added to your new playlist. The default value is 20, and the max value is 100.
+
+---
+Additionally, you can pass arguments to specify the what the recommendations should be based on
+```
+$ python /path/to/spotirec.py -t 
+$ python /path/to/spotirec.py -a
+$ python /path/to/spotirec.py -tc
+$ python /path/to/spotirec.py -ac
+$ python /path/to/spotirec.py -gc
+```
+where
+- `-t` is based off your most played tracks,
+- `-a` is based off your most played artists,
+- `-tc` you can define 1-5 of your most played tracks,
+- `-ac` you can define 1-5 of your most played artists,
+- `-gc` you can define 1-5 genre seeds
+By default, the script will base recommendations off of your top genres extracted from your top artists. For this method, pass none of the above 5 arguments.
 
 ## Troubleshooting
 If you encounter issues adding tracks to your playlist, try running the script from a terminal. This should output a status code of the request, as well as some information about the code. Should you need additional help regarding status codes, consult the table in the `Response Status Codes` section [here](https://developer.spotify.com/documentation/web-api/)

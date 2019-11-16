@@ -14,11 +14,17 @@ redirect_uri = f'http://localhost:{port}'
 scope = 'user-top-read playlist-modify-public playlist-modify-private user-read-private user-read-email'
 cache = f'{Path.home()}/.spotirecoauth'
 limit = 20
+rec_params = {}
 
 sp_oauth = oauth2.SpotifyOAuth(client_id, client_secret, redirect_uri, scope=scope, cache_path=cache)
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(epilog='passing no optional arguments defaults to basing recommendations off the user\'s top genres')
 parser.add_argument('limit', metavar='n', nargs='?', type=int, help='amount of tracks to add (default: 20, max: 100)')
+parser.add_argument('-a', action='store_true', help='base recommendations on your top artists')
+parser.add_argument('-t', action='store_true', help='base recommendations on your top tracks')
+parser.add_argument('-ac', action='store_true', help='base recommendations on custom top artists')
+parser.add_argument('-tc', action='store_true', help='base recommendations on custom top tracks')
+parser.add_argument('-gc', action='store_true', help='base recommendations on custom seed genres')
 
 
 def authorize():
@@ -104,10 +110,8 @@ def add_to_playlist(tracks: list, playlist: str):
 
 
 def get_recommendations():
-    params = {'seed_genres': get_genre_string(),
-              'limit': limit}
     print('Getting recommendations')
-    response = requests.get('https://api.spotify.com/v1/recommendations', params=params, headers=headers)
+    response = requests.get('https://api.spotify.com/v1/recommendations', params=rec_params, headers=headers)
     data = json.loads(response.content.decode('utf-8'))
     tracks = []
     for item in data['tracks']:
@@ -115,19 +119,83 @@ def get_recommendations():
     add_to_playlist(tracks, create_playlist())
 
 
+def print_choices(data: list) -> str:
+    line = ""
+    for x in range(0, round(len(data)), 3):
+        try:
+            line += f'{x}: {data[x]}'
+            if data[x+1]:
+                line += f'{" "*(30-len(data[x]))}{x+1}: {data[x+1]}'
+                if data[x+2]:
+                    line += f'{" "*(30-len(data[x+1]))}{x+2}: {data[x+2]}\n'
+        except IndexError:
+            continue
+    print(line.strip('\n'))
+    input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to include:\n')
+    seed_string = ""
+    for x in input_string.split(' '):
+        seed_string += f'{data[int(x)]},'
+    return seed_string.strip(',')
+
+
+def convert_top_to_string(data: json) -> str:
+    line = ""
+    for x in data['items']:
+        line += f'{x["id"]},'
+    return line.strip(',')
+
+
+def get_uri_seed(data: json) -> str:
+    choices = {}
+    for x in data['items']:
+        choices[x['name']] = x['uri']
+    selection = print_choices(list(choices.keys()))
+    uri_string = ""
+    for x in selection.split(' '):
+        uri_string += f'{list(choices.values())[int(x)]},'
+    return uri_string.strip(',')
+
+
+def parse():
+    args = parser.parse_args()
+    global rec_params
+    if args.a:
+        print('Basing recommendations off your top 5 artists')
+        rec_params['seed_artists'] = convert_top_to_string(get_top_list('artists', 5))
+    elif args.t:
+        print('Basing recommendations off your top 5 tracks')
+        rec_params['seed_tracks'] = convert_top_to_string(get_top_list('tracks', 5))
+    elif args.gc:
+        response = requests.get('https://api.spotify.com/v1/recommendations/available-genre-seeds', headers=headers)
+        data = json.loads(response.content.decode('utf-8'))
+        rec_params['seed_genres'] = print_choices(data['genres'])
+    elif args.ac:
+        data = get_top_list('artists', 50)
+        rec_params['seed_artists'] = get_uri_seed(data)
+    elif args.tc:
+        data = get_top_list('tracks', 50)
+        rec_params['seed_tracks'] = get_uri_seed(data)
+    else:
+        print('Basing recommendations off your top 5 genres')
+        rec_params['seed_genres'] = get_genre_string()
+
+    if args.limit:
+        if args.limit > 100:
+            print('Limit value must be below 100')
+            exit(1)
+        elif args.limit < 1:
+            print('Limit value must be above 0')
+            exit(1)
+        global limit
+        limit = args.limit
+        print(f'The playlist will contain {limit} tracks')
+    rec_params['limit'] = limit
+
+
 headers = {'Content-Type': 'application/json',
            'Authorization': f'Bearer {get_token()}'}
 
-args = parser.parse_args()
-
-if args.limit:
-    if args.limit > 100:
-        print('Limit value must be below 100')
-        exit(1)
-    elif args.limit < 1:
-        print('Limit value must be above 0')
-        exit(1)
-    limit = args.limit
+parse()
 
 if __name__ == '__main__':
     get_recommendations()
