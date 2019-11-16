@@ -41,6 +41,7 @@ where
 - `-tc` you can define 1-5 of your most played tracks,
 - `-ac` you can define 1-5 of your most played artists,
 - `-gc` you can define 1-5 genre seeds
+
 By default, the script will base recommendations off of your top genres extracted from your top artists. For this method, pass none of the above 5 arguments.
 
 ## Troubleshooting
