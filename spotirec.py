@@ -121,7 +121,7 @@ def get_recommendations():
     add_to_playlist(tracks, create_playlist())
 
 
-def print_choices(data: list) -> str:
+def print_choices(data: list, genres: bool) -> str:
     line = ""
     for x in range(0, round(len(data)), 3):
         try:
@@ -134,12 +134,15 @@ def print_choices(data: list) -> str:
             continue
     print(line.strip('\n'))
     input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to include:\n')
-    seed_string = ""
-    print('Selection:')
-    for x in input_string.split(' '):
-        print(f'\t{data[int(x)]}')
-        seed_string += f'{data[int(x)]},'
-    return seed_string.strip(',')
+    if genres:
+        seed_string = ""
+        print('Selection:')
+        for x in input_string.split(' '):
+            print(f'\t{data[int(x)]}')
+            seed_string += f'{data[int(x)]},'
+        return seed_string.strip(',')
+    else:
+        return input_string
 
 
 def convert_top_to_string(data: json) -> str:
@@ -160,8 +163,8 @@ def convert_top_to_string(data: json) -> str:
 def get_uri_seed(data: json) -> str:
     choices = {}
     for x in data['items']:
-        choices[x['name']] = x['uri']
-    selection = print_choices(list(choices.keys()))
+        choices[x['name']] = x['id']
+    selection = print_choices(list(choices.keys()), False)
     uri_string = ""
     for x in selection.split(' '):
         uri_string += f'{list(choices.values())[int(x)]},'
@@ -180,7 +183,7 @@ def parse():
     elif args.gc:
         response = requests.get('https://api.spotify.com/v1/recommendations/available-genre-seeds', headers=headers)
         data = json.loads(response.content.decode('utf-8'))
-        rec_params['seed_genres'] = print_choices(data['genres'])
+        rec_params['seed_genres'] = print_choices(data['genres'], True)
     elif args.ac:
         data = get_top_list('artists', 50)
         rec_params['seed_artists'] = get_uri_seed(data)
