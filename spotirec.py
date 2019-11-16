@@ -36,7 +36,7 @@ def index() -> str:
         access_token = token_info['access_token']
 
     if access_token:
-        return "<span>Successfully retrieved OAuth token. You may close this tab and start using Spotisave.</span>"
+        return "<span>Successfully retrieved OAuth token. You may close this tab and start using Spotirec.</span>"
     else:
         return f"<a href='{sp_oauth.get_authorize_url()}'>Login to Spotify</a>"
 
