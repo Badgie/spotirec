@@ -203,7 +203,7 @@ def parse():
             exit(1)
         global limit
         limit = args.limit
-        print(f'The playlist will contain {limit} tracks')
+    print(f'The playlist will contain {limit} tracks')
     rec_params['limit'] = limit
 
 
