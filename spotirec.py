@@ -19,7 +19,7 @@ cache = f'{Path.home()}/.spotirecoauth'
 sp_oauth = oauth2.SpotifyOAuth(client_id, client_secret, redirect_uri, scope=scope, cache_path=cache)
 
 parser = argparse.ArgumentParser(epilog='passing no optional arguments defaults to basing recommendations off the user\'s top genres')
-parser.add_argument('limit', metavar='n', nargs='?', type=int, help='amount of tracks to add (default: 20, max: 100)')
+parser.add_argument('limit', metavar='n', nargs='?', type=int, choices=range(1, 101), help='amount of tracks to add (default: 20, max: 100)')
 parser.add_argument('-a', action='store_true', help='base recommendations on your top artists')
 parser.add_argument('-t', action='store_true', help='base recommendations on your top tracks')
 parser.add_argument('-ac', action='store_true', help='base recommendations on custom top artists')
@@ -232,12 +232,6 @@ def parse():
         get_genre_string()
 
     if args.limit:
-        if args.limit > 100:
-            print('Limit value must be below 100')
-            exit(1)
-        elif args.limit < 1:
-            print('Limit value must be above 0')
-            exit(1)
         rec.limit = args.limit
     print(f'The playlist will contain {rec.limit} tracks')
 
