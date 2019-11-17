@@ -15,6 +15,7 @@ client_secret = '28147de72c3549e98b1e790f3d080b85'
 redirect_uri = f'http://localhost:{port}'
 scope = 'user-top-read playlist-modify-public playlist-modify-private user-read-private user-read-email'
 cache = f'{Path.home()}/.spotirecoauth'
+url_base = 'https://api.spotify.com/v1'
 
 sp_oauth = oauth2.SpotifyOAuth(client_id, client_secret, redirect_uri, scope=scope, cache_path=cache)
 
@@ -76,7 +77,7 @@ class Recommendation:
 
     def create_seed(self):
         if 'genres' in self.seed_type:
-            self.seed = ','.join(str(x['name'] for x in self.seed_info.values()))
+            self.seed = ','.join(str(x['name']) for x in self.seed_info.values())
         else:
             self.seed = ','.join(str(x['id']) for x in self.seed_info.values())
 
@@ -119,11 +120,11 @@ def refresh_token():
 
 def get_top_list(list_type: str, top_limit: int) -> json:
     params = {'limit': top_limit}
-    response = requests.get(f'https://api.spotify.com/v1/me/top/{list_type}', headers=headers, params=params)
+    response = requests.get(f'{url_base}/me/top/{list_type}', headers=headers, params=params)
     return json.loads(response.content.decode('utf-8'))
 
 
-def get_genre_string():
+def add_top_genres_seed():
     data = get_top_list('artists', 50)
     genres = {}
     for x in data['items']:
@@ -138,7 +139,7 @@ def get_genre_string():
 
 
 def get_user_id() -> str:
-    response = requests.get('https://api.spotify.com/v1/me', headers=headers)
+    response = requests.get(f'{url_base}/me', headers=headers)
     return json.loads(response.content.decode('utf-8'))['id']
 
 
@@ -146,20 +147,20 @@ def create_playlist() -> str:
     data = {'name': rec.playlist_name,
             'description': rec.playlist_description()}
     print('Creating playlist')
-    response = requests.post(f'https://api.spotify.com/v1/users/{get_user_id()}/playlists', json=data, headers=headers)
+    response = requests.post(f'{url_base}/users/{get_user_id()}/playlists', json=data, headers=headers)
     return json.loads(response.content.decode('utf-8'))['id']
 
 
 def add_to_playlist(tracks: list, playlist: str):
     data = {'uris': tracks}
     print('Adding tracks to playlist')
-    requests.post(f'https://api.spotify.com/v1/playlists/{playlist}/tracks', headers=headers, json=data)
+    requests.post(f'{url_base}/playlists/{playlist}/tracks', headers=headers, json=data)
 
 
 def get_recommendations():
     print('Getting recommendations')
     rec.create_seed()
-    response = requests.get('https://api.spotify.com/v1/recommendations', params=rec.rec_params(), headers=headers)
+    response = requests.get(f'{url_base}/recommendations', params=rec.rec_params(), headers=headers)
     data = json.loads(response.content.decode('utf-8'))
     tracks = []
     for item in data['tracks']:
@@ -216,7 +217,7 @@ def parse():
         rec.seed_type = 'tracks'
         add_top_seed_info(get_top_list('tracks', 5))
     elif args.gc:
-        response = requests.get('https://api.spotify.com/v1/recommendations/available-genre-seeds', headers=headers)
+        response = requests.get(f'{url_base}/recommendations/available-genre-seeds', headers=headers)
         data = json.loads(response.content.decode('utf-8'))
         rec.based_on = 'custom genres'
         print_choices(data['genres'])
@@ -232,7 +233,7 @@ def parse():
         add_custom_seed_info(data)
     else:
         print('Basing recommendations off your top 5 genres')
-        get_genre_string()
+        add_top_genres_seed()
 
     if args.limit:
         rec.limit = args.limit
