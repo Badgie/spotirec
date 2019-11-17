@@ -44,5 +44,12 @@ where
 
 By default, the script will base recommendations off of your top genres extracted from your top artists. For this method, pass none of the above 5 arguments.
 
+---
+
+To blacklist tracks or artists, pass the `-b` argument followed by an arbitrary number of whitespace separated Spotify URIs
+```
+$ python /path/to/spotirec.py -b spotify:track:id spotify:track:id spotify:artist:id
+```
+
 ## Troubleshooting
 If you encounter issues adding tracks to your playlist, try running the script from a terminal. This should output a status code of the request, as well as some information about the code. Should you need additional help regarding status codes, consult the table in the `Response Status Codes` section [here](https://developer.spotify.com/documentation/web-api/)

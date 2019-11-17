@@ -20,6 +20,7 @@ redirect_uri = f'http://localhost:{port}'
 scope = 'user-top-read playlist-modify-public playlist-modify-private user-read-private user-read-email'
 cache = f'{Path.home()}/.config/spotirec/spotirecoauth'
 url_base = 'https://api.spotify.com/v1'
+blacklist_path = f'{Path.home()}/.config/spotirec/blacklist'
 
 sp_oauth = oauth2.SpotifyOAuth(client_id, client_secret, redirect_uri, scope=scope, cache_path=cache)
 
@@ -32,6 +33,7 @@ parser.add_argument('-t', action='store_true', help='base recommendations on you
 parser.add_argument('-ac', action='store_true', help='base recommendations on custom top artists')
 parser.add_argument('-tc', action='store_true', help='base recommendations on custom top tracks')
 parser.add_argument('-gc', action='store_true', help='base recommendations on custom seed genres')
+parser.add_argument('-b', metavar='uri(s)', nargs='+', type=str, help='blacklist tracks or artist uris')
 
 
 class Recommendation:
@@ -156,14 +158,41 @@ def add_to_playlist(tracks: list, playlist: str):
     requests.post(f'{url_base}/playlists/{playlist}/tracks', headers=headers, json=data)
 
 
-def get_recommendations():
+def get_recommendations() -> json:
+    response = requests.get(f'{url_base}/recommendations', params=rec.rec_params(), headers=headers)
+    return json.loads(response.content.decode('utf-8'))
+
+
+def filter_recommendations(data: json) -> list:
+    tracks = []
+    with open(blacklist_path, 'r+') as file:
+        try:
+            blacklist = json.loads(file.read())
+            for x in data['tracks']:
+                artists = [y for y in x['artists'] if y['uri'] in blacklist['artists']]
+                if len(artists) > 0:
+                    continue
+                elif x['uri'] in blacklist['tracks']:
+                    continue
+                else:
+                    tracks.append(x['uri'])
+        except json.decoder.JSONDecodeError:
+            tracks = [x['uri'] for x in data['tracks']]
+    return tracks
+
+
+def recommend():
     print('Getting recommendations')
     rec.create_seed()
-    response = requests.get(f'{url_base}/recommendations', params=rec.rec_params(), headers=headers)
-    data = json.loads(response.content.decode('utf-8'))
-    tracks = []
-    for item in data['tracks']:
-        tracks.append(item['uri'])
+    data = get_recommendations()
+    tracks = filter_recommendations(data)
+    limit_save = rec.limit
+    while True:
+        if len(tracks) < limit_save:
+            rec.limit = limit_save - len(tracks)
+            tracks += filter_recommendations(get_recommendations())
+        else:
+            break
     add_to_playlist(tracks, create_playlist())
     rec.print_selection()
 
@@ -206,6 +235,24 @@ def add_custom_seed_info(data: json):
 
 def parse():
     args = parser.parse_args()
+    if args.b:
+        with open(blacklist_path, 'w+') as file:
+            if file.read():
+                data = json.loads(file.read())
+            else:
+                data = {'tracks': [],
+                        'artists': []}
+            for uri in args.b:
+                if 'track' in uri:
+                    data['tracks'].append(uri)
+                elif 'artist' in uri:
+                    data['artists'].append(uri)
+                else:
+                    print(f'uri \"{uri}\" is either not a valid uri for a track or artist, or is malformed and has '
+                          f'not been added to the blacklist')
+            file.write(json.dumps(data))
+        exit(1)
+
     if args.a:
         print('Basing recommendations off your top 5 artists')
         rec.based_on = 'top artists'
@@ -246,4 +293,4 @@ rec = Recommendation()
 parse()
 
 if __name__ == '__main__':
-    get_recommendations()
+    recommend()
