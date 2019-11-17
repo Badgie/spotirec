@@ -18,8 +18,10 @@ cache = f'{Path.home()}/.spotirecoauth'
 
 sp_oauth = oauth2.SpotifyOAuth(client_id, client_secret, redirect_uri, scope=scope, cache_path=cache)
 
-parser = argparse.ArgumentParser(epilog='passing no optional arguments defaults to basing recommendations off the user\'s top genres')
-parser.add_argument('limit', metavar='n', nargs='?', type=int, choices=range(1, 101), help='amount of tracks to add (default: 20, max: 100)')
+parser = argparse.ArgumentParser(epilog='passing no optional arguments defaults to basing recommendations off the '
+                                        'user\'s top genres')
+parser.add_argument('limit', metavar='n', nargs='?', type=int, choices=range(1, 101),
+                    help='amount of tracks to add (default: 20, max: 100)')
 parser.add_argument('-a', action='store_true', help='base recommendations on your top artists')
 parser.add_argument('-t', action='store_true', help='base recommendations on your top tracks')
 parser.add_argument('-ac', action='store_true', help='base recommendations on custom top artists')
@@ -174,7 +176,8 @@ def print_choices(data: list) -> str:
             if data[x+1]:
                 line += f'{" "*(40-len(data[x]))}{x+1}: {data[x+1] if len(data[x+1]) < 40 else f"{data[x+1][0:37]}.. "}'
                 if data[x+2]:
-                    line += f'{" "*(40-len(data[x+1]))}{x+2}: {data[x+2] if len(data[x+2]) < 40 else f"{data[x+2][0:37]}.. "}\n'
+                    line += f'{" "*(40-len(data[x+1]))}{x+2}: ' \
+                            f'{data[x+2] if len(data[x+2]) < 40 else f"{data[x+2][0:37]}.. "}\n'
         except IndexError:
             continue
     print(line.strip('\n'))
