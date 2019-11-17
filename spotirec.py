@@ -5,16 +5,20 @@ import webbrowser
 import json
 import time
 import argparse
+import os
 from bottle import route, run, request
 from spotipy import oauth2
 from pathlib import Path
+
+if not os.path.isdir(f'{Path.home()}/.config/spotirec'):
+    os.mkdir(f'{Path.home()}/.config/spotirec')
 
 port = 8080
 client_id = '466a89a53359403b82df7d714030ec5f'
 client_secret = '28147de72c3549e98b1e790f3d080b85'
 redirect_uri = f'http://localhost:{port}'
 scope = 'user-top-read playlist-modify-public playlist-modify-private user-read-private user-read-email'
-cache = f'{Path.home()}/.spotirecoauth'
+cache = f'{Path.home()}/.config/spotirec/spotirecoauth'
 url_base = 'https://api.spotify.com/v1'
 
 sp_oauth = oauth2.SpotifyOAuth(client_id, client_secret, redirect_uri, scope=scope, cache_path=cache)
