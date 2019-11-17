@@ -236,10 +236,13 @@ def add_custom_seed_info(data: json):
 def parse():
     args = parser.parse_args()
     if args.b:
-        with open(blacklist_path, 'w+') as file:
-            if file.read():
+        if not os.path.exists(blacklist_path):
+            f = open(blacklist_path, 'w')
+            f.close()
+        with open(blacklist_path, 'r') as file:
+            try:
                 data = json.loads(file.read())
-            else:
+            except json.decoder.JSONDecodeError:
                 data = {'tracks': [],
                         'artists': []}
             for uri in args.b:
@@ -250,6 +253,7 @@ def parse():
                 else:
                     print(f'uri \"{uri}\" is either not a valid uri for a track or artist, or is malformed and has '
                           f'not been added to the blacklist')
+        with open(blacklist_path, 'w+') as file:
             file.write(json.dumps(data))
         exit(1)
 
