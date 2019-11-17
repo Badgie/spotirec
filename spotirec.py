@@ -11,7 +11,7 @@ from spotipy import oauth2
 from pathlib import Path
 
 if not os.path.isdir(f'{Path.home()}/.config/spotirec'):
-    os.mkdir(f'{Path.home()}/.config/spotirec')
+    os.makedirs(f'{Path.home()}/.config/spotirec')
 
 port = 8080
 client_id = '466a89a53359403b82df7d714030ec5f'
