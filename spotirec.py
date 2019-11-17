@@ -42,18 +42,13 @@ class Recommendation:
 
     def playlist_description(self) -> str:
         desc = f'Created by Spotirec - {self.created_at} - based on {self.based_on} - seed: '
-        for x in self.seed_info:
-            desc += self.seed_info[x]['name']
-            try:
-                if self.seed_info[x]['artists']:
-                    desc += ' - '
-                    for y in self.seed_info[x]['artists']:
-                        desc += f'{y}, '
-                    desc = desc.strip(', ')
-            except KeyError:
-                pass
-            desc += ' | '
-        return desc.strip(' | ')
+        if 'tracks' in self.seed_type:
+            seeds = ' | '.join(str(f'{x["name"]} - {", ".join(str(y) for y in x["artists"])}')
+                               for x in self.seed_info.values())
+            return f'{desc}{seeds}'
+        else:
+            seeds = ' | '.join(str(x["name"]) for x in self.seed_info.values())
+            return f'{desc}{seeds}'
 
     def rec_params(self) -> dict:
         return {f'seed_{self.seed_type}': self.seed,
@@ -182,7 +177,8 @@ def print_choices(data: list) -> str:
         except IndexError:
             continue
     print(line.strip('\n'))
-    input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to include:\n')
+    input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to '
+                         'include:\n')
     if 'genres' in rec.seed_type:
         for x in input_string.split(' '):
             rec.add_seed_info(data_string=data[int(x)])
