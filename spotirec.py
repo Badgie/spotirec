@@ -172,9 +172,9 @@ def print_choices(data: list) -> str:
         try:
             line += f'{x}: {data[x]}'
             if data[x+1]:
-                line += f'{" "*(40-len(data[x]))}{x+1}: {data[x+1]}'
+                line += f'{" "*(40-len(data[x]))}{x+1}: {data[x+1] if len(data[x+1]) < 40 else f"{data[x+1][0:37]}.. "}'
                 if data[x+2]:
-                    line += f'{" "*(40-len(data[x+1]))}{x+2}: {data[x+2]}\n'
+                    line += f'{" "*(40-len(data[x+1]))}{x+2}: {data[x+2] if len(data[x+2]) < 40 else f"{data[x+2][0:37]}.. "}\n'
         except IndexError:
             continue
     print(line.strip('\n'))
