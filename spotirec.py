@@ -5,6 +5,7 @@ import webbrowser
 import json
 import time
 import argparse
+import pprint
 from bottle import route, run, request
 from spotipy import oauth2
 from pathlib import Path
@@ -15,9 +16,6 @@ client_secret = '28147de72c3549e98b1e790f3d080b85'
 redirect_uri = f'http://localhost:{port}'
 scope = 'user-top-read playlist-modify-public playlist-modify-private user-read-private user-read-email'
 cache = f'{Path.home()}/.spotirecoauth'
-limit = 20
-rec_params = {}
-playlist_description = f'Created by Spotirec - {time.ctime(time.time())} - based on '
 
 sp_oauth = oauth2.SpotifyOAuth(client_id, client_secret, redirect_uri, scope=scope, cache_path=cache)
 
@@ -28,6 +26,41 @@ parser.add_argument('-t', action='store_true', help='base recommendations on you
 parser.add_argument('-ac', action='store_true', help='base recommendations on custom top artists')
 parser.add_argument('-tc', action='store_true', help='base recommendations on custom top tracks')
 parser.add_argument('-gc', action='store_true', help='base recommendations on custom seed genres')
+
+
+class Recommendation:
+    def __init__(self, t=time.localtime()):
+        self.limit = 20
+        self.created_at = time.ctime(time.time())
+        self.based_on = 'top genres'
+        self.seed = ''
+        self.seed_type = 'genres'
+        self.seed_info = {}
+        self.playlist_name = f'Spotirec-{t.tm_mday}-{t.tm_mon}-{t.tm_year}'
+
+    def playlist_description(self) -> str:
+        desc = f'Created by Spotirec - {self.created_at} - based on {self.based_on} - seed: '
+        for x in self.seed_info:
+            desc += self.seed_info[x]['name']
+            try:
+                if self.seed_info[x]['artists']:
+                    desc += ' - '
+                    for y in self.seed_info[x]['artists']:
+                        desc += f'{y}, '
+                    desc = desc.strip(', ')
+            except KeyError:
+                pass
+            desc += ' | '
+        return desc.strip(' | ')
+
+    def rec_params(self) -> dict:
+        return {f'seed_{self.seed_type}': self.seed,
+                'limit': self.limit}
+
+    def selection(self):
+        print('Selection:')
+        for x in self.seed_info:
+            print(f'\t{self.seed_info[x]}')
 
 
 def authorize():
@@ -73,8 +106,6 @@ def get_top_list(list_type: str, top_limit: int) -> json:
 
 
 def get_genre_string() -> str:
-    global playlist_description
-    playlist_description += 'seeds: '
     data = get_top_list('artists', 50)
     genres = {}
     for x in data['items']:
@@ -85,17 +116,11 @@ def get_genre_string() -> str:
                 genres[genre] = 1
     sort = sorted(genres.items(), key=lambda kv: kv[1], reverse=True)
     genre_string = ""
-    print('Selection:')
     for x in range(0, 5):
-        playlist_description += f'{sort[x][0]} | '
-        print(f'\t{sort[x][0]}')
+        rec.seed_info[x] = {}
+        rec.seed_info[x]['name'] = sort[x][0]
         genre_string += f'{sort[x][0]},'
     return genre_string.strip(',')
-
-
-def generate_playlist_name() -> str:
-    t = time.localtime()
-    return f'Spotirec-{t.tm_mday}-{t.tm_mon}-{t.tm_year}'
 
 
 def get_user_id() -> str:
@@ -104,8 +129,8 @@ def get_user_id() -> str:
 
 
 def create_playlist() -> str:
-    data = {'name': generate_playlist_name(),
-            'description': playlist_description.strip(' | ')}
+    data = {'name': rec.playlist_name,
+            'description': rec.playlist_description()}
     print('Creating playlist')
     response = requests.post(f'https://api.spotify.com/v1/users/{get_user_id()}/playlists', json=data, headers=headers)
     return json.loads(response.content.decode('utf-8'))['id']
@@ -119,15 +144,16 @@ def add_to_playlist(tracks: list, playlist: str):
 
 def get_recommendations():
     print('Getting recommendations')
-    response = requests.get('https://api.spotify.com/v1/recommendations', params=rec_params, headers=headers)
+    response = requests.get('https://api.spotify.com/v1/recommendations', params=rec.rec_params(), headers=headers)
     data = json.loads(response.content.decode('utf-8'))
     tracks = []
     for item in data['tracks']:
         tracks.append(item['uri'])
     add_to_playlist(tracks, create_playlist())
+    rec.selection()
 
 
-def print_choices(data: list, genres: bool) -> str:
+def print_choices(data: list) -> str:
     line = ""
     for x in range(0, round(len(data)), 3):
         try:
@@ -140,14 +166,11 @@ def print_choices(data: list, genres: bool) -> str:
             continue
     print(line.strip('\n'))
     input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to include:\n')
-    if genres:
-        global playlist_description
-        playlist_description += 'seeds: '
+    if 'genres' in rec.seed_type:
         seed_string = ""
-        print('Selection:')
         for x in input_string.split(' '):
-            playlist_description += f'{data[int(x)]} | '
-            print(f'\t{data[int(x)]}')
+            rec.seed_info[x] = {}
+            rec.seed_info[x]['name'] = data[int(x)]
             seed_string += f'{data[int(x)]},'
         return seed_string.strip(',')
     else:
@@ -156,76 +179,71 @@ def print_choices(data: list, genres: bool) -> str:
 
 def convert_top_to_string(data: json) -> str:
     line = ""
-    global playlist_description
-    playlist_description += 'seeds: '
-    print('Selection:')
     for x in data['items']:
-        try:
-            selection = f'\t{x["name"]} - '
-            for y in x['artists']:
-                selection += f'{y["name"]}, '
-            print(selection.strip(', '))
-            playlist_description += selection.strip(', ').replace('\t', '')
-        except KeyError:
-            print(f'\t{x["name"]}')
-            playlist_description += f'{x["name"]} | '
         line += f'{x["id"]},'
+        rec.seed_info[x['name']] = {}
+        rec.seed_info[x['name']]['name'] = x['name']
+        try:
+            if x['artists']:
+                rec.seed_info[x['name']]['artists'] = []
+                for y in x['artists']:
+                    rec.seed_info[x['name']]['artists'].append(y['name'])
+        except KeyError:
+            continue
     return line.strip(',')
 
 
 def get_uri_seed(data: json) -> str:
-    global playlist_description
-    playlist_description += 'seeds: '
     choices = {}
     for x in data['items']:
         choices[x['name']] = x['id']
-    selection = print_choices(list(choices.keys()), False)
+    selection = print_choices(list(choices.keys()))
     uri_string = ""
     for x in selection.split(' '):
         item = data['items'][int(x)]
-        playlist_description += item['name']
+        uri_string += f'{list(choices.values())[int(x)]},'
+        rec.seed_info[x] = {}
+        rec.seed_info[x]['name'] = item['name']
         try:
             if item['artists']:
-                playlist_description += ' - '
+                rec.seed_info[x]['artists'] = []
                 for y in item['artists']:
-                    playlist_description += f'{y["name"]}, '
-                playlist_description = str(playlist_description).strip(', ')
-                playlist_description += ' | '
+                    rec.seed_info[x]['artists'].append(y['name'])
         except KeyError:
-            playlist_description += ' | '
-        uri_string += f'{list(choices.values())[int(x)]},'
+            continue
     return uri_string.strip(',')
 
 
 def parse():
     args = parser.parse_args()
-    global rec_params
-    global playlist_description
     if args.a:
         print('Basing recommendations off your top 5 artists')
-        playlist_description += 'top artists - '
-        rec_params['seed_artists'] = convert_top_to_string(get_top_list('artists', 5))
+        rec.based_on = 'top artists'
+        rec.seed_type = 'artists'
+        rec.seed = convert_top_to_string(get_top_list('artists', 5))
     elif args.t:
         print('Basing recommendations off your top 5 tracks')
-        playlist_description += 'top tracks - '
-        rec_params['seed_tracks'] = convert_top_to_string(get_top_list('tracks', 5))
+        rec.based_on = 'top tracks'
+        rec.seed_type = 'tracks'
+        rec.seed = convert_top_to_string(get_top_list('tracks', 5))
     elif args.gc:
         response = requests.get('https://api.spotify.com/v1/recommendations/available-genre-seeds', headers=headers)
         data = json.loads(response.content.decode('utf-8'))
-        playlist_description += 'custom genres - '
-        rec_params['seed_genres'] = print_choices(data['genres'], True)
+        rec.based_on = 'custom genres'
+        rec.seed = print_choices(data['genres'])
     elif args.ac:
         data = get_top_list('artists', 50)
-        playlist_description += 'custom artists - '
-        rec_params['seed_artists'] = get_uri_seed(data)
+        rec.based_on = 'custom artists'
+        rec.seed_type = 'artists'
+        rec.seed = get_uri_seed(data)
     elif args.tc:
         data = get_top_list('tracks', 50)
-        playlist_description += 'custom tracks - '
-        rec_params['seed_tracks'] = get_uri_seed(data)
+        rec.based_on = 'custom tracks'
+        rec.seed_type = 'tracks'
+        rec.seed = get_uri_seed(data)
     else:
         print('Basing recommendations off your top 5 genres')
-        playlist_description += 'top genres - '
-        rec_params['seed_genres'] = get_genre_string()
+        rec.seed = get_genre_string()
 
     if args.limit:
         if args.limit > 100:
@@ -234,15 +252,13 @@ def parse():
         elif args.limit < 1:
             print('Limit value must be above 0')
             exit(1)
-        global limit
-        limit = args.limit
-    print(f'The playlist will contain {limit} tracks')
-    rec_params['limit'] = limit
+        rec.limit = args.limit
+    print(f'The playlist will contain {rec.limit} tracks')
 
 
 headers = {'Content-Type': 'application/json',
            'Authorization': f'Bearer {get_token()}'}
-
+rec = Recommendation()
 parse()
 
 if __name__ == '__main__':
