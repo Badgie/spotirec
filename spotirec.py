@@ -5,7 +5,6 @@ import webbrowser
 import json
 import time
 import argparse
-import pprint
 from bottle import route, run, request
 from spotipy import oauth2
 from pathlib import Path
@@ -57,10 +56,27 @@ class Recommendation:
         return {f'seed_{self.seed_type}': self.seed,
                 'limit': self.limit}
 
-    def selection(self):
+    def print_selection(self):
         print('Selection:')
         for x in self.seed_info:
             print(f'\t{self.seed_info[x]}')
+
+    def add_seed_info(self, data_dict=None, data_string=None):
+        if 'genres' in self.seed_type:
+            self.seed_info[len(self.seed_info)] = {'name': data_string}
+        else:
+            self.seed_info[len(self.seed_info)] = {'name': data_dict['name'],
+                                                   'id': data_dict['id']}
+            if 'tracks' in self.seed_type:
+                self.seed_info[len(self.seed_info)-1]['artists'] = []
+                for x in data_dict['artists']:
+                    self.seed_info[len(self.seed_info) - 1]['artists'].append(x['name'])
+
+    def create_seed(self):
+        if 'genres' in self.seed_type:
+            self.seed = ','.join(str(x['name'] for x in self.seed_info.values()))
+        else:
+            self.seed = ','.join(str(x['id']) for x in self.seed_info.values())
 
 
 def authorize():
@@ -105,7 +121,7 @@ def get_top_list(list_type: str, top_limit: int) -> json:
     return json.loads(response.content.decode('utf-8'))
 
 
-def get_genre_string() -> str:
+def get_genre_string():
     data = get_top_list('artists', 50)
     genres = {}
     for x in data['items']:
@@ -115,12 +131,8 @@ def get_genre_string() -> str:
             else:
                 genres[genre] = 1
     sort = sorted(genres.items(), key=lambda kv: kv[1], reverse=True)
-    genre_string = ""
     for x in range(0, 5):
-        rec.seed_info[x] = {}
-        rec.seed_info[x]['name'] = sort[x][0]
-        genre_string += f'{sort[x][0]},'
-    return genre_string.strip(',')
+        rec.add_seed_info(data_string=sort[x][0])
 
 
 def get_user_id() -> str:
@@ -144,13 +156,14 @@ def add_to_playlist(tracks: list, playlist: str):
 
 def get_recommendations():
     print('Getting recommendations')
+    rec.create_seed()
     response = requests.get('https://api.spotify.com/v1/recommendations', params=rec.rec_params(), headers=headers)
     data = json.loads(response.content.decode('utf-8'))
     tracks = []
     for item in data['tracks']:
         tracks.append(item['uri'])
     add_to_playlist(tracks, create_playlist())
-    rec.selection()
+    rec.print_selection()
 
 
 def print_choices(data: list) -> str:
@@ -167,51 +180,24 @@ def print_choices(data: list) -> str:
     print(line.strip('\n'))
     input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to include:\n')
     if 'genres' in rec.seed_type:
-        seed_string = ""
         for x in input_string.split(' '):
-            rec.seed_info[x] = {}
-            rec.seed_info[x]['name'] = data[int(x)]
-            seed_string += f'{data[int(x)]},'
-        return seed_string.strip(',')
+            rec.add_seed_info(data_string=data[int(x)])
     else:
         return input_string
 
 
-def convert_top_to_string(data: json) -> str:
-    line = ""
+def add_top_seed_info(data: json):
     for x in data['items']:
-        line += f'{x["id"]},'
-        rec.seed_info[x['name']] = {}
-        rec.seed_info[x['name']]['name'] = x['name']
-        try:
-            if x['artists']:
-                rec.seed_info[x['name']]['artists'] = []
-                for y in x['artists']:
-                    rec.seed_info[x['name']]['artists'].append(y['name'])
-        except KeyError:
-            continue
-    return line.strip(',')
+        rec.add_seed_info(data_dict=x)
 
 
-def get_uri_seed(data: json) -> str:
+def add_custom_seed_info(data: json):
     choices = {}
     for x in data['items']:
         choices[x['name']] = x['id']
     selection = print_choices(list(choices.keys()))
-    uri_string = ""
     for x in selection.split(' '):
-        item = data['items'][int(x)]
-        uri_string += f'{list(choices.values())[int(x)]},'
-        rec.seed_info[x] = {}
-        rec.seed_info[x]['name'] = item['name']
-        try:
-            if item['artists']:
-                rec.seed_info[x]['artists'] = []
-                for y in item['artists']:
-                    rec.seed_info[x]['artists'].append(y['name'])
-        except KeyError:
-            continue
-    return uri_string.strip(',')
+        rec.add_seed_info(data_dict=data['items'][int(x)])
 
 
 def parse():
@@ -220,30 +206,30 @@ def parse():
         print('Basing recommendations off your top 5 artists')
         rec.based_on = 'top artists'
         rec.seed_type = 'artists'
-        rec.seed = convert_top_to_string(get_top_list('artists', 5))
+        add_top_seed_info(get_top_list('artists', 5))
     elif args.t:
         print('Basing recommendations off your top 5 tracks')
         rec.based_on = 'top tracks'
         rec.seed_type = 'tracks'
-        rec.seed = convert_top_to_string(get_top_list('tracks', 5))
+        add_top_seed_info(get_top_list('tracks', 5))
     elif args.gc:
         response = requests.get('https://api.spotify.com/v1/recommendations/available-genre-seeds', headers=headers)
         data = json.loads(response.content.decode('utf-8'))
         rec.based_on = 'custom genres'
-        rec.seed = print_choices(data['genres'])
+        print_choices(data['genres'])
     elif args.ac:
         data = get_top_list('artists', 50)
         rec.based_on = 'custom artists'
         rec.seed_type = 'artists'
-        rec.seed = get_uri_seed(data)
+        add_custom_seed_info(data)
     elif args.tc:
         data = get_top_list('tracks', 50)
         rec.based_on = 'custom tracks'
         rec.seed_type = 'tracks'
-        rec.seed = get_uri_seed(data)
+        add_custom_seed_info(data)
     else:
         print('Basing recommendations off your top 5 genres')
-        rec.seed = get_genre_string()
+        get_genre_string()
 
     if args.limit:
         if args.limit > 100:
