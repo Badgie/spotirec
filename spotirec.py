@@ -44,6 +44,7 @@ class Recommendation:
         self.seed = ''
         self.seed_type = 'genres'
         self.seed_info = {}
+        self.rec_params = {}
         self.playlist_name = f'Spotirec-{t.tm_mday}-{t.tm_mon}-{t.tm_year}'
 
     def playlist_description(self) -> str:
@@ -56,9 +57,9 @@ class Recommendation:
             seeds = ' | '.join(str(x["name"]) for x in self.seed_info.values())
             return f'{desc}{seeds}'
 
-    def rec_params(self) -> dict:
-        return {f'seed_{self.seed_type}': self.seed,
-                'limit': self.limit}
+    def update_limit(self, limit: int):
+        self.limit = limit
+        self.rec_params['limit'] = self.limit
 
     def print_selection(self):
         print('Selection:')
@@ -81,6 +82,7 @@ class Recommendation:
             self.seed = ','.join(str(x['name']) for x in self.seed_info.values())
         else:
             self.seed = ','.join(str(x['id']) for x in self.seed_info.values())
+        self.rec_params[f'seed_{self.seed_type}'] = self.seed
 
 
 def authorize():
@@ -159,7 +161,7 @@ def add_to_playlist(tracks: list, playlist: str):
 
 
 def get_recommendations() -> json:
-    response = requests.get(f'{url_base}/recommendations', params=rec.rec_params(), headers=headers)
+    response = requests.get(f'{url_base}/recommendations', params=rec.rec_params, headers=headers)
     return json.loads(response.content.decode('utf-8'))
 
 
@@ -189,7 +191,7 @@ def recommend():
     limit_save = rec.limit
     while True:
         if len(tracks) < limit_save:
-            rec.limit = limit_save - len(tracks)
+            rec.update_limit(limit_save - len(tracks))
             tracks += filter_recommendations(get_recommendations())
         else:
             break
