@@ -23,7 +23,7 @@ url_base = 'https://api.spotify.com/v1'
 blacklist_path = f'{Path.home()}/.config/spotirec/blacklist'
 tune_prefix = ['max', 'min', 'target']
 tune_attr = ['acousticness', 'danceability', 'duration_ms', 'energy', 'instrumentalness', 'key', 'liveness',
-             'loudness', 'mode', 'popularity', 'speechiness', 'tempo', 'time_signature', 'valence']
+             'loudness', 'mode', 'popularity', 'speechiness', 'tempo', 'time_signature', 'valence', 'popularity']
 
 sp_oauth = oauth2.SpotifyOAuth(client_id, client_secret, redirect_uri, scope=scope, cache_path=cache)
 
