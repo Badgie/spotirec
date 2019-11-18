@@ -171,6 +171,9 @@ def get_recommendations() -> json:
 
 def filter_recommendations(data: json) -> list:
     tracks = []
+    if not os.path.exists(blacklist_path):
+        f = open(blacklist_path, 'w')
+        f.close()
     with open(blacklist_path, 'r+') as file:
         try:
             blacklist = json.loads(file.read())
