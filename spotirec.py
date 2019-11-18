@@ -21,6 +21,9 @@ scope = 'user-top-read playlist-modify-public playlist-modify-private user-read-
 cache = f'{Path.home()}/.config/spotirec/spotirecoauth'
 url_base = 'https://api.spotify.com/v1'
 blacklist_path = f'{Path.home()}/.config/spotirec/blacklist'
+tune_prefix = ['max', 'min', 'target']
+tune_attr = ['acousticness', 'danceability', 'duration_ms', 'energy', 'instrumentalness', 'key', 'liveness',
+             'loudness', 'mode', 'popularity', 'speechiness', 'tempo', 'time_signature', 'valence']
 
 sp_oauth = oauth2.SpotifyOAuth(client_id, client_secret, redirect_uri, scope=scope, cache_path=cache)
 
@@ -33,7 +36,8 @@ parser.add_argument('-t', action='store_true', help='base recommendations on you
 parser.add_argument('-ac', action='store_true', help='base recommendations on custom top artists')
 parser.add_argument('-tc', action='store_true', help='base recommendations on custom top tracks')
 parser.add_argument('-gc', action='store_true', help='base recommendations on custom seed genres')
-parser.add_argument('-b', metavar='uri(s)', nargs='+', type=str, help='blacklist tracks or artist uris')
+parser.add_argument('-b', metavar='uri', nargs='+', type=str, help='blacklist track or artist uri(s)')
+parser.add_argument('--tune', metavar='attr', nargs='+', type=str, help='specify tunable attribute(s)')
 
 
 class Recommendation:
@@ -44,7 +48,7 @@ class Recommendation:
         self.seed = ''
         self.seed_type = 'genres'
         self.seed_info = {}
-        self.rec_params = {}
+        self.rec_params = {'limit': str(self.limit)}
         self.playlist_name = f'Spotirec-{t.tm_mday}-{t.tm_mon}-{t.tm_year}'
 
     def playlist_description(self) -> str:
@@ -59,7 +63,7 @@ class Recommendation:
 
     def update_limit(self, limit: int):
         self.limit = limit
-        self.rec_params['limit'] = self.limit
+        self.rec_params['limit'] = str(self.limit)
 
     def print_selection(self):
         print('Selection:')
@@ -186,8 +190,10 @@ def filter_recommendations(data: json) -> list:
 def recommend():
     print('Getting recommendations')
     rec.create_seed()
-    data = get_recommendations()
-    tracks = filter_recommendations(data)
+    tracks = filter_recommendations(get_recommendations())
+    if len(tracks) == 0:
+        print('Error: received zero tracks with your options - adjust and try again')
+        exit(1)
     limit_save = rec.limit
     while True:
         if len(tracks) < limit_save:
@@ -289,8 +295,20 @@ def parse():
         add_top_genres_seed()
 
     if args.limit:
-        rec.limit = args.limit
+        rec.update_limit(args.limit)
     print(f'The playlist will contain {rec.limit} tracks')
+
+    if args.tune:
+        for x in args.tune:
+            if not x.split('_', 1)[0] in tune_prefix:
+                print(f'Tune prefix \"{x.split("_", 1)[0]}\" is malformed - available prefixes:')
+                print(tune_prefix)
+                exit(1)
+            if not x.split('=')[0].split('_', 1)[1] in tune_attr:
+                print(f'Tune attribute \"{x.split("=")[0].split("_", 1)[1]}\" is malformed - available attributes:')
+                print(tune_attr)
+                exit(1)
+            rec.rec_params[x.split('=')[0]] = x.split('=')[1]
 
 
 headers = {'Content-Type': 'application/json',

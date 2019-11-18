@@ -26,7 +26,6 @@ $ python /path/to/spotirec.py 50
 ```
 This option determines how many tracks should be added to your new playlist. The default value is 20, and the max value is 100.
 
----
 Additionally, you can pass arguments to specify the what the recommendations should be based on
 ```
 $ python /path/to/spotirec.py -t 
@@ -43,6 +42,38 @@ where
 - `-gc` you can define 1-5 genre seeds
 
 By default, the script will base recommendations off of your top genres extracted from your top artists. For this method, pass none of the above 5 arguments.
+
+You can also specify tunable attributes with the `--tune` option, followed by any number of whitespace separated arguments on the form `prefix_attribute=value`
+```
+$ python /path/to/spotirec.py --tune prefix_attribute=value prefix_attribute=value
+```
+If you wish to specify a limit, this should appear before `--tune`
+### Prefixes
+
+| Prefix | Function |
+|---|---|
+| max | The attribute value serves as a hard ceiling |
+| min | The attribute value serves as a hard floor |
+| target | The attribute value serves as a target for recommendations. Recommendations will be as close as possible to the value. |
+
+### Attributes
+| Attribute | Data type | Range | Recomm. range | Function |
+|---|---|---|---|---|
+| duration_ms | int | **R+** | N/A | The duration of the track in milliseconds. |
+| key | int | 0-11 | N/A | [Pitch class](https://en.wikipedia.org/wiki/Pitch_class#Other_ways_to_label_pitch_classes) of the track. |
+| mode | int | 0-1 | N/A | Modality of the track. 1 is major, 0 is minor. |
+| time_signature | int | N/A | N/A | Estimated overall [time signature](https://en.wikipedia.org/wiki/Time_signature) of the track. |
+| acousticness | float | 0.0-1.0 | Any | Confidence measure for whether or not the track is acoustic. High value is acoustic. |
+| danceability | float | 0.0-1.0 | 0.1-0.9 | How well fit a track is for dancing. Measurement includes among others tempo, rhythm stability, and beat strength. High value is suitable for dancing. |
+| energy | float | 0.0-1.0 | Any | Perceptual measure of intensity and activity. High energy is fast, loud, and noisy, and low is slow and mellow. |
+| instrumentalness | float | 0.0-1.0 | 0.0-0.05 | Whether or not a track contains vocals. Low contains vocals, high is purely instrumental. |
+| liveness | float | 0.0-1.0 | 0.0-0.4 | Predicts whether or not a track is live. High value is live. |
+| loudness | float | -60-0 | -20-0 | Overall loudness of the track, measured in decibels. |
+| speechiness | float | 0.0-1.0 | 0.0-0.3 | Presence of spoken words. Low is a song, and high is likely to be a talk show or podcast. |
+| valence | float | 0.0-1.0 | Any | Positivity of the track. High value is positive, and low value is negative. |
+| tempo | float | 0.0-220.0 | 60.0-210.0 | Overall estimated beats per minute of the track. |
+
+Recommendations may be sparce outside the recommended range.
 
 ---
 
