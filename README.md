@@ -1,38 +1,63 @@
 # Spotirec
 Script that creates a playlist of recommendations based on the user's top artists or tracks, or genres extracted from top artists. A sort of Discover Weekly on demand.
 
-## Setup
-Install dependencies with `pip`
+## Installation
+When installing Spotirec, you have two options.
+
+#### AUR Helper
+Spotirec is packaged for AUR, and as such it can be installed using an AUR helper
 ```
-pip install requests
-pip install spotipy
-pip install bottle
+yay -S spotirec
 ```
+
+#### Manual
+On any other distribution you need to install Spotirec manually. Spotirec has three dependencies
+```
+bottle<=0.12.17-1
+requests>=2.22.0
+spotipy>=2.4.4
+```
+If available, these should be installed as packages through your package manager. Alternatively, these can be installed through `pip` - this should only be done as a last resort.
+
+Once these are installed, you can proceed to install Spotirec
+```
+git clone https://github.com/Badgie/spotirec.git
+cd spotirec
+
+mkdir /usr/lib/spotirec
+
+install spotirec.py -t /usr/lib/spotirec
+
+ln -s /usr/lib/spotirec/spotirec.py /usr/bin/spotirec
+```
+
 ---
+
 Run the script in terminal for a first time setup
 ```
-$ python /path/to/spotirec.py
+$ spotirec
 ```
 The first time setup will cache access and refresh tokens used to perform various remote actions on your spotify account. The first time setup will host a localhost port and open this in your browser. On this page you simply log in to your spotify account to authorize access to Spotirec - once this is done, you can close the page and exit the script.
+
 
 ## Usage
 To use Spotirec, simply run it from terminal
 ```
-$ python /path/to/spotirec.py
+$ spotirec
 ```
 Optionally you can add a limit as an integer value
 ```
-$ python /path/to/spotirec.py 50
+$ spotirec 50
 ```
 This option determines how many tracks should be added to your new playlist. The default value is 20, and the max value is 100.
 
 Additionally, you can pass arguments to specify the what the recommendations should be based on
 ```
-$ python /path/to/spotirec.py -t 
-$ python /path/to/spotirec.py -a
-$ python /path/to/spotirec.py -tc
-$ python /path/to/spotirec.py -ac
-$ python /path/to/spotirec.py -gc
+$ spotirec -t 
+$ spotirec -a
+$ spotirec -tc
+$ spotirec -ac
+$ spotirec -gc
 ```
 where
 - `-t` is based off your most played tracks,
@@ -45,7 +70,7 @@ By default, the script will base recommendations off of your top genres extracte
 
 You can also specify tunable attributes with the `--tune` option, followed by any number of whitespace separated arguments on the form `prefix_attribute=value`
 ```
-$ python /path/to/spotirec.py --tune prefix_attribute=value prefix_attribute=value
+$ spotirec --tune prefix_attribute=value prefix_attribute=value
 ```
 If you wish to specify a limit, this should appear before `--tune`
 ### Prefixes
@@ -67,7 +92,7 @@ If you wish to specify a limit, this should appear before `--tune`
 | acousticness | float | 0.0-1.0 | Any | Confidence measure for whether or not the track is acoustic. High value is acoustic. |
 | danceability | float | 0.0-1.0 | 0.1-0.9 | How well fit a track is for dancing. Measurement includes among others tempo, rhythm stability, and beat strength. High value is suitable for dancing. |
 | energy | float | 0.0-1.0 | Any | Perceptual measure of intensity and activity. High energy is fast, loud, and noisy, and low is slow and mellow. |
-| instrumentalness | float | 0.0-1.0 | 0.0-0.05 | Whether or not a track contains vocals. Low contains vocals, high is purely instrumental. |
+| instrumentalness | float | 0.0-1.0 | 0.0-1.0 | Whether or not a track contains vocals. Low contains vocals, high is purely instrumental. |
 | liveness | float | 0.0-1.0 | 0.0-0.4 | Predicts whether or not a track is live. High value is live. |
 | loudness | float | -60-0 | -20-0 | Overall loudness of the track, measured in decibels. |
 | speechiness | float | 0.0-1.0 | 0.0-0.3 | Presence of spoken words. Low is a song, and high is likely to be a talk show or podcast. |
@@ -80,7 +105,7 @@ Recommendations may be sparce outside the recommended range.
 
 To blacklist tracks or artists, pass the `-b` argument followed by an arbitrary number of whitespace separated Spotify URIs
 ```
-$ python /path/to/spotirec.py -b spotify:track:id spotify:track:id spotify:artist:id
+$ spotirec -b spotify:track:id spotify:track:id spotify:artist:id
 ```
 
 ## Troubleshooting
