@@ -13,7 +13,7 @@ yay -S spotirec
 #### Manual
 On any other distribution you need to install Spotirec manually. Spotirec has two dependencies
 ```
-bottle<=0.12.17-1
+bottle>=0.12.17
 requests>=2.22.0
 ```
 If available, these should be installed as packages through your package manager. Alternatively, these can be installed through `pip` - this should only be done as a last resort.
