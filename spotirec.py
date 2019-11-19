@@ -1,13 +1,12 @@
 #!/usr/bin/env python
-
 import requests
 import webbrowser
 import json
 import time
 import argparse
 import os
+import oauth2
 from bottle import route, run, request
-from spotipy import oauth2
 from pathlib import Path
 
 if not os.path.isdir(f'{Path.home()}/.config/spotirec'):
@@ -25,7 +24,7 @@ tune_prefix = ['max', 'min', 'target']
 tune_attr = ['acousticness', 'danceability', 'duration_ms', 'energy', 'instrumentalness', 'key', 'liveness',
              'loudness', 'mode', 'popularity', 'speechiness', 'tempo', 'time_signature', 'valence', 'popularity']
 
-sp_oauth = oauth2.SpotifyOAuth(client_id, client_secret, redirect_uri, scope=scope, cache_path=cache)
+sp_oauth = oauth2.SpotifyOAuth(client_id, client_secret, redirect_uri, scopes=scope, cache=cache)
 
 parser = argparse.ArgumentParser(epilog='passing no optional arguments defaults to basing recommendations off the '
                                         'user\'s top genres')
@@ -100,7 +99,7 @@ def index() -> str:
     url = request.url
     code = sp_oauth.parse_response_code(url)
     if code:
-        token_info = sp_oauth.get_access_token(code)
+        token_info = sp_oauth.retrieve_access_token(code)
         access_token = token_info['access_token']
 
     if access_token:
@@ -110,19 +109,7 @@ def index() -> str:
 
 
 def get_token() -> str:
-    token_info = sp_oauth.get_cached_token()
-    if token_info:
-        if (time.time() + 5) > int(sp_oauth.get_cached_token()['expires_at']):
-            refresh_token()
-        return sp_oauth.get_cached_token()['access_token']
-    else:
-        authorize()
-        exit(1)
-
-
-def refresh_token():
-    print('OAuth token invalid, refreshing...')
-    sp_oauth.refresh_access_token(sp_oauth.get_cached_token()['refresh_token'])
+    return sp_oauth.get_credentials()['access_token']
 
 
 def get_top_list(list_type: str, top_limit: int) -> json:
