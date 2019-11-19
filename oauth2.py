@@ -87,7 +87,6 @@ class SpotifyOAuth:
                   'scope': self.scopes}
         return f'{self.oauth_auth_url}?{parse.urlencode(params)}'
 
-
     def parse_response_code(self, url: str) -> str:
         """
         Extract code from response url after authorization by user.
