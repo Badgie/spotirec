@@ -9,9 +9,6 @@ import oauth2
 from bottle import route, run, request
 from pathlib import Path
 
-if not os.path.isdir(f'{Path.home()}/.config/spotirec'):
-    os.makedirs(f'{Path.home()}/.config/spotirec')
-
 port = 8080
 client_id = '466a89a53359403b82df7d714030ec5f'
 client_secret = '28147de72c3549e98b1e790f3d080b85'
@@ -37,6 +34,10 @@ parser.add_argument('-tc', action='store_true', help='base recommendations on cu
 parser.add_argument('-gc', action='store_true', help='base recommendations on custom seed genres')
 parser.add_argument('-b', metavar='uri', nargs='+', type=str, help='blacklist track or artist uri(s)')
 parser.add_argument('--tune', metavar='attr', nargs='+', type=str, help='specify tunable attribute(s)')
+
+if not os.path.exists(blacklist_path):
+    f = open(blacklist_path, 'w')
+    f.close()
 
 
 class Recommendation:
@@ -163,9 +164,6 @@ def get_recommendations() -> json:
 
 def filter_recommendations(data: json) -> list:
     tracks = []
-    if not os.path.exists(blacklist_path):
-        f = open(blacklist_path, 'w')
-        f.close()
     with open(blacklist_path, 'r+') as file:
         try:
             blacklist = json.loads(file.read())
@@ -239,9 +237,6 @@ def add_custom_seed_info(data: json):
 def parse():
     args = parser.parse_args()
     if args.b:
-        if not os.path.exists(blacklist_path):
-            f = open(blacklist_path, 'w')
-            f.close()
         with open(blacklist_path, 'r') as file:
             try:
                 data = json.loads(file.read())

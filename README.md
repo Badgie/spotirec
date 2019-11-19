@@ -23,7 +23,9 @@ Once these are installed, you can proceed to install Spotirec
 git clone https://github.com/Badgie/spotirec.git
 cd spotirec
 
-mkdir /usr/lib/spotirec
+mkdir -p /usr/lib/spotirec
+mkdir -p /usr/bin
+mkdir -p $HOME/.config/spotirec
 
 install spotirec.py -t /usr/lib/spotirec
 
