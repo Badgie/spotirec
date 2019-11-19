@@ -30,7 +30,7 @@ class SpotifyOAuth:
                     creds = self.refresh_token(creds['refresh_token'])
         except (IOError, json.decoder.JSONDecodeError):
             print('Error: cache does not exist or is empty')
-            exit(1)
+            return None
         return creds
 
     def is_token_expired(self, token_expire: int) -> bool:

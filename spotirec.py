@@ -109,7 +109,12 @@ def index() -> str:
 
 
 def get_token() -> str:
-    return sp_oauth.get_credentials()['access_token']
+    creds = sp_oauth.get_credentials()
+    if creds:
+        return creds['access_token']
+    else:
+        authorize()
+        exit(1)
 
 
 def get_top_list(list_type: str, top_limit: int) -> json:
