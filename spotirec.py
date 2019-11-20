@@ -4,6 +4,7 @@ import webbrowser
 import json
 import time
 import argparse
+import shlex
 import os
 import oauth2
 from bottle import route, run, request
@@ -119,11 +120,11 @@ class Recommendation:
                                                    'id': data_dict['id'],
                                                    'type': data_dict['type']}
             try:
-                assert self.seed_info[len(self.seed_info)-1]['artists']
+                assert data_dict['artists'] is not None
                 self.seed_info[len(self.seed_info)-1]['artists'] = []
                 for x in data_dict['artists']:
                     self.seed_info[len(self.seed_info) - 1]['artists'].append(x['name'])
-            except KeyError:
+            except (KeyError, AssertionError):
                 pass
 
     def create_seed(self):
@@ -136,7 +137,6 @@ class Recommendation:
             self.rec_params['seed_tracks'] = ','.join(str(x['id']) for x in self.seed_info.values() if x['type'] == 'track')
             self.rec_params['seed_artists'] = ','.join(str(x['id']) for x in self.seed_info.values() if x['type'] == 'artist')
             self.rec_params['seed_genres'] = ','.join(str(x['name']) for x in self.seed_info.values() if x['type'] == 'genre')
-            print(self.seed_info.values())
             return
         else:
             self.seed = ','.join(str(x['id']) for x in self.seed_info.values())
@@ -262,9 +262,6 @@ def get_recommendations() -> json:
     :return: recommendations as json object
     """
     response = requests.get(f'{url_base}/recommendations', params=rec.rec_params, headers=headers)
-    print(response.reason)
-    print(response.request)
-    print(rec.rec_params)
     return json.loads(response.content.decode('utf-8'))
 
 
@@ -437,7 +434,7 @@ def print_user_genres_sorted(prompt=True):
 
 
 def parse_custom_input(user_input: str):
-    for x in user_input.split(' '):
+    for x in shlex.split(user_input):
         if 'track' in x:
             rec.add_seed_info(data_dict=request_data(x, 'tracks'))
         elif 'artist' in x:
