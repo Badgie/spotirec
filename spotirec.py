@@ -281,6 +281,9 @@ def add_to_blacklist(entries: list):
 
 
 def print_blacklist():
+    """
+    Format and print blacklist entries
+    """
     with open(blacklist_path, 'r') as file:
         try:
             blacklist = json.loads(file.read())
