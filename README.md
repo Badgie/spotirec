@@ -46,13 +46,13 @@ To use Spotirec, simply run it from terminal
 ```
 $ spotirec
 ```
-Optionally you can add a limit as an integer value
+Optionally you can add a limit as an integer value with the `-l` argument
 ```
-$ spotirec 50
+$ spotirec -l 50
 ```
 This option determines how many tracks should be added to your new playlist. The default value is 20, and the max value is 100.
 
-Additionally, you can pass arguments to specify the what the recommendations should be based on
+Additionally, you can pass arguments to specify the what the recommendations should be based on - these are mutually exclusive
 ```
 $ spotirec -t 
 $ spotirec -a
