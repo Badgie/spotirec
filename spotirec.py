@@ -37,6 +37,9 @@ mutex_group.add_argument('-gc', action='store_true', help='base recommendations 
 parser.add_argument('-b', metavar='uri', nargs='+', type=str, help='blacklist track or artist uri(s)')
 parser.add_argument('--tune', metavar='attr', nargs='+', type=str, help='specify tunable attribute(s)')
 
+if not os.path.isdir(f'{Path.home()}/.config/spotirec'):
+    os.makedirs(f'{Path.home()}/.config/spotirec')
+
 if not os.path.exists(blacklist_path):
     f = open(blacklist_path, 'w')
     f.close()
