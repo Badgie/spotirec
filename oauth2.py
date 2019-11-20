@@ -51,7 +51,7 @@ class SpotifyOAuth:
                 'refresh_token': refresh_token}
         response = requests.post(self.oauth_token_url, data=body, headers=self.encode_header())
         token = json.loads(response.content.decode('utf-8'))
-        self.save_token(token, refresh_token)
+        self.save_token(token, refresh_token=refresh_token)
         return token
 
     def encode_header(self) -> dict:
@@ -98,13 +98,14 @@ class SpotifyOAuth:
         except IndexError:
             pass
 
-    def save_token(self, token: json, refresh_token: str):
+    def save_token(self, token: json, refresh_token=None):
         """
         Add 'expires at' field and reapplies refresh token to token, and save to cache
         :param token: credentials as a json object
         :param refresh_token: user refresh token
         """
         token['expires_at'] = round(time.time()) + int(token['expires_in'])
-        token['refresh_token'] = refresh_token
+        if refresh_token:
+            token['refresh_token'] = refresh_token
         with open(self.cache, 'w') as file:
             file.write(json.dumps(token))
