@@ -31,6 +31,7 @@ spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for de
 parser.add_argument('-l', metavar='limit', nargs=1, type=int, choices=range(1, 101),
                     help='amount of tracks to add (default: 20, max: 100)')
 parser.add_argument('-b', metavar='uri', nargs='+', type=str, help='blacklist track or artist uri(s)')
+parser.add_argument('-b list', action='store_true', help='print blacklist entries')
 
 # Create mutually exclusive group for recommendation types to ensure only one is given
 mutex_group = parser.add_mutually_exclusive_group()
@@ -40,7 +41,6 @@ mutex_group.add_argument('-ac', action='store_true', help='base recommendations 
 mutex_group.add_argument('-tc', action='store_true', help='base recommendations on custom top tracks')
 mutex_group.add_argument('-gc', action='store_true', help='base recommendations on custom seed genres')
 
-parser.add_argument('-b list', action='store_true', help='print blacklist entries')
 parser.add_argument('--tune', metavar='attr', nargs='+', type=str, help='specify tunable attribute(s)')
 
 # Ensure config dir and blacklist file exists
