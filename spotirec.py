@@ -6,6 +6,7 @@ import time
 import argparse
 import os
 import oauth2
+from textwrap import dedent
 from bottle import route, run, request
 from pathlib import Path
 
@@ -23,8 +24,9 @@ tune_attr = ['acousticness', 'danceability', 'duration_ms', 'energy', 'instrumen
 
 sp_oauth = oauth2.SpotifyOAuth(client_id, client_secret, redirect_uri, scopes=scope, cache=cache)
 
-parser = argparse.ArgumentParser(epilog='passing no optional arguments defaults to basing recommendations off the '
-                                        'user\'s top genres')
+parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
+                                 epilog="""passing no optional arguments defaults to basing recommendations off the user\'s top genres
+spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for details read LICENSE""")
 parser.add_argument('limit', metavar='n', nargs='?', type=int, choices=range(1, 101),
                     help='amount of tracks to add (default: 20, max: 100)')
 parser.add_argument('-a', action='store_true', help='base recommendations on your top artists')
