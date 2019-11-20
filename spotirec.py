@@ -34,6 +34,7 @@ parser.add_argument('-ac', action='store_true', help='base recommendations on cu
 parser.add_argument('-tc', action='store_true', help='base recommendations on custom top tracks')
 parser.add_argument('-gc', action='store_true', help='base recommendations on custom seed genres')
 parser.add_argument('-b', metavar='uri', nargs='+', type=str, help='blacklist track or artist uri(s)')
+parser.add_argument('-b list', action='store_true', help='print blacklist entries')
 parser.add_argument('--tune', metavar='attr', nargs='+', type=str, help='specify tunable attribute(s)')
 
 if not os.path.exists(blacklist_path):
@@ -277,13 +278,32 @@ def add_to_blacklist(entries: list):
                       f'not been added to the blacklist')
     with open(blacklist_path, 'w+') as file:
         file.write(json.dumps(data))
-    exit(1)
+
+
+def print_blacklist():
+    with open(blacklist_path, 'r') as file:
+        try:
+            blacklist = json.loads(file.read())
+            print('Tracks')
+            print('--------------------------')
+            for x in blacklist['tracks']:
+                print(f'{x["name"]} by {", ".join(x["artists"]).strip(", ")} - {x["uri"]}')
+            print('\nArtists')
+            print('--------------------------')
+            for x in blacklist['artists']:
+                print(f'{x["name"]} - {x["uri"]}')
+        except json.decoder.JSONDecodeError:
+            print('Blacklist is empty')
 
 
 def parse():
     args = parser.parse_args()
     if args.b:
-        add_to_blacklist(args.b)
+        if args.b[0] == 'list':
+            print_blacklist()
+        else:
+            add_to_blacklist(args.b)
+        exit(1)
 
     if args.a:
         print('Basing recommendations off your top 5 artists')
