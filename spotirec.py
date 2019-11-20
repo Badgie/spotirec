@@ -6,7 +6,6 @@ import time
 import argparse
 import os
 import oauth2
-from textwrap import dedent
 from bottle import route, run, request
 from pathlib import Path
 
@@ -236,26 +235,49 @@ def add_custom_seed_info(data: json):
         rec.add_seed_info(data_dict=data['items'][int(x)])
 
 
+def request_data(uri: str, data_type: str) -> json:
+    """
+    Requests data about an artist or a track.
+    :param uri: uri for the artist or track
+    :param data_type: the type of data to request; 'artists' or 'tracks'
+    :return: data about artist or track as a json obj
+    """
+    response = requests.get(f'{url_base}/{data_type}/{uri.split(":")[2]}', headers=headers)
+    return json.loads(response.content.decode('utf-8'))
+
+
+def add_to_blacklist(entries: list):
+    with open(blacklist_path, 'r') as file:
+        try:
+            data = json.loads(file.read())
+        except json.decoder.JSONDecodeError:
+            data = {'tracks': [],
+                    'artists': []}
+        for uri in entries:
+            if 'track' in uri:
+                track = request_data(uri, 'tracks')
+                artists = [x['name'] for x in track['artists']]
+                data['tracks'].append({'name': track['name'],
+                                       'uri': uri,
+                                       'artists': artists})
+                print(f'Added track \"{track["name"]}\" by {artists} to your blacklist')
+            elif 'artist' in uri:
+                artist = request_data(uri, 'artists')
+                data['artists'].append({'name': artist['name'],
+                                        'uri': artist['uri']})
+                print(f'Added artist \"{artist["name"]}\" to your blacklist')
+            else:
+                print(f'uri \"{uri}\" is either not a valid uri for a track or artist, or is malformed and has '
+                      f'not been added to the blacklist')
+    with open(blacklist_path, 'w+') as file:
+        file.write(json.dumps(data))
+    exit(1)
+
+
 def parse():
     args = parser.parse_args()
     if args.b:
-        with open(blacklist_path, 'r') as file:
-            try:
-                data = json.loads(file.read())
-            except json.decoder.JSONDecodeError:
-                data = {'tracks': [],
-                        'artists': []}
-            for uri in args.b:
-                if 'track' in uri:
-                    data['tracks'].append(uri)
-                elif 'artist' in uri:
-                    data['artists'].append(uri)
-                else:
-                    print(f'uri \"{uri}\" is either not a valid uri for a track or artist, or is malformed and has '
-                          f'not been added to the blacklist')
-        with open(blacklist_path, 'w+') as file:
-            file.write(json.dumps(data))
-        exit(1)
+        add_to_blacklist(args.b)
 
     if args.a:
         print('Basing recommendations off your top 5 artists')
