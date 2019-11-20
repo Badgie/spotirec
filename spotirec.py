@@ -28,11 +28,12 @@ parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpForm
 spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for details read LICENSE""")
 parser.add_argument('-l', metavar='limit', nargs=1, type=int, choices=range(1, 101),
                     help='amount of tracks to add (default: 20, max: 100)')
-parser.add_argument('-a', action='store_true', help='base recommendations on your top artists')
-parser.add_argument('-t', action='store_true', help='base recommendations on your top tracks')
-parser.add_argument('-ac', action='store_true', help='base recommendations on custom top artists')
-parser.add_argument('-tc', action='store_true', help='base recommendations on custom top tracks')
-parser.add_argument('-gc', action='store_true', help='base recommendations on custom seed genres')
+mutex_group = parser.add_mutually_exclusive_group()
+mutex_group.add_argument('-a', action='store_true', help='base recommendations on your top artists')
+mutex_group.add_argument('-t', action='store_true', help='base recommendations on your top tracks')
+mutex_group.add_argument('-ac', action='store_true', help='base recommendations on custom top artists')
+mutex_group.add_argument('-tc', action='store_true', help='base recommendations on custom top tracks')
+mutex_group.add_argument('-gc', action='store_true', help='base recommendations on custom seed genres')
 parser.add_argument('-b', metavar='uri', nargs='+', type=str, help='blacklist track or artist uri(s)')
 parser.add_argument('--tune', metavar='attr', nargs='+', type=str, help='specify tunable attribute(s)')
 
