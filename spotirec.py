@@ -41,6 +41,7 @@ mutex_group.add_argument('-ac', action='store_true', help='base recommendations 
 mutex_group.add_argument('-tc', action='store_true', help='base recommendations on custom top tracks')
 mutex_group.add_argument('-gc', action='store_true', help='base recommendations on custom top genres')
 mutex_group.add_argument('-gcs', action='store_true', help='base recommendations on custom seed genres')
+mutex_group.add_argument('-c', action='store_true', help='base recommendations on a custom seed')
 
 parser.add_argument('--tune', metavar='attr', nargs='+', type=str, help='specify tunable attribute(s)')
 
@@ -77,6 +78,13 @@ class Recommendation:
             seeds = ' | '.join(str(f'{x["name"]} - {", ".join(str(y) for y in x["artists"])}')
                                for x in self.seed_info.values())
             return f'{desc}{seeds}'
+        elif 'custom' in self.seed_type:
+            for x in self.seed_info.values():
+                if x['type'] == 'track':
+                    desc = f'{desc}{x["name"]} - {", ".join(str(y) for y in x["artists"])} | '
+                else:
+                    desc = f'{desc}{x["name"]} | '
+            return desc.strip(' | ')
         else:
             seeds = ' | '.join(str(x["name"]) for x in self.seed_info.values())
             return f'{desc}{seeds}'
@@ -103,15 +111,20 @@ class Recommendation:
         :param data_dict: seed info as a dict if seed is artist or track
         :param data_string: seed info as a string if seed is genre
         """
-        if 'genres' in self.seed_type:
-            self.seed_info[len(self.seed_info)] = {'name': data_string}
+        if data_string:
+            self.seed_info[len(self.seed_info)] = {'name': data_string,
+                                                   'type': 'genre'}
         else:
             self.seed_info[len(self.seed_info)] = {'name': data_dict['name'],
-                                                   'id': data_dict['id']}
-            if 'tracks' in self.seed_type:
+                                                   'id': data_dict['id'],
+                                                   'type': data_dict['type']}
+            try:
+                assert self.seed_info[len(self.seed_info)-1]['artists']
                 self.seed_info[len(self.seed_info)-1]['artists'] = []
                 for x in data_dict['artists']:
                     self.seed_info[len(self.seed_info) - 1]['artists'].append(x['name'])
+            except KeyError:
+                pass
 
     def create_seed(self):
         """
@@ -119,6 +132,12 @@ class Recommendation:
         """
         if 'genres' in self.seed_type:
             self.seed = ','.join(str(x['name']) for x in self.seed_info.values())
+        elif 'custom' in self.seed_type:
+            self.rec_params['seed_tracks'] = ','.join(str(x['id']) for x in self.seed_info.values() if x['type'] == 'track')
+            self.rec_params['seed_artists'] = ','.join(str(x['id']) for x in self.seed_info.values() if x['type'] == 'artist')
+            self.rec_params['seed_genres'] = ','.join(str(x['name']) for x in self.seed_info.values() if x['type'] == 'genre')
+            print(self.seed_info.values())
+            return
         else:
             self.seed = ','.join(str(x['id']) for x in self.seed_info.values())
         self.rec_params[f'seed_{self.seed_type}'] = self.seed
@@ -243,6 +262,9 @@ def get_recommendations() -> json:
     :return: recommendations as json object
     """
     response = requests.get(f'{url_base}/recommendations', params=rec.rec_params, headers=headers)
+    print(response.reason)
+    print(response.request)
+    print(rec.rec_params)
     return json.loads(response.content.decode('utf-8'))
 
 
@@ -293,11 +315,12 @@ def recommend():
     rec.print_selection()
 
 
-def print_choices(data: list) -> str:
+def print_choices(data: list, prompt=True) -> str:
     """
     Used for custom seed creation. All valid choices are printed to terminal and user is prompted
     to select. If the seed type is genres, seeds are simply added to the recommendations object.
     :param data: valid choices as a list of names
+    :param prompt: whether or not to prompt user for input
     :return: user input, if seed type is artists or tracks
     """
     line = ""
@@ -312,13 +335,14 @@ def print_choices(data: list) -> str:
         except IndexError:
             continue
     print(line.strip('\n'))
-    input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to '
-                         'include:\n')
-    if 'genres' in rec.seed_type:
-        for x in input_string.split(' '):
-            rec.add_seed_info(data_string=data[int(x)])
-    else:
-        return input_string
+    if prompt:
+        input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to '
+                             'include:\n')
+        if 'genres' in rec.seed_type:
+            for x in input_string.split(' '):
+                rec.add_seed_info(data_string=data[int(x)])
+        else:
+            return input_string
 
 
 def add_top_seed_info(data: json):
@@ -407,6 +431,21 @@ def print_blacklist():
             print('Blacklist is empty')
 
 
+def print_user_genres_sorted(prompt=True):
+    sort = sorted(get_user_top_genres().items(), key=lambda kv: kv[1], reverse=True)
+    print_choices([sort[x][0] for x in range(0, len(sort))], prompt=prompt)
+
+
+def parse_custom_input(user_input: str):
+    for x in user_input.split(' '):
+        if 'track' in x:
+            rec.add_seed_info(data_dict=request_data(x, 'tracks'))
+        elif 'artist' in x:
+            rec.add_seed_info(data_dict=request_data(x, 'artists'))
+        else:
+            rec.add_seed_info(data_string=x)
+
+
 def parse():
     """
     Parse arguments
@@ -432,7 +471,7 @@ def parse():
     elif args.gcs:
         response = requests.get(f'{url_base}/recommendations/available-genre-seeds', headers=headers)
         data = json.loads(response.content.decode('utf-8'))
-        rec.based_on = 'custom genres'
+        rec.based_on = 'custom seed genres'
         print_choices(data['genres'])
     elif args.ac:
         data = get_top_list('artists', 50)
@@ -445,8 +484,15 @@ def parse():
         rec.seed_type = 'tracks'
         add_custom_seed_info(data)
     elif args.gc:
-        sort = sorted(get_user_top_genres().items(), key=lambda kv: kv[1], reverse=True)
-        print_choices([sort[x][0] for x in range(0, len(sort))])
+        rec.based_on = 'custom top genres'
+        print_user_genres_sorted()
+    elif args.c:
+        rec.based_on = 'custom mix'
+        rec.seed_type = 'custom'
+        print_user_genres_sorted(prompt=False)
+        user_input = input('Enter a combination of 1-5 whitespace separated genres, track uris, and artist uris. '
+                           '\nGenres should be encased in double quotes, e.g.; \"vapor death pop\".\n')
+        parse_custom_input(user_input)
     else:
         print('Basing recommendations off your top 5 genres')
         add_top_genres_seed()
