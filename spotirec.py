@@ -178,10 +178,10 @@ def get_top_list(list_type: str, top_limit: int) -> json:
     return json.loads(response.content.decode('utf-8'))
 
 
-def add_top_genres_seed():
+def get_user_top_genres() -> dict:
     """
-    Extract genres from user's top 50 artists and sort them from high to low.
-    Add top 5 genres to recommendation object seed info.
+    Extract genres from user's top 50 artists and map them to their amount of occurrences
+    :return: dict of genres and their count of occurrences
     """
     data = get_top_list('artists', 50)
     genres = {}
@@ -191,6 +191,14 @@ def add_top_genres_seed():
                 genres[genre] += 1
             else:
                 genres[genre] = 1
+    return genres
+
+
+def add_top_genres_seed():
+    """
+    Add top 5 genres to recommendation object seed info.
+    """
+    genres = get_user_top_genres()
     sort = sorted(genres.items(), key=lambda kv: kv[1], reverse=True)
     for x in range(0, 5):
         rec.add_seed_info(data_string=sort[x][0])
