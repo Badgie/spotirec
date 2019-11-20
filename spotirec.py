@@ -39,7 +39,8 @@ mutex_group.add_argument('-a', action='store_true', help='base recommendations o
 mutex_group.add_argument('-t', action='store_true', help='base recommendations on your top tracks')
 mutex_group.add_argument('-ac', action='store_true', help='base recommendations on custom top artists')
 mutex_group.add_argument('-tc', action='store_true', help='base recommendations on custom top tracks')
-mutex_group.add_argument('-gc', action='store_true', help='base recommendations on custom seed genres')
+mutex_group.add_argument('-gc', action='store_true', help='base recommendations on custom top genres')
+mutex_group.add_argument('-gcs', action='store_true', help='base recommendations on custom seed genres')
 
 parser.add_argument('--tune', metavar='attr', nargs='+', type=str, help='specify tunable attribute(s)')
 
@@ -428,7 +429,7 @@ def parse():
         rec.based_on = 'top tracks'
         rec.seed_type = 'tracks'
         add_top_seed_info(get_top_list('tracks', 5))
-    elif args.gc:
+    elif args.gcs:
         response = requests.get(f'{url_base}/recommendations/available-genre-seeds', headers=headers)
         data = json.loads(response.content.decode('utf-8'))
         rec.based_on = 'custom genres'
@@ -443,6 +444,9 @@ def parse():
         rec.based_on = 'custom tracks'
         rec.seed_type = 'tracks'
         add_custom_seed_info(data)
+    elif args.gc:
+        sort = sorted(get_user_top_genres().items(), key=lambda kv: kv[1], reverse=True)
+        print_choices([sort[x][0] for x in range(0, len(sort))])
     else:
         print('Basing recommendations off your top 5 genres')
         add_top_genres_seed()
