@@ -104,9 +104,13 @@ Recommendations may be sparce outside the recommended range.
 
 ---
 
-To blacklist tracks or artists, pass the `-b` argument followed by an arbitrary number of whitespace separated Spotify URIs
+To blacklist tracks or artists, pass the `-b` option followed by an arbitrary number of whitespace separated Spotify URIs
 ```
 $ spotirec -b spotify:track:id spotify:track:id spotify:artist:id
+```
+To see your current blacklist entries, pass the `list` argument to the `-b` option
+```
+$ spotirec -b list
 ```
 
 ## Troubleshooting
