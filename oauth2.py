@@ -51,7 +51,12 @@ class SpotifyOAuth:
                 'refresh_token': refresh_token}
         response = requests.post(self.oauth_token_url, data=body, headers=self.encode_header())
         token = json.loads(response.content.decode('utf-8'))
-        self.save_token(token, refresh_token=refresh_token)
+        try:
+            assert token['refresh_token'] is not None
+            self.save_token(token)
+        except (KeyError, AssertionError):
+            print('Did not receive new refresh token, saving old')
+            self.save_token(token, refresh_token=refresh_token)
         return token
 
     def encode_header(self) -> dict:
