@@ -260,7 +260,8 @@ def add_to_blacklist(entries: list):
                 data['tracks'].append({'name': track['name'],
                                        'uri': uri,
                                        'artists': artists})
-                print(f'Added track \"{track["name"]}\" by {artists} to your blacklist')
+                print(f'Added track \"{track["name"]}\" by {", ".join(str(x) for x in artists).strip(", ")}'
+                      f' to your blacklist')
             elif 'artist' in uri:
                 artist = request_data(uri, 'artists')
                 data['artists'].append({'name': artist['name'],
