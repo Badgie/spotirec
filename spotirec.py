@@ -168,11 +168,12 @@ def filter_recommendations(data: json) -> list:
     with open(blacklist_path, 'r+') as file:
         try:
             blacklist = json.loads(file.read())
+            blacklist_artists = [x['uri'] for x in blacklist['artists']]
+            blacklist_tracks = [x['uri'] for x in blacklist['tracks']]
             for x in data['tracks']:
-                artists = [y for y in x['artists'] if y['uri'] in blacklist['artists']]
-                if len(artists) > 0:
+                if x['uri'] in blacklist_artists:
                     continue
-                elif x['uri'] in blacklist['tracks']:
+                elif x['uri'] in blacklist_tracks:
                     continue
                 else:
                     tracks.append(x['uri'])
@@ -247,6 +248,10 @@ def request_data(uri: str, data_type: str) -> json:
 
 
 def add_to_blacklist(entries: list):
+    """
+    Add input uris to blacklist and exit
+    :param entries: list of input uris
+    """
     with open(blacklist_path, 'r') as file:
         try:
             data = json.loads(file.read())
