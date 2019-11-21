@@ -425,12 +425,33 @@ def print_user_genres_sorted(prompt=True):
     print_choices([sort[x][0] for x in range(0, len(sort))], prompt=prompt)
 
 
+def get_genre_seeds() -> json:
+    """
+    Retrieves available genre seeds from Spotify API.
+    :return: genre seeds as a json obj
+    """
+    response = requests.get(f'{url_base}/recommendations/available-genre-seeds', headers=headers)
+    return json.loads(response.content.decode('utf-8'))
+
+
+def check_if_valid_genre(genre: str) -> bool:
+    """
+    Checks if input genre is in user's top genres or available genre seeds.
+    :param genre: user input genre
+    :return: True if genre exists, False if not
+    """
+    top_genres = get_user_top_genres()
+    seed_genres = get_genre_seeds()['genres']
+    if genre in top_genres:
+        return True
+    if genre in seed_genres:
+        return True
+    return False
+
+
 def parse_custom_input(user_input: str):
     """
     Parse custom input from user.
-    TODO: figure out how to handle genres so the else clause can be an error message
-    -> regex(limited) / keep list of user genres and compare(better, but leaves out other genres)
-    -> compare to user genres and genre seeds
     :param user_input: input string
     """
     for x in shlex.split(user_input):
@@ -438,8 +459,10 @@ def parse_custom_input(user_input: str):
             rec.add_seed_info(data_dict=request_data(x, 'tracks'))
         elif 'artist' in x:
             rec.add_seed_info(data_dict=request_data(x, 'artists'))
-        else:
+        elif check_if_valid_genre(x):
             rec.add_seed_info(data_string=x)
+        else:
+            print(f'Error: input \"{x}\" is either a malformed uri or not a valid genre')
 
 
 def parse():
@@ -465,8 +488,7 @@ def parse():
         rec.seed_type = 'tracks'
         add_top_seed_info(get_top_list('tracks', 5))
     elif args.gcs:
-        response = requests.get(f'{url_base}/recommendations/available-genre-seeds', headers=headers)
-        data = json.loads(response.content.decode('utf-8'))
+        data = get_genre_seeds()
         rec.based_on = 'custom seed genres'
         print_choices(data['genres'])
     elif args.ac:
