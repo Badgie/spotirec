@@ -429,11 +429,22 @@ def print_blacklist():
 
 
 def print_user_genres_sorted(prompt=True):
+    """
+    Print user top genres to terminal in a formatted list.
+    :param prompt: whether or not user should be prompted for input
+    """
     sort = sorted(get_user_top_genres().items(), key=lambda kv: kv[1], reverse=True)
     print_choices([sort[x][0] for x in range(0, len(sort))], prompt=prompt)
 
 
 def parse_custom_input(user_input: str):
+    """
+    Parse custom input from user.
+    TODO: figure out how to handle genres so the else clause can be an error message
+    -> regex(limited) / keep list of user genres and compare(better, but leaves out other genres)
+    -> compare to user genres and genre seeds
+    :param user_input: input string
+    """
     for x in shlex.split(user_input):
         if 'track' in x:
             rec.add_seed_info(data_dict=request_data(x, 'tracks'))
