@@ -75,20 +75,10 @@ class Recommendation:
         :return: description string
         """
         desc = f'Created by Spotirec - {self.created_at} - based on {self.based_on} - seed: '
-        if 'tracks' in self.seed_type:
-            seeds = ' | '.join(str(f'{x["name"]} - {", ".join(str(y) for y in x["artists"])}')
-                               for x in self.seed_info.values())
-            return f'{desc}{seeds}'
-        elif 'custom' in self.seed_type:
-            for x in self.seed_info.values():
-                if x['type'] == 'track':
-                    desc = f'{desc}{x["name"]} - {", ".join(str(y) for y in x["artists"])} | '
-                else:
-                    desc = f'{desc}{x["name"]} | '
-            return desc.strip(' | ')
-        else:
-            seeds = ' | '.join(str(x["name"]) for x in self.seed_info.values())
-            return f'{desc}{seeds}'
+        seeds = ' | '.join(
+            f'{str(x["name"])}{" - " + ", ".join(str(y) for y in x["artists"]) if x["type"] == "track" else ""}' for x
+            in self.seed_info.values())
+        return f'{desc}{seeds}'
 
     def update_limit(self, limit: int):
         """
@@ -121,9 +111,7 @@ class Recommendation:
                                                    'type': data_dict['type']}
             try:
                 assert data_dict['artists'] is not None
-                self.seed_info[len(self.seed_info)-1]['artists'] = []
-                for x in data_dict['artists']:
-                    self.seed_info[len(self.seed_info) - 1]['artists'].append(x['name'])
+                self.seed_info[len(self.seed_info)-1]['artists'] = [x['name'] for x in data_dict['artists']]
             except (KeyError, AssertionError):
                 pass
 
