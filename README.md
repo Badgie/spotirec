@@ -1,11 +1,22 @@
 # Spotirec
 Script that creates a playlist of recommendations based on the user's top artists or tracks, or genres extracted from top artists. A sort of Discover Weekly on demand.
 
+## Table of Contents
+- [Installation](#installation)
+  - [AUR](#aur-helper)
+  - [Manual](#manual)
+- [Usage](#usage)
+  - [Limits](#limits)
+  - [Recommendation Schemes](#recommendation-schemes)
+  - [Tuning](#tuning)
+  - [Blacklists](#blacklists)
+- [Troubleshooting](#troubleshooting)
+
 ## Installation
 When installing Spotirec, you have two options.
 
 #### AUR Helper
-Spotirec is packaged for AUR, and as such it can be installed using an AUR helper
+Spotirec is packaged for [AUR](https://aur.archlinux.org/packages/spotirec/), and as such it can be installed using an AUR helper
 ```
 yay -S spotirec
 ```
@@ -46,12 +57,15 @@ To use Spotirec, simply run it from terminal
 ```
 $ spotirec
 ```
+
+### Limits
 Optionally you can add a limit as an integer value with the `-l` argument
 ```
 $ spotirec -l 50
 ```
 This option determines how many tracks should be added to your new playlist. The default value is 20, and the max value is 100.
 
+### Recommendation schemes
 Additionally, you can pass arguments to specify the what the recommendations should be based on - these are mutually exclusive
 ```
 $ spotirec -t 
@@ -73,12 +87,13 @@ where
 
 By default, the script will base recommendations off of your top genres extracted from your top artists. For this method, pass none of the above 7 arguments.
 
+### Tuning
 You can also specify tunable attributes with the `--tune` option, followed by any number of whitespace separated arguments on the form `prefix_attribute=value`
 ```
 $ spotirec --tune prefix_attribute=value prefix_attribute=value
 ```
 
-### Prefixes
+#### Prefixes
 
 | Prefix | Function |
 |---|---|
@@ -86,7 +101,7 @@ $ spotirec --tune prefix_attribute=value prefix_attribute=value
 | min | The attribute value serves as a hard floor |
 | target | The attribute value serves as a target for recommendations. Recommendations will be as close as possible to the value. |
 
-### Attributes
+#### Attributes
 | Attribute | Data type | Range | Recomm. range | Function |
 |---|---|---|---|---|
 | duration_ms | int | **R+** | N/A | The duration of the track in milliseconds. |
@@ -106,8 +121,7 @@ $ spotirec --tune prefix_attribute=value prefix_attribute=value
 
 Recommendations may be sparce outside the recommended range.
 
----
-
+### Blacklists
 To blacklist tracks or artists, pass the `-b` option followed by an arbitrary number of whitespace separated Spotify URIs
 ```
 $ spotirec -b spotify:track:id spotify:track:id spotify:artist:id
