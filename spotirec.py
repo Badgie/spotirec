@@ -76,8 +76,8 @@ class Recommendation:
         """
         desc = f'Created by Spotirec - {self.created_at} - based on {self.based_on} - seed: '
         seeds = ' | '.join(
-            f'{str(x["name"])}{" - " + ", ".join(str(y) for y in x["artists"]) if x["type"] == "track" else ""}' for x
-            in self.seed_info.values())
+            f'{str(x["name"])}{" - " + ", ".join(str(y) for y in x["artists"]) if x["type"] == "track" else ""}'
+            for x in self.seed_info.values())
         return f'{desc}{seeds}'
 
     def update_limit(self, limit: int):
@@ -122,9 +122,12 @@ class Recommendation:
         if 'genres' in self.seed_type:
             self.seed = ','.join(str(x['name']) for x in self.seed_info.values())
         elif 'custom' in self.seed_type:
-            self.rec_params['seed_tracks'] = ','.join(str(x['id']) for x in self.seed_info.values() if x['type'] == 'track')
-            self.rec_params['seed_artists'] = ','.join(str(x['id']) for x in self.seed_info.values() if x['type'] == 'artist')
-            self.rec_params['seed_genres'] = ','.join(str(x['name']) for x in self.seed_info.values() if x['type'] == 'genre')
+            self.rec_params['seed_tracks'] = ','.join(str(x['id']) for x in self.seed_info.values()
+                                                      if x['type'] == 'track')
+            self.rec_params['seed_artists'] = ','.join(str(x['id']) for x in self.seed_info.values()
+                                                       if x['type'] == 'artist')
+            self.rec_params['seed_genres'] = ','.join(str(x['name']) for x in self.seed_info.values()
+                                                      if x['type'] == 'genre')
             return
         else:
             self.seed = ','.join(str(x['id']) for x in self.seed_info.values())
