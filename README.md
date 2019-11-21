@@ -6,8 +6,8 @@ Script that creates a playlist of recommendations based on the user's top artist
   - [AUR](#aur-helper)
   - [Manual](#manual)
 - [Usage](#usage)
-  - [Limits](#limits)
   - [Recommendation Schemes](#recommendation-schemes)
+  - [Limits](#limits)
   - [Tuning](#tuning)
   - [Blacklists](#blacklists)
 - [Troubleshooting](#troubleshooting)
@@ -58,15 +58,8 @@ To use Spotirec, simply run it from terminal
 $ spotirec
 ```
 
-### Limits
-Optionally you can add a limit as an integer value with the `-l` argument
-```
-$ spotirec -l 50
-```
-This option determines how many tracks should be added to your new playlist. The default value is 20, and the max value is 100.
-
 ### Recommendation schemes
-Additionally, you can pass arguments to specify the what the recommendations should be based on - these are mutually exclusive
+You can pass arguments to specify the what the recommendations should be based on - these are mutually exclusive
 ```
 $ spotirec -t 
 $ spotirec -a
@@ -86,6 +79,13 @@ where
 - `-c` you can manually input 1-5 genres, artist uris, or track uris
 
 By default, the script will base recommendations off of your top genres extracted from your top artists. For this method, pass none of the above 7 arguments.
+
+### Limits
+You can add a limit as an integer value with the `-l` argument
+```
+$ spotirec -l 50
+```
+This option determines how many tracks should be added to your new playlist. The default value is 20, the minimum value is 1, and the max value is 100.
 
 ### Tuning
 You can also specify tunable attributes with the `--tune` option, followed by any number of whitespace separated arguments on the form `prefix_attribute=value`
