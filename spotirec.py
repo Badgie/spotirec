@@ -39,7 +39,8 @@ mutex_group.add_argument('-a', action='store_true', help='base recommendations o
 mutex_group.add_argument('-t', action='store_true', help='base recommendations on your top tracks')
 mutex_group.add_argument('-ac', action='store_true', help='base recommendations on custom top artists')
 mutex_group.add_argument('-tc', action='store_true', help='base recommendations on custom top tracks')
-mutex_group.add_argument('-gc', action='store_true', help='base recommendations on custom seed genres')
+mutex_group.add_argument('-gc', action='store_true', help='base recommendations on custom top genres')
+mutex_group.add_argument('-gcs', action='store_true', help='base recommendations on custom seed genres')
 
 parser.add_argument('--tune', metavar='attr', nargs='+', type=str, help='specify tunable attribute(s)')
 
@@ -178,10 +179,10 @@ def get_top_list(list_type: str, top_limit: int) -> json:
     return json.loads(response.content.decode('utf-8'))
 
 
-def add_top_genres_seed():
+def get_user_top_genres() -> dict:
     """
-    Extract genres from user's top 50 artists and sort them from high to low.
-    Add top 5 genres to recommendation object seed info.
+    Extract genres from user's top 50 artists and map them to their amount of occurrences
+    :return: dict of genres and their count of occurrences
     """
     data = get_top_list('artists', 50)
     genres = {}
@@ -191,6 +192,14 @@ def add_top_genres_seed():
                 genres[genre] += 1
             else:
                 genres[genre] = 1
+    return genres
+
+
+def add_top_genres_seed():
+    """
+    Add top 5 genres to recommendation object seed info.
+    """
+    genres = get_user_top_genres()
     sort = sorted(genres.items(), key=lambda kv: kv[1], reverse=True)
     for x in range(0, 5):
         rec.add_seed_info(data_string=sort[x][0])
@@ -420,7 +429,7 @@ def parse():
         rec.based_on = 'top tracks'
         rec.seed_type = 'tracks'
         add_top_seed_info(get_top_list('tracks', 5))
-    elif args.gc:
+    elif args.gcs:
         response = requests.get(f'{url_base}/recommendations/available-genre-seeds', headers=headers)
         data = json.loads(response.content.decode('utf-8'))
         rec.based_on = 'custom genres'
@@ -435,6 +444,9 @@ def parse():
         rec.based_on = 'custom tracks'
         rec.seed_type = 'tracks'
         add_custom_seed_info(data)
+    elif args.gc:
+        sort = sorted(get_user_top_genres().items(), key=lambda kv: kv[1], reverse=True)
+        print_choices([sort[x][0] for x in range(0, len(sort))])
     else:
         print('Basing recommendations off your top 5 genres')
         add_top_genres_seed()
