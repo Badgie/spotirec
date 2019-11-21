@@ -3,6 +3,7 @@ import requests
 import webbrowser
 import json
 import argparse
+import shlex
 import os
 import oauth2
 import recommendation
@@ -39,7 +40,9 @@ mutex_group.add_argument('-a', action='store_true', help='base recommendations o
 mutex_group.add_argument('-t', action='store_true', help='base recommendations on your top tracks')
 mutex_group.add_argument('-ac', action='store_true', help='base recommendations on custom top artists')
 mutex_group.add_argument('-tc', action='store_true', help='base recommendations on custom top tracks')
-mutex_group.add_argument('-gc', action='store_true', help='base recommendations on custom seed genres')
+mutex_group.add_argument('-gc', action='store_true', help='base recommendations on custom top genres')
+mutex_group.add_argument('-gcs', action='store_true', help='base recommendations on custom seed genres')
+mutex_group.add_argument('-c', action='store_true', help='base recommendations on a custom seed')
 
 parser.add_argument('--tune', metavar='attr', nargs='+', type=str, help='specify tunable attribute(s)')
 
@@ -106,10 +109,10 @@ def get_top_list(list_type: str, top_limit: int) -> json:
     return json.loads(response.content.decode('utf-8'))
 
 
-def add_top_genres_seed():
+def get_user_top_genres() -> dict:
     """
-    Extract genres from user's top 50 artists and sort them from high to low.
-    Add top 5 genres to recommendation object seed info.
+    Extract genres from user's top 50 artists and map them to their amount of occurrences
+    :return: dict of genres and their count of occurrences
     """
     data = get_top_list('artists', 50)
     genres = {}
@@ -119,6 +122,14 @@ def add_top_genres_seed():
                 genres[genre] += 1
             else:
                 genres[genre] = 1
+    return genres
+
+
+def add_top_genres_seed():
+    """
+    Add top 5 genres to recommendation object seed info.
+    """
+    genres = get_user_top_genres()
     sort = sorted(genres.items(), key=lambda kv: kv[1], reverse=True)
     for x in range(0, 5):
         rec.add_seed_info(data_string=sort[x][0])
@@ -212,11 +223,12 @@ def recommend():
     rec.print_selection()
 
 
-def print_choices(data: list) -> str:
+def print_choices(data: list, prompt=True) -> str:
     """
     Used for custom seed creation. All valid choices are printed to terminal and user is prompted
     to select. If the seed type is genres, seeds are simply added to the recommendations object.
     :param data: valid choices as a list of names
+    :param prompt: whether or not to prompt user for input
     :return: user input, if seed type is artists or tracks
     """
     line = ""
@@ -231,13 +243,14 @@ def print_choices(data: list) -> str:
         except IndexError:
             continue
     print(line.strip('\n'))
-    input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to '
-                         'include:\n')
-    if 'genres' in rec.seed_type:
-        for x in input_string.split(' '):
-            rec.add_seed_info(data_string=data[int(x)])
-    else:
-        return input_string
+    if prompt:
+        input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to '
+                             'include:\n')
+        if 'genres' in rec.seed_type:
+            for x in input_string.split(' '):
+                rec.add_seed_info(data_string=data[int(x)])
+        else:
+            return input_string
 
 
 def add_top_seed_info(data: json):
@@ -326,6 +339,55 @@ def print_blacklist():
             print('Blacklist is empty')
 
 
+def print_user_genres_sorted(prompt=True):
+    """
+    Print user top genres to terminal in a formatted list.
+    :param prompt: whether or not user should be prompted for input
+    """
+    sort = sorted(get_user_top_genres().items(), key=lambda kv: kv[1], reverse=True)
+    print_choices([sort[x][0] for x in range(0, len(sort))], prompt=prompt)
+
+
+def get_genre_seeds() -> json:
+    """
+    Retrieves available genre seeds from Spotify API.
+    :return: genre seeds as a json obj
+    """
+    response = requests.get(f'{url_base}/recommendations/available-genre-seeds', headers=headers)
+    return json.loads(response.content.decode('utf-8'))
+
+
+def check_if_valid_genre(genre: str) -> bool:
+    """
+    Checks if input genre is in user's top genres or available genre seeds.
+    :param genre: user input genre
+    :return: True if genre exists, False if not
+    """
+    top_genres = get_user_top_genres()
+    seed_genres = get_genre_seeds()['genres']
+    if genre in top_genres:
+        return True
+    if genre in seed_genres:
+        return True
+    return False
+
+
+def parse_custom_input(user_input: str):
+    """
+    Parse custom input from user.
+    :param user_input: input string
+    """
+    for x in shlex.split(user_input):
+        if 'track' in x:
+            rec.add_seed_info(data_dict=request_data(x, 'tracks'))
+        elif 'artist' in x:
+            rec.add_seed_info(data_dict=request_data(x, 'artists'))
+        elif check_if_valid_genre(x):
+            rec.add_seed_info(data_string=x)
+        else:
+            print(f'Error: input \"{x}\" is either a malformed uri or not a valid genre')
+
+
 def parse():
     """
     Parse arguments
@@ -348,10 +410,9 @@ def parse():
         rec.based_on = 'top tracks'
         rec.seed_type = 'tracks'
         add_top_seed_info(get_top_list('tracks', 5))
-    elif args.gc:
-        response = requests.get(f'{url_base}/recommendations/available-genre-seeds', headers=headers)
-        data = json.loads(response.content.decode('utf-8'))
-        rec.based_on = 'custom genres'
+    elif args.gcs:
+        data = get_genre_seeds()
+        rec.based_on = 'custom seed genres'
         print_choices(data['genres'])
     elif args.ac:
         data = get_top_list('artists', 50)
@@ -363,6 +424,16 @@ def parse():
         rec.based_on = 'custom tracks'
         rec.seed_type = 'tracks'
         add_custom_seed_info(data)
+    elif args.gc:
+        rec.based_on = 'custom top genres'
+        print_user_genres_sorted()
+    elif args.c:
+        rec.based_on = 'custom mix'
+        rec.seed_type = 'custom'
+        print_user_genres_sorted(prompt=False)
+        user_input = input('Enter a combination of 1-5 whitespace separated genres, track uris, and artist uris. '
+                           '\nGenres should be encased in double quotes, e.g.; \"vapor death pop\".\n')
+        parse_custom_input(user_input)
     else:
         print('Basing recommendations off your top 5 genres')
         add_top_genres_seed()

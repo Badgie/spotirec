@@ -59,21 +59,25 @@ $ spotirec -a
 $ spotirec -tc
 $ spotirec -ac
 $ spotirec -gc
+$ spotirec -gcs
+$ spotirec -c
 ```
 where
-- `-t` is based off your most played tracks,
-- `-a` is based off your most played artists,
+- `-t` is based off your 5 most played tracks,
+- `-a` is based off your 5 most played artists,
 - `-tc` you can define 1-5 of your most played tracks,
 - `-ac` you can define 1-5 of your most played artists,
-- `-gc` you can define 1-5 genre seeds
+- `-gc` you can define 1-5 of your most played genre,
+- `-gcs` you can define 1-5 preset genre seeds,
+- `-c` you can manually input 1-5 genres, artist uris, or track uris
 
-By default, the script will base recommendations off of your top genres extracted from your top artists. For this method, pass none of the above 5 arguments.
+By default, the script will base recommendations off of your top genres extracted from your top artists. For this method, pass none of the above 7 arguments.
 
 You can also specify tunable attributes with the `--tune` option, followed by any number of whitespace separated arguments on the form `prefix_attribute=value`
 ```
 $ spotirec --tune prefix_attribute=value prefix_attribute=value
 ```
-If you wish to specify a limit, this should appear before `--tune`
+
 ### Prefixes
 
 | Prefix | Function |

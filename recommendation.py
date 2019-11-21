@@ -23,13 +23,10 @@ class Recommendation:
         :return: description string
         """
         desc = f'Created by Spotirec - {self.created_at} - based on {self.based_on} - seed: '
-        if 'tracks' in self.seed_type:
-            seeds = ' | '.join(str(f'{x["name"]} - {", ".join(str(y) for y in x["artists"])}')
-                               for x in self.seed_info.values())
-            return f'{desc}{seeds}'
-        else:
-            seeds = ' | '.join(str(x["name"]) for x in self.seed_info.values())
-            return f'{desc}{seeds}'
+        seeds = ' | '.join(
+            f'{str(x["name"])}{" - " + ", ".join(str(y) for y in x["artists"]) if x["type"] == "track" else ""}'
+            for x in self.seed_info.values())
+        return f'{desc}{seeds}'
 
     def update_limit(self, limit: int):
         """
@@ -53,15 +50,18 @@ class Recommendation:
         :param data_dict: seed info as a dict if seed is artist or track
         :param data_string: seed info as a string if seed is genre
         """
-        if 'genres' in self.seed_type:
-            self.seed_info[len(self.seed_info)] = {'name': data_string}
+        if data_string:
+            self.seed_info[len(self.seed_info)] = {'name': data_string,
+                                                   'type': 'genre'}
         else:
             self.seed_info[len(self.seed_info)] = {'name': data_dict['name'],
-                                                   'id': data_dict['id']}
-            if 'tracks' in self.seed_type:
-                self.seed_info[len(self.seed_info)-1]['artists'] = []
-                for x in data_dict['artists']:
-                    self.seed_info[len(self.seed_info) - 1]['artists'].append(x['name'])
+                                                   'id': data_dict['id'],
+                                                   'type': data_dict['type']}
+            try:
+                assert data_dict['artists'] is not None
+                self.seed_info[len(self.seed_info)-1]['artists'] = [x['name'] for x in data_dict['artists']]
+            except (KeyError, AssertionError):
+                pass
 
     def create_seed(self):
         """
@@ -69,6 +69,14 @@ class Recommendation:
         """
         if 'genres' in self.seed_type:
             self.seed = ','.join(str(x['name']) for x in self.seed_info.values())
+        elif 'custom' in self.seed_type:
+            self.rec_params['seed_tracks'] = ','.join(str(x['id']) for x in self.seed_info.values()
+                                                      if x['type'] == 'track')
+            self.rec_params['seed_artists'] = ','.join(str(x['id']) for x in self.seed_info.values()
+                                                       if x['type'] == 'artist')
+            self.rec_params['seed_genres'] = ','.join(str(x['name']) for x in self.seed_info.values()
+                                                      if x['type'] == 'genre')
+            return
         else:
             self.seed = ','.join(str(x['id']) for x in self.seed_info.values())
         self.rec_params[f'seed_{self.seed_type}'] = self.seed
