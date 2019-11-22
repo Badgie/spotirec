@@ -27,7 +27,7 @@ sp_oauth = oauth2.SpotifyOAuth(client_id, client_secret, redirect_uri, scopes=sc
 
 # Argument parser
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
-                                 epilog="""passing no optional arguments defaults to basing recommendations off the user\'s top genres
+                                 epilog="""passing no recommendation scheme argument defaults to basing recommendations off the user\'s top genres
 spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for details read LICENSE""")
 
 # Create mutually exclusive group for recommendation types to ensure only one is given
