@@ -7,7 +7,6 @@ import shlex
 import os
 import hashlib
 import re
-import math
 import base64
 import oauth2
 import recommendation
@@ -163,6 +162,12 @@ def create_playlist():
 
 
 def generate_img(tracks: list) -> Image:
+    """
+    Generate personalized cover image for a playlist. Track uris are hashed. The hash is both mapped
+    to an image and converted to a color.
+    :param tracks: list of track uris
+    :return: a 320x320 image generated from playlist hash
+    """
     track_hash = hashlib.sha256(''.join(str(x) for x in tracks).encode('utf-8')).hexdigest()
     color = [int(track_hash[i:i + 2], 16) for i in (0, 2, 4)]
     img = Image.new('RGB', (8, 8))
@@ -177,6 +182,11 @@ def generate_img(tracks: list) -> Image:
 
 
 def add_image_to_playlist(tracks: list):
+    """
+    base64 encode image data and upload to playlist.
+    :param tracks: list of track uris
+    """
+    print('Generating and uploading playlist cover image')
     img_headers = {'Content-Type': 'image/jpeg',
                    'Authorization': f'Bearer {get_token()}'}
     img_buffer = BytesIO()
