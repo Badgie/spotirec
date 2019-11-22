@@ -7,6 +7,7 @@ import shlex
 import os
 import hashlib
 import re
+import math
 import base64
 import oauth2
 import recommendation
@@ -170,7 +171,7 @@ def generate_img(tracks: list) -> Image:
     """
     track_hash = hashlib.sha256(''.join(str(x) for x in tracks).encode('utf-8')).hexdigest()
     color = [int(track_hash[i:i + 2], 16) for i in (0, 2, 4)]
-    img = Image.new('RGB', (8, 8))
+    img = Image.new('RGB', (int(math.sqrt(len(track_hash))), int(math.sqrt(len(track_hash)))))
     pixel_map = []
     for x in track_hash:
         if re.match(r'[0-9]', x):
@@ -202,7 +203,6 @@ def add_to_playlist(tracks: list):
     """
     Add tracks to playlist.
     :param tracks: list of track URIs
-    :param playlist: playlist ID
     """
     data = {'uris': tracks}
     print('Adding tracks to playlist')
