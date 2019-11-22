@@ -26,6 +26,7 @@ On any other distribution you need to install Spotirec manually. Spotirec has tw
 ```
 bottle>=0.12.17
 requests>=2.22.0
+Pillow>=6.2.1
 ```
 If available, these should be installed as packages through your package manager. Alternatively, these can be installed through `pip` - this should only be done as a last resort.
 
