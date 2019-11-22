@@ -29,13 +29,10 @@ sp_oauth = oauth2.SpotifyOAuth(client_id, client_secret, redirect_uri, scopes=sc
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
                                  epilog="""passing no optional arguments defaults to basing recommendations off the user\'s top genres
 spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for details read LICENSE""")
-parser.add_argument('-l', metavar='limit', nargs=1, type=int, choices=range(1, 101),
-                    help='amount of tracks to add (default: 20, max: 100)')
-parser.add_argument('-b', metavar='uri', nargs='+', type=str, help='blacklist track or artist uri(s)')
-parser.add_argument('-b list', action='store_true', help='print blacklist entries')
 
 # Create mutually exclusive group for recommendation types to ensure only one is given
-mutex_group = parser.add_mutually_exclusive_group()
+rec_scheme_group = parser.add_argument_group(title='Recommendation schemes')
+mutex_group = rec_scheme_group.add_mutually_exclusive_group()
 mutex_group.add_argument('-a', action='store_true', help='base recommendations on your top artists')
 mutex_group.add_argument('-t', action='store_true', help='base recommendations on your top tracks')
 mutex_group.add_argument('-ac', action='store_true', help='base recommendations on custom top artists')
@@ -44,7 +41,16 @@ mutex_group.add_argument('-gc', action='store_true', help='base recommendations 
 mutex_group.add_argument('-gcs', action='store_true', help='base recommendations on custom seed genres')
 mutex_group.add_argument('-c', action='store_true', help='base recommendations on a custom seed')
 
-parser.add_argument('--tune', metavar='attr', nargs='+', type=str, help='specify tunable attribute(s)')
+rec_options_group = parser.add_argument_group(title='Recommendation options',
+                                              description='These may only appear when creating a playlist')
+rec_options_group.add_argument('-l', metavar='LIMIT', nargs=1, type=int, choices=range(1, 101),
+                               help='amount of tracks to add (default: 20, max: 100)')
+rec_options_group.add_argument('--tune', metavar='ATTR', nargs='+', type=str, help='specify tunable attribute(s)')
+
+blacklist_group = parser.add_argument_group(title='Blacklisting',
+                                            description='Spotirec will exit once these actions are complete')
+blacklist_group.add_argument('-b', metavar='URI', nargs='+', type=str, help='blacklist track or artist uri(s)')
+blacklist_group.add_argument('-b list', action='store_true', help='print blacklist entries')
 
 # Ensure config dir and blacklist file exists
 if not os.path.isdir(f'{Path.home()}/.config/spotirec'):
