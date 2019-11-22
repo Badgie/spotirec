@@ -5,8 +5,11 @@ import json
 import argparse
 import shlex
 import os
+import hashlib
+import base64
 import oauth2
 import recommendation
+from PIL import Image
 from bottle import route, run, request
 from pathlib import Path
 
@@ -144,19 +147,18 @@ def get_user_id() -> str:
     return json.loads(response.content.decode('utf-8'))['id']
 
 
-def create_playlist() -> str:
+def create_playlist():
     """
     Creates playlist on user's account.
-    :return: ID of the newly created playlist
     """
     data = {'name': rec.playlist_name,
             'description': rec.playlist_description()}
     print('Creating playlist')
     response = requests.post(f'{url_base}/users/{get_user_id()}/playlists', json=data, headers=headers)
-    return json.loads(response.content.decode('utf-8'))['id']
+    rec.playlist_id = json.loads(response.content.decode('utf-8'))['id']
 
 
-def add_to_playlist(tracks: list, playlist: str):
+def add_to_playlist(tracks: list):
     """
     Add tracks to playlist.
     :param tracks: list of track URIs
@@ -164,7 +166,7 @@ def add_to_playlist(tracks: list, playlist: str):
     """
     data = {'uris': tracks}
     print('Adding tracks to playlist')
-    requests.post(f'{url_base}/playlists/{playlist}/tracks', headers=headers, json=data)
+    requests.post(f'{url_base}/playlists/{rec.playlist_id}/tracks', headers=headers, json=data)
 
 
 def get_recommendations() -> json:
@@ -219,7 +221,7 @@ def recommend():
             tracks += filter_recommendations(get_recommendations())
         else:
             break
-    add_to_playlist(tracks, create_playlist())
+    add_to_playlist(tracks)
     rec.print_selection()
 
 

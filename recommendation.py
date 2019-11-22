@@ -15,6 +15,7 @@ class Recommendation:
         self.seed_info = {}
         self.rec_params = {'limit': str(self.limit)}
         self.playlist_name = f'Spotirec-{t.tm_mday}-{t.tm_mon}-{t.tm_year}'
+        self.playlist_id = ''
 
     def playlist_description(self) -> str:
         """
