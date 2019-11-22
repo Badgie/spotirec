@@ -35,7 +35,7 @@ sp_oauth = oauth2.SpotifyOAuth(client_id, client_secret, redirect_uri, scopes=sc
 # Argument parser
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
                                  epilog="""
-passing no recommendation scheme argument defaults to basing recommendations off your top 5 genres
+passing no recommendation scheme argument defaults to basing recommendations off your top 5 valid seed genres
 spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for details read LICENSE""")
 
 # Create mutually exclusive group for recommendation types to ensure only one is given
@@ -45,7 +45,7 @@ mutex_group.add_argument('-a', action='store_true', help='base recommendations o
 mutex_group.add_argument('-t', action='store_true', help='base recommendations on your top tracks')
 mutex_group.add_argument('-ac', action='store_true', help='base recommendations on custom top artists')
 mutex_group.add_argument('-tc', action='store_true', help='base recommendations on custom top tracks')
-mutex_group.add_argument('-gc', action='store_true', help='base recommendations on custom top genres')
+mutex_group.add_argument('-gc', action='store_true', help='base recommendations on custom top valid seed genres')
 mutex_group.add_argument('-gcs', action='store_true', help='base recommendations on custom seed genres')
 mutex_group.add_argument('-c', action='store_true', help='base recommendations on a custom seed')
 
@@ -130,12 +130,15 @@ def get_user_top_genres() -> dict:
     """
     data = get_top_list('artists', 50)
     genres = {}
+    genre_seeds = get_genre_seeds()
     for x in data['items']:
         for genre in x['genres']:
-            if genre in genres.keys():
-                genres[genre] += 1
-            else:
-                genres[genre] = 1
+            genre = genre.replace(' ', '-')
+            if genre in genre_seeds['genres']:
+                if genre in genres.keys():
+                    genres[genre] += 1
+                else:
+                    genres[genre] = 1
     return genres
 
 
@@ -483,7 +486,7 @@ def parse():
         rec.seed_type = 'custom'
         print_user_genres_sorted(prompt=False)
         user_input = input('Enter a combination of 1-5 whitespace separated genres, track uris, and artist uris. '
-                           '\nGenres should be encased in double quotes, e.g.; \"vapor death pop\".\n')
+                           '\nGenres with several words should be connected with dashes, e.g.; \"vapor-death-pop\".\n')
         parse_custom_input(user_input)
     else:
         print('Basing recommendations off your top 5 genres')

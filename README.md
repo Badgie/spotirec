@@ -75,11 +75,11 @@ where
 - `-a` is based off your 5 most played artists,
 - `-tc` you can define 1-5 of your most played tracks,
 - `-ac` you can define 1-5 of your most played artists,
-- `-gc` you can define 1-5 of your most played genre,
+- `-gc` you can define 1-5 of your most played valid seed genres,
 - `-gcs` you can define 1-5 preset genre seeds,
 - `-c` you can manually input 1-5 genres, artist uris, or track uris
 
-By default, the script will base recommendations off of your top genres extracted from your top artists. For this method, pass none of the above 7 arguments.
+By default, the script will base recommendations off of your top valid seed genres extracted from your top artists. For this method, pass none of the above 7 arguments.
 
 ### Limits
 You can add a limit as an integer value with the `-l` argument
