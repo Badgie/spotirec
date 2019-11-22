@@ -6,9 +6,12 @@ import argparse
 import shlex
 import os
 import hashlib
+import re
+import math
 import base64
 import oauth2
 import recommendation
+from io import BytesIO
 from PIL import Image
 from bottle import route, run, request
 from pathlib import Path
@@ -17,7 +20,8 @@ port = 8080
 client_id = '466a89a53359403b82df7d714030ec5f'
 client_secret = '28147de72c3549e98b1e790f3d080b85'
 redirect_uri = f'http://localhost:{port}'
-scope = 'user-top-read playlist-modify-public playlist-modify-private user-read-private user-read-email'
+scope = 'user-top-read playlist-modify-public playlist-modify-private user-read-private user-read-email ' \
+        'ugc-image-upload'
 cache = f'{Path.home()}/.config/spotirec/spotirecoauth'
 url_base = 'https://api.spotify.com/v1'
 blacklist_path = f'{Path.home()}/.config/spotirec/blacklist'
@@ -158,6 +162,32 @@ def create_playlist():
     rec.playlist_id = json.loads(response.content.decode('utf-8'))['id']
 
 
+def generate_img(tracks: list) -> Image:
+    track_hash = hashlib.sha256(''.join(str(x) for x in tracks).encode('utf-8')).hexdigest()
+    color = [int(track_hash[i:i + 2], 16) for i in (0, 2, 4)]
+    img = Image.new('RGB', (8, 8))
+    pixel_map = []
+    for x in track_hash:
+        if re.match(r'[0-9]', x):
+            pixel_map.append(color)
+        else:
+            pixel_map.append([200, 200, 200])
+    img.putdata([tuple(x) for x in pixel_map])
+    return img.resize((320, 320), Image.AFFINE)
+
+
+def add_image_to_playlist(tracks: list):
+    img_headers = {'Content-Type': 'image/jpeg',
+                   'Authorization': f'Bearer {get_token()}'}
+    img_buffer = BytesIO()
+    generate_img(tracks).save(img_buffer, format='JPEG')
+    img_str = base64.b64encode(img_buffer.getvalue())
+    response = requests.put(f'{url_base}/playlists/{rec.playlist_id}/images', headers=img_headers, data=img_str)
+    if response.reason != 'Accepted':
+        print('Failed to update playlist cover image. If you would like this functionality, you should '
+              f're-authorize your access token by removing \"{cache}\".')
+
+
 def add_to_playlist(tracks: list):
     """
     Add tracks to playlist.
@@ -167,6 +197,7 @@ def add_to_playlist(tracks: list):
     data = {'uris': tracks}
     print('Adding tracks to playlist')
     requests.post(f'{url_base}/playlists/{rec.playlist_id}/tracks', headers=headers, json=data)
+    add_image_to_playlist(tracks)
 
 
 def get_recommendations() -> json:
@@ -221,6 +252,7 @@ def recommend():
             tracks += filter_recommendations(get_recommendations())
         else:
             break
+    create_playlist()
     add_to_playlist(tracks)
     rec.print_selection()
 
