@@ -241,8 +241,8 @@ def filter_recommendations(data: json) -> list:
     with open(blacklist_path, 'r+') as file:
         try:
             blacklist = json.loads(file.read())
-            blacklist_artists = [x['uri'] for x in blacklist['artists']]
-            blacklist_tracks = [x['uri'] for x in blacklist['tracks']]
+            blacklist_artists = [x for x in blacklist['artists'].keys()]
+            blacklist_tracks = [x for x in blacklist['tracks'].keys()]
             for x in data['tracks']:
                 if x['uri'] in blacklist_artists:
                     continue
