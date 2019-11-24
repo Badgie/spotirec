@@ -57,7 +57,9 @@ rec_options_group.add_argument('--tune', metavar='ATTR', nargs='+', type=str, he
 
 blacklist_group = parser.add_argument_group(title='Blacklisting',
                                             description='Spotirec will exit once these actions are complete')
-blacklist_group.add_argument('-b', metavar='URI', nargs='+', type=str, help='blacklist track or artist uri(s)')
+blacklist_group.add_argument('-b', metavar='URI', nargs='+', type=str, help='blacklist track(s) and/or artist(s)')
+blacklist_group.add_argument('-br', metavar='URI', nargs='+', type=str,
+                             help='remove track(s) and/or artists(s) from blacklist')
 blacklist_group.add_argument('-b list', action='store_true', help='print blacklist entries')
 
 # Ensure config dir and blacklist file exists
@@ -239,8 +241,8 @@ def filter_recommendations(data: json) -> list:
     with open(blacklist_path, 'r+') as file:
         try:
             blacklist = json.loads(file.read())
-            blacklist_artists = [x['uri'] for x in blacklist['artists']]
-            blacklist_tracks = [x['uri'] for x in blacklist['tracks']]
+            blacklist_artists = [x for x in blacklist['artists'].keys()]
+            blacklist_tracks = [x for x in blacklist['tracks'].keys()]
             for x in data['tracks']:
                 if x['uri'] in blacklist_artists:
                     continue
@@ -351,27 +353,56 @@ def add_to_blacklist(entries: list):
         try:
             data = json.loads(file.read())
         except json.decoder.JSONDecodeError:
-            data = {'tracks': [],
-                    'artists': []}
+            data = {'tracks': {},
+                    'artists': {}}
         for uri in entries:
             if 'track' in uri:
                 track = request_data(uri, 'tracks')
                 artists = [x['name'] for x in track['artists']]
-                data['tracks'].append({'name': track['name'],
+                data['tracks'][uri] = {'name': track['name'],
                                        'uri': uri,
-                                       'artists': artists})
+                                       'artists': artists}
                 print(f'Added track \"{track["name"]}\" by {", ".join(str(x) for x in artists).strip(", ")}'
                       f' to your blacklist')
             elif 'artist' in uri:
                 artist = request_data(uri, 'artists')
-                data['artists'].append({'name': artist['name'],
-                                        'uri': artist['uri']})
+                data['artists'][uri] = {'name': artist['name'],
+                                        'uri': uri}
                 print(f'Added artist \"{artist["name"]}\" to your blacklist')
             else:
                 print(f'uri \"{uri}\" is either not a valid uri for a track or artist, or is malformed and has '
                       f'not been added to the blacklist')
     with open(blacklist_path, 'w+') as file:
         file.write(json.dumps(data))
+
+
+def remove_from_blacklist(entries: list):
+    """
+    Remove track(s) and/or artist(s) from blacklist.
+    :param entries: list of uris
+    """
+    try:
+        with open(blacklist_path, 'r') as file:
+            blacklist = json.loads(file.read())
+    except json.decoder.JSONDecodeError:
+        print('Error: blacklist is empty')
+        exit(1)
+    for uri in entries:
+        if 'track' in uri:
+            print(f'Removing track {blacklist["tracks"][uri]["name"]} by '
+                  f'{", ".join(str(x) for x in blacklist["tracks"][uri]["artists"]).strip(", ")} from blacklist')
+            del blacklist['tracks'][uri]
+        elif 'artist' in uri:
+            print(f'Removing artist \"{blacklist["artists"][uri]["name"]}\" from blacklist')
+            del blacklist['artists'][uri]
+        else:
+            print(f'uri \"{uri}\" is either not a valid uri for a track or artist, is malformed, or is not in '
+                  f'your blacklist')
+            # FIXME: Remove this notice at some point
+            print('Blacklist structure was recently re-done, so you may need to remove and re-do your blacklist. '
+                  'Sorry!')
+    with open(blacklist_path, 'w+') as file:
+        file.write(json.dumps(blacklist))
 
 
 def print_blacklist():
@@ -452,6 +483,9 @@ def parse():
             print_blacklist()
         else:
             add_to_blacklist(args.b)
+        exit(1)
+    if args.br:
+        remove_from_blacklist(args.br)
         exit(1)
 
     if args.a:
