@@ -17,9 +17,9 @@ Script that creates a playlist of recommendations based on the user's top artist
 When installing Spotirec, you have two options.
 
 #### AUR Helper
-Spotirec is packaged for [AUR](https://aur.archlinux.org/packages/spotirec/), and as such it can be installed using an AUR helper
+Spotirec is packaged for [AUR](https://aur.archlinux.org/packages/spotirec-git/), and as such it can be installed using an AUR helper
 ```
-yay -S spotirec
+yay -S spotirec-git
 ```
 
 #### Manual
