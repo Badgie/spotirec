@@ -25,6 +25,7 @@ scope = 'user-top-read playlist-modify-public playlist-modify-private user-read-
 cache = f'{Path.home()}/.config/spotirec/spotirecoauth'
 url_base = 'https://api.spotify.com/v1'
 blacklist_path = f'{Path.home()}/.config/spotirec/blacklist'
+preset_path = f'{Path.home()}/.config/spotirec/presets'
 tune_prefix = ['max', 'min', 'target']
 tune_attr = ['acousticness', 'danceability', 'duration_ms', 'energy', 'instrumentalness', 'key', 'liveness',
              'loudness', 'mode', 'popularity', 'speechiness', 'tempo', 'time_signature', 'valence', 'popularity']
@@ -68,6 +69,9 @@ if not os.path.isdir(f'{Path.home()}/.config/spotirec'):
     os.makedirs(f'{Path.home()}/.config/spotirec')
 if not os.path.exists(blacklist_path):
     f = open(blacklist_path, 'w')
+    f.close()
+if not os.path.exists(preset_path):
+    f = open(preset_path, 'w')
     f.close()
 
 
@@ -265,7 +269,7 @@ def recommend():
     print('Getting recommendations')
     rec.create_seed()
     if args.ps:
-        save_preset(args.ps)
+        save_preset(args.ps[0])
     tracks = filter_recommendations(get_recommendations())
     if len(tracks) == 0:
         print('Error: received zero tracks with your options - adjust and try again')
@@ -293,11 +297,12 @@ def print_choices(data: list, prompt=True) -> str:
     for x in range(0, round(len(data)), 3):
         try:
             line += f'{x}: {data[x]}'
-            if data[x+1]:
-                line += f'{" "*(40-len(data[x]))}{x+1}: {data[x+1] if len(data[x+1]) < 40 else f"{data[x+1][0:37]}.. "}'
-                if data[x+2]:
-                    line += f'{" "*(40-len(data[x+1]))}{x+2}: ' \
-                            f'{data[x+2] if len(data[x+2]) < 40 else f"{data[x+2][0:37]}.. "}\n'
+            if data[x + 1]:
+                line += f'{" " * (40 - len(data[x]))}{x + 1}: ' \
+                        f'{data[x + 1] if len(data[x + 1]) < 40 else f"{data[x + 1][0:37]}.. "}'
+                if data[x + 2]:
+                    line += f'{" " * (40 - len(data[x + 1]))}{x + 2}: ' \
+                            f'{data[x + 2] if len(data[x + 2]) < 40 else f"{data[x + 2][0:37]}.. "}\n'
         except IndexError:
             continue
     print(line.strip('\n'))
@@ -447,9 +452,43 @@ def parse_custom_input(user_input: str):
 
 
 def save_preset(name: str):
+    try:
+        with open(preset_path, 'r') as file:
+            preset_data = json.loads(file.read())
+    except json.decoder.JSONDecodeError:
+        preset_data = {}
+    preset_data[name] = {'limit': rec.limit,
+                         'based_on': rec.based_on,
+                         'seed': rec.seed,
+                         'seed_type': rec.seed_type,
+                         'seed_info': rec.seed_info,
+                         'rec_params': rec.rec_params}
+    with open(preset_path, 'w+') as file:
+        print(f'Saving preset \"{name}\"')
+        file.write(json.dumps(preset_data))
 
 
-def load_preset(name: str):
+def load_preset(name: str) -> recommendation.Recommendation:
+    print(f'Using preset \"{name}\"')
+    try:
+        with open(preset_path, 'r') as file:
+            preset_data = json.loads(file.read())
+    except json.decoder.JSONDecodeError:
+        print('Error: you do not have any presets')
+        exit(1)
+    try:
+        contents = preset_data[name]
+        preset = recommendation.Recommendation()
+        preset.limit = contents['limit']
+        preset.based_on = contents['based_on']
+        preset.seed = contents['seed']
+        preset.seed_type = contents['seed_type']
+        preset.seed_info = contents['seed_info']
+        preset.rec_params = contents['rec_params']
+        return preset
+    except KeyError:
+        print(f'Error: could not find preset \"{name}\", check spelling and try again')
+        exit(1)
 
 
 def parse():
@@ -517,12 +556,16 @@ def parse():
                 exit(1)
             rec.rec_params[x.split('=')[0]] = x.split('=')[1]
 
+
 args = parser.parse_args()
 
 headers = {'Content-Type': 'application/json',
            'Authorization': f'Bearer {get_token()}'}
-rec = recommendation.Recommendation() if not args.p else load_preset(args.p)
-parse()
+if args.p:
+    rec = load_preset(args.p[0])
+else:
+    rec = recommendation.Recommendation()
+    parse()
 
 if __name__ == '__main__':
     recommend()
