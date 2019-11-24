@@ -127,6 +127,10 @@ To blacklist tracks or artists, pass the `-b` option followed by an arbitrary nu
 ```
 $ spotirec -b spotify:track:id spotify:track:id spotify:artist:id
 ```
+To remove entries from your blacklist, pass the `-br` option followed by an arbitrary number of whitespace separated Spotify URIs
+```
+$ spotirec -br spotify:track:id spotify:track:id spotify:artist:id
+```
 To see your current blacklist entries, pass the `list` argument to the `-b` option
 ```
 $ spotirec -b list
