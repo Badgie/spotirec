@@ -8,6 +8,7 @@ class Recommendation:
     """
     def __init__(self, t=time.localtime()):
         self.limit = 20
+        self.limit_fill = 0
         self.created_at = time.ctime(time.time())
         self.based_on = 'top genres'
         self.seed = ''
