@@ -398,6 +398,7 @@ def remove_from_blacklist(entries: list):
         else:
             print(f'uri \"{uri}\" is either not a valid uri for a track or artist, is malformed, or is not in '
                   f'your blacklist')
+            # FIXME: Remove this notice at some point
             print('Blacklist structure was recently re-done, so you may need to remove and re-do your blacklist. '
                   'Sorry!')
     with open(blacklist_path, 'w+') as file:
