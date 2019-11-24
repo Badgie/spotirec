@@ -8,6 +8,7 @@ Script that creates a playlist of recommendations based on the user's top artist
 - [Usage](#usage)
   - [Recommendation Schemes](#recommendation-schemes)
   - [Limits](#limits)
+  - [Presets](#presets)
   - [Tuning](#tuning)
   - [Blacklists](#blacklists)
 - [Troubleshooting](#troubleshooting)
@@ -87,6 +88,16 @@ You can add a limit as an integer value with the `-l` argument
 $ spotirec -l 50
 ```
 This option determines how many tracks should be added to your new playlist. The default value is 20, the minimum value is 1, and the max value is 100.
+
+### Presets
+You can save the settings for a recommendation with the `-ps` argument followed by a name
+```
+$ spotirec -t -ps name -l 50 --tune prefix_attribute=value prefix_attribute=value
+```
+To load and use a saved preset, pass the `-p` argument followed by the name of the preset
+```
+$ spotirec -p name
+```
 
 ### Tuning
 You can also specify tunable attributes with the `--tune` option, followed by any number of whitespace separated arguments on the form `prefix_attribute=value`
