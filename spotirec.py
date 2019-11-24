@@ -53,6 +53,9 @@ rec_options_group = parser.add_argument_group(title='Recommendation options',
                                               description='These may only appear when creating a playlist')
 rec_options_group.add_argument('-l', metavar='LIMIT', nargs=1, type=int, choices=range(1, 101),
                                help='amount of tracks to add (default: 20, max: 100)')
+preset_mutex = rec_options_group.add_mutually_exclusive_group()
+preset_mutex.add_argument('-p', metavar='NAME', nargs=1, type=str, help='load and use preset')
+preset_mutex.add_argument('-ps', metavar='NAME', nargs=1, type=str, help='save options as preset')
 rec_options_group.add_argument('--tune', metavar='ATTR', nargs='+', type=str, help='specify tunable attribute(s)')
 
 blacklist_group = parser.add_argument_group(title='Blacklisting',
@@ -261,14 +264,15 @@ def recommend():
     """
     print('Getting recommendations')
     rec.create_seed()
+    if args.ps:
+        save_preset(args.ps)
     tracks = filter_recommendations(get_recommendations())
     if len(tracks) == 0:
         print('Error: received zero tracks with your options - adjust and try again')
         exit(1)
-    limit_save = rec.limit
     while True:
-        if len(tracks) < limit_save:
-            rec.update_limit(limit_save - len(tracks))
+        if len(tracks) < rec.limit:
+            rec.update_limit(rec.limit_fill - len(tracks))
             tracks += filter_recommendations(get_recommendations())
         else:
             break
@@ -442,11 +446,16 @@ def parse_custom_input(user_input: str):
             print(f'Error: input \"{x}\" is either a malformed uri or not a valid genre')
 
 
+def save_preset(name: str):
+
+
+def load_preset(name: str):
+
+
 def parse():
     """
     Parse arguments
     """
-    args = parser.parse_args()
     if args.b:
         if args.b[0] == 'list':
             print_blacklist()
@@ -508,10 +517,11 @@ def parse():
                 exit(1)
             rec.rec_params[x.split('=')[0]] = x.split('=')[1]
 
+args = parser.parse_args()
 
 headers = {'Content-Type': 'application/json',
            'Authorization': f'Bearer {get_token()}'}
-rec = recommendation.Recommendation()
+rec = recommendation.Recommendation() if not args.p else load_preset(args.p)
 parse()
 
 if __name__ == '__main__':
