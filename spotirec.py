@@ -227,7 +227,7 @@ def recommend():
             tracks += filter_recommendations(api.get_recommendations(rec.rec_params, headers=headers))
         else:
             break
-    api.create_playlist(rec.playlist_name, rec.playlist_description(), headers=headers)
+    rec.playlist_id = api.create_playlist(rec.playlist_name, rec.playlist_description(), headers=headers)
     api.add_to_playlist(tracks, rec.playlist_id, headers=headers)
     add_image_to_playlist(tracks)
     rec.print_selection()

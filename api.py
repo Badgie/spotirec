@@ -3,7 +3,6 @@ import json
 import requests
 
 url_base = 'https://api.spotify.com/v1'
-# TODO: handle headers
 
 
 def get_top_list(list_type: str, limit: int, headers: dict) -> json:
@@ -62,8 +61,7 @@ def add_to_playlist(tracks: list, playlist_id: str, headers: dict):
     :param headers: request headers
     """
     data = {'uris': tracks}
-    print('Adding tracks to playlist')
-    requests.post(f'{url_base}/playlists/{playlist_id}/tracks', headers=headers, json=data)
+    response = requests.post(f'{url_base}/playlists/{playlist_id}/tracks', headers=headers, json=data)
 
 
 def get_recommendations(rec_params: dict, headers: dict) -> json:
