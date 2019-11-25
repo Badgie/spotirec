@@ -17,13 +17,6 @@ from bottle import route, run, request
 from pathlib import Path
 
 port = 8080
-client_id = '466a89a53359403b82df7d714030ec5f'
-client_secret = '28147de72c3549e98b1e790f3d080b85'
-redirect_uri = f'http://localhost:{port}'
-scope = 'user-top-read playlist-modify-public playlist-modify-private user-read-private user-read-email ' \
-        'ugc-image-upload'
-cache = f'{Path.home()}/.config/spotirec/spotirecoauth'
-url_base = 'https://api.spotify.com/v1'
 blacklist_path = f'{Path.home()}/.config/spotirec/blacklist'
 preset_path = f'{Path.home()}/.config/spotirec/presets'
 tune_prefix = ['max', 'min', 'target']
@@ -31,7 +24,7 @@ tune_attr = ['acousticness', 'danceability', 'duration_ms', 'energy', 'instrumen
              'loudness', 'mode', 'popularity', 'speechiness', 'tempo', 'time_signature', 'valence', 'popularity']
 
 # OAuth handler
-sp_oauth = oauth2.SpotifyOAuth(client_id, client_secret, redirect_uri, scopes=scope, cache=cache)
+sp_oauth = oauth2.SpotifyOAuth()
 
 # Argument parser
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -82,7 +75,7 @@ def authorize():
     Open redirect URL in browser, and host http server on localhost.
     Function index() will be routed on said http server.
     """
-    webbrowser.open(redirect_uri)
+    webbrowser.open(sp_oauth.redirect)
     run(host='', port=port)
 
 
