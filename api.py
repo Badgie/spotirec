@@ -5,6 +5,36 @@ import requests
 url_base = 'https://api.spotify.com/v1'
 
 
+def error(request_type: str, status_code: int, reason: str):
+    """
+    Print error message and exit.
+    :param request_type: type of request; get, put, post
+    :param status_code: status code of the response
+    :param reason: textual reason for response code
+    """
+    print(f'{request_type} request failed with status code {status_code}. Reason: {reason}')
+    exit(1)
+
+
+def error_handle(response=None, get=False, put=False, post=False):
+    """
+    Dispatch error message depending on request type
+    :param response: response object
+    :param get: GET request
+    :param put: PUT request
+    :param post: POST request
+    """
+    if get:
+        if response.status_code != 200:
+            error('GET', response.status_code, response.reason)
+    elif put:
+        if response.status_code != 202:
+            error('PUT', response.status_code, response.reason)
+    elif post:
+        if response.status_code != 201:
+            error('POST', response.status_code, response.reason)
+
+
 def get_top_list(list_type: str, limit: int, headers: dict) -> json:
     """
     Retrieve list of top artists of tracks from user's profile.
@@ -15,6 +45,7 @@ def get_top_list(list_type: str, limit: int, headers: dict) -> json:
     """
     params = {'limit': limit}
     response = requests.get(f'{url_base}/me/top/{list_type}', headers=headers, params=params)
+    error_handle(response=response, get=True)
     return json.loads(response.content.decode('utf-8'))
 
 
@@ -25,6 +56,7 @@ def get_user_id(headers: dict) -> str:
     :return: user ID as a string
     """
     response = requests.get(f'{url_base}/me', headers=headers)
+    error_handle(response=response, get=True)
     return json.loads(response.content.decode('utf-8'))['id']
 
 
@@ -40,6 +72,7 @@ def create_playlist(playlist_name: str, playlist_description: str, headers: dict
             'description': playlist_description}
     print('Creating playlist')
     response = requests.post(f'{url_base}/users/{get_user_id(headers)}/playlists', json=data, headers=headers)
+    error_handle(response=response, post=True)
     return json.loads(response.content.decode('utf-8'))['id']
 
 
@@ -51,6 +84,7 @@ def upload_image(playlist_id: str, data: str, img_headers: dict):
     :param img_headers: request headers
     """
     response = requests.put(f'{url_base}/playlists/{playlist_id}/images', headers=img_headers, data=data)
+    error_handle(response=response, put=True)
 
 
 def add_to_playlist(tracks: list, playlist_id: str, headers: dict):
@@ -62,6 +96,7 @@ def add_to_playlist(tracks: list, playlist_id: str, headers: dict):
     """
     data = {'uris': tracks}
     response = requests.post(f'{url_base}/playlists/{playlist_id}/tracks', headers=headers, json=data)
+    error_handle(response=response, post=True)
 
 
 def get_recommendations(rec_params: dict, headers: dict) -> json:
@@ -72,6 +107,7 @@ def get_recommendations(rec_params: dict, headers: dict) -> json:
     :return: recommendations as json object
     """
     response = requests.get(f'{url_base}/recommendations', params=rec_params, headers=headers)
+    error_handle(response=response, get=True)
     return json.loads(response.content.decode('utf-8'))
 
 
@@ -84,6 +120,7 @@ def request_data(uri: str, data_type: str, headers: dict) -> json:
     :return: data about artist or track as a json obj
     """
     response = requests.get(f'{url_base}/{data_type}/{uri.split(":")[2]}', headers=headers)
+    error_handle(response=response, get=True)
     return json.loads(response.content.decode('utf-8'))
 
 
@@ -94,4 +131,5 @@ def get_genre_seeds(headers: dict) -> json:
     :return: genre seeds as a json obj
     """
     response = requests.get(f'{url_base}/recommendations/available-genre-seeds', headers=headers)
+    error_handle(response=response, get=True)
     return json.loads(response.content.decode('utf-8'))
