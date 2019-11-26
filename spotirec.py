@@ -61,6 +61,12 @@ blacklist_group.add_argument('-br', metavar='URI', nargs='+', type=str,
                              help='remove track(s) and/or artists(s) from blacklist')
 blacklist_group.add_argument('-b list', action='store_true', help='print blacklist entries')
 
+print_group = parser.add_argument_group(title='Printing')
+print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
+                         choices=['artists', 'tracks', 'genres', 'genre-seeds'],
+                         help='print a list of genre seeds, or your top artists, tracks, or genres, where'
+                              'TYPE=[artists|tracks|genres|genre-seeds]')
+
 # Ensure config dir and blacklist file exists
 if not os.path.isdir(config_path):
     os.makedirs(config_path)
@@ -173,17 +179,19 @@ def print_choices(data=None, prompt=True, sort=False) -> str:
             return input_string
 
 
-def add_custom_seed_info(data: json):
+def print_artists_or_tracks(data: json, prompt=True):
     """
     Construct dict only containing artist or track names and IDs and prompt for selection.
-    Seeds are added to recommendation object.
+    Seeds are added to recommendation object. If prompt is False, choices will simply be printed.
     :param data: valid choices as json object
+    :param prompt: whether or not to prompt for input
     """
     choices = {}
     for x in data['items']:
         choices[x['name']] = x['id']
-    selection = print_choices(data=list(choices.keys()))
-    parse_seed_info([data['items'][int(x)] for x in selection.split(' ')])
+    selection = print_choices(data=list(choices.keys()), prompt=prompt)
+    if prompt:
+        parse_seed_info([data['items'][int(x)] for x in selection.split(' ')])
 
 
 def check_if_valid_genre(genre: str) -> bool:
@@ -437,6 +445,21 @@ def parse():
         remove_from_blacklist(args.br)
         exit(1)
 
+    if args.print:
+        if args.print[0] == 'artists':
+            print('Top artists:')
+            print_artists_or_tracks(data=api.get_top_list('artists', 50, headers=headers), prompt=False)
+        elif args.print[0] == 'tracks':
+            print('Top tracks:')
+            print_artists_or_tracks(data=api.get_top_list('tracks', 50, headers=headers), prompt=False)
+        elif args.print[0] == 'genres':
+            print('Top genres:')
+            print_choices(data=get_user_top_genres(), sort=True, prompt=False)
+        elif args.print[0] == 'genre-seeds':
+            print('Genre seeds:')
+            print_choices(data=api.get_genre_seeds(headers=headers)['genres'], prompt=False)
+        exit(1)
+
     if args.a:
         print('Basing recommendations off your top 5 artists')
         rec.based_on = 'top artists'
@@ -453,11 +476,11 @@ def parse():
     elif args.ac:
         rec.based_on = 'custom artists'
         rec.seed_type = 'artists'
-        add_custom_seed_info(api.get_top_list('artists', 50, headers=headers))
+        print_artists_or_tracks(api.get_top_list('artists', 50, headers=headers))
     elif args.tc:
         rec.based_on = 'custom tracks'
         rec.seed_type = 'tracks'
-        add_custom_seed_info(api.get_top_list('tracks', 50, headers=headers))
+        print_artists_or_tracks(api.get_top_list('tracks', 50, headers=headers))
     elif args.gc:
         rec.based_on = 'custom top genres'
         print_choices(data=get_user_top_genres(), sort=True)

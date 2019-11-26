@@ -11,6 +11,7 @@ Script that creates a playlist of recommendations based on the user's top artist
   - [Presets](#presets)
   - [Tuning](#tuning)
   - [Blacklists](#blacklists)
+  - [Printing](#printing)
 - [Troubleshooting](#troubleshooting)
 
 ## Installation
@@ -40,7 +41,7 @@ mkdir -p /usr/lib/spotirec
 mkdir -p /usr/bin
 mkdir -p $HOME/.config/spotirec
 
-install spotirec.py oauth2.py recommendation.py -t /usr/lib/spotirec
+install spotirec.py oauth2.py recommendation.py api.py -t /usr/lib/spotirec
 
 ln -s /usr/lib/spotirec/spotirec.py /usr/bin/spotirec
 ```
@@ -145,6 +146,15 @@ $ spotirec -br spotify:track:id spotify:track:id spotify:artist:id
 To see your current blacklist entries, pass the `list` argument to the `-b` option
 ```
 $ spotirec -b list
+```
+
+### Printing
+You can print lists containing your available choices without having to create a playlist using the `--print` argument followed by `[artists|tracks|genres|genre-seeds]`
+```
+$ spotirec --print artists
+$ spotirec --print tracks
+$ spotirec --print genres
+$ spotirec --print genre-seeds
 ```
 
 ## Troubleshooting
