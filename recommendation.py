@@ -43,8 +43,11 @@ class Recommendation:
         Print seed selection into terminal.
         """
         print('Selection:')
-        for x in self.seed_info:
-            print(f'\t{self.seed_info[x]}')
+        for x in self.seed_info.values():
+            try:
+                print(f'\t{x["type"].capitalize()}: {x["name"]} - {", ".join(str(y) for y in x["artists"])}')
+            except KeyError:
+                print(f'\t{x["type"].capitalize()}: {x["name"]}')
 
     def add_seed_info(self, data_dict=None, data_string=None):
         """
