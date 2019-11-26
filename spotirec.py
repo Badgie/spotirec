@@ -338,7 +338,7 @@ def save_preset(name: str):
             preset_data = json.loads(file.read())
     except json.decoder.JSONDecodeError:
         preset_data = {}
-    preset_data[name] = {'limit': rec.limit,
+    preset_data[name] = {'limit': rec.limit_original,
                          'based_on': rec.based_on,
                          'seed': rec.seed,
                          'seed_type': rec.seed_type,
@@ -361,6 +361,7 @@ def load_preset(name: str) -> recommendation.Recommendation:
         contents = preset_data[name]
         preset = recommendation.Recommendation()
         preset.limit = contents['limit']
+        preset.limit_original = contents['limit']
         preset.based_on = contents['based_on']
         preset.seed = contents['seed']
         preset.seed_type = contents['seed_type']
@@ -411,8 +412,8 @@ def recommend():
         print('Error: received zero tracks with your options - adjust and try again')
         exit(1)
     while True:
-        if len(tracks) < rec.limit:
-            rec.update_limit(rec.limit_fill - len(tracks))
+        if len(tracks) < rec.limit_original:
+            rec.update_limit(rec.limit_original - len(tracks))
             tracks += filter_recommendations(api.get_recommendations(rec.rec_params, headers=headers))
         else:
             break
@@ -472,7 +473,7 @@ def parse():
         add_top_genres_seed()
 
     if args.l:
-        rec.update_limit(args.l[0])
+        rec.update_limit(args.l[0], init=True)
     print(f'The playlist will contain {rec.limit} tracks')
 
     if args.tune:

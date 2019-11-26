@@ -8,7 +8,7 @@ class Recommendation:
     """
     def __init__(self, t=time.localtime()):
         self.limit = 20
-        self.limit_fill = 0
+        self.limit_original = self.limit
         self.created_at = time.ctime(time.time())
         self.based_on = 'top genres'
         self.seed = ''
@@ -30,13 +30,16 @@ class Recommendation:
             for x in self.seed_info.values())
         return f'{desc}{seeds}'
 
-    def update_limit(self, limit: int):
+    def update_limit(self, limit: int, init=False):
         """
         Update playlist limit as object field and in request parameters.
         :param limit: user-defined playlist limit
+        :param init: should only be true when updated by -l arg
         """
         self.limit = limit
         self.rec_params['limit'] = str(self.limit)
+        if init:
+            self.limit_original = limit
 
     def print_selection(self):
         """
