@@ -192,11 +192,9 @@ def check_if_valid_genre(genre: str) -> bool:
     :param genre: user input genre
     :return: True if genre exists, False if not
     """
-    top_genres = get_user_top_genres()
-    seed_genres = api.get_genre_seeds(headers=headers)['genres']
-    if genre in top_genres:
+    if genre in get_user_top_genres():
         return True
-    if genre in seed_genres:
+    if genre in api.get_genre_seeds(headers=headers)['genres']:
         return True
     return False
 
@@ -212,8 +210,10 @@ def parse_seed_info(seeds):
         elif rec.seed_type == 'custom':
             if check_if_valid_genre(x):
                 rec.add_seed_info(data_string=x)
-            else:
+            elif re.match(uri_re, x):
                 rec.add_seed_info(data_dict=api.request_data(x, f'{x.split(":")[1]}s', headers=headers))
+            else:
+                print(f'Input \"{x}\" does not match a genre or a valid URI syntax, skipping...')
         else:
             rec.add_seed_info(data_dict=x)
 
