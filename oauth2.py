@@ -54,7 +54,7 @@ class SpotifyOAuth:
         body = {'grant_type': 'refresh_token',
                 'refresh_token': refresh_token}
         response = requests.post(self.OAUTH_TOKEN_URL, data=body, headers=self.encode_header())
-        api.error_handle('token refresh', response=response, post=True)
+        api.error_handle('token refresh', 200, 'POST', response=response)
         token = json.loads(response.content.decode('utf-8'))
         try:
             assert token['refresh_token'] is not None
@@ -82,7 +82,7 @@ class SpotifyOAuth:
                 'code': code,
                 'redirect_uri': self.redirect}
         response = requests.post(self.OAUTH_TOKEN_URL, data=body, headers=self.encode_header())
-        api.error_handle('token retrieve', response=response, post=True)
+        api.error_handle('token retrieve', 200, 'POST', response=response)
         token = json.loads(response.content.decode('utf-8'))
         self.save_token(token)
         return token

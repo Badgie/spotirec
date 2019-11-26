@@ -5,36 +5,18 @@ import requests
 url_base = 'https://api.spotify.com/v1'
 
 
-def error(request_type: str, status_code: int, reason: str, request_domain: str):
-    """
-    Print error message and exit.
-    :param request_type: type of request; get, put, post
-    :param status_code: status code of the response
-    :param reason: textual reason for response code
-    :param request_domain: the domain of the request, e.g. 'recommendation'
-    """
-    print(f'{request_type} request for {request_domain} failed with status code {status_code}. Reason: {reason}')
-    exit(1)
-
-
-def error_handle(request_domain: str, response=None, get=False, put=False, post=False):
+def error_handle(request_domain: str, expected_code: int, request_type: str, response=None):
     """
     Dispatch error message depending on request type
-    :param response: response object
-    :param get: GET request
-    :param put: PUT request
-    :param post: POST request
     :param request_domain: domain of the request, e.g. 'recommendation'
+    :param expected_code: expected status code
+    :param request_type: type of request, e.g. GET, POST, PUT
+    :param response: response object
     """
-    if get:
-        if response.status_code != 200:
-            error('GET', response.status_code, response.reason, request_domain)
-    elif put:
-        if response.status_code != 202:
-            error('PUT', response.status_code, response.reason, request_domain)
-    elif post:
-        if response.status_code != 201:
-            error('POST', response.status_code, response.reason, request_domain)
+    if response.status_code is not expected_code:
+        print(f'{request_type} request for {request_domain} failed with status code {response.status_code} '
+              f'(expected {expected_code}). Reason: {response.reason}')
+        exit(1)
 
 
 def get_top_list(list_type: str, limit: int, headers: dict) -> json:
@@ -47,7 +29,7 @@ def get_top_list(list_type: str, limit: int, headers: dict) -> json:
     """
     params = {'limit': limit}
     response = requests.get(f'{url_base}/me/top/{list_type}', headers=headers, params=params)
-    error_handle(f'top {list_type}', response=response, get=True)
+    error_handle(f'top {list_type}', 200, 'GET', response=response)
     return json.loads(response.content.decode('utf-8'))
 
 
@@ -58,7 +40,7 @@ def get_user_id(headers: dict) -> str:
     :return: user ID as a string
     """
     response = requests.get(f'{url_base}/me', headers=headers)
-    error_handle('user info', response=response, get=True)
+    error_handle('user info', 200, 'GET', response=response)
     return json.loads(response.content.decode('utf-8'))['id']
 
 
@@ -74,7 +56,7 @@ def create_playlist(playlist_name: str, playlist_description: str, headers: dict
             'description': playlist_description}
     print('Creating playlist')
     response = requests.post(f'{url_base}/users/{get_user_id(headers)}/playlists', json=data, headers=headers)
-    error_handle('playlist creation', response=response, post=True)
+    error_handle('playlist creation', 201, 'POST', response=response)
     return json.loads(response.content.decode('utf-8'))['id']
 
 
@@ -86,7 +68,7 @@ def upload_image(playlist_id: str, data: str, img_headers: dict):
     :param img_headers: request headers
     """
     response = requests.put(f'{url_base}/playlists/{playlist_id}/images', headers=img_headers, data=data)
-    error_handle('image upload', response=response, put=True)
+    error_handle('image upload', 202, 'PUT', response=response)
 
 
 def add_to_playlist(tracks: list, playlist_id: str, headers: dict):
@@ -98,7 +80,7 @@ def add_to_playlist(tracks: list, playlist_id: str, headers: dict):
     """
     data = {'uris': tracks}
     response = requests.post(f'{url_base}/playlists/{playlist_id}/tracks', headers=headers, json=data)
-    error_handle('adding tracks', response=response, post=True)
+    error_handle('adding tracks', 201, 'POST', response=response)
 
 
 def get_recommendations(rec_params: dict, headers: dict) -> json:
@@ -109,7 +91,7 @@ def get_recommendations(rec_params: dict, headers: dict) -> json:
     :return: recommendations as json object
     """
     response = requests.get(f'{url_base}/recommendations', params=rec_params, headers=headers)
-    error_handle('recommendations', response=response, get=True)
+    error_handle('recommendations', 200, 'GET', response=response)
     return json.loads(response.content.decode('utf-8'))
 
 
@@ -122,7 +104,7 @@ def request_data(uri: str, data_type: str, headers: dict) -> json:
     :return: data about artist or track as a json obj
     """
     response = requests.get(f'{url_base}/{data_type}/{uri.split(":")[2]}', headers=headers)
-    error_handle(f'single {data_type.strip("s")}', response=response, get=True)
+    error_handle(f'single {data_type.strip("s")}', 200, 'GET', response=response)
     return json.loads(response.content.decode('utf-8'))
 
 
@@ -133,5 +115,5 @@ def get_genre_seeds(headers: dict) -> json:
     :return: genre seeds as a json obj
     """
     response = requests.get(f'{url_base}/recommendations/available-genre-seeds', headers=headers)
-    error_handle('genre seeds', response=response, get=True)
+    error_handle('genre seeds', 200, 'GET', response=response)
     return json.loads(response.content.decode('utf-8'))
