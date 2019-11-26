@@ -3,19 +3,23 @@ import json
 import time
 import requests
 import base64
+import api
 from urllib import parse
+from pathlib import Path
 
 
 class SpotifyOAuth:
-    oauth_auth_url = 'https://accounts.spotify.com/authorize'
-    oauth_token_url = 'https://accounts.spotify.com/api/token'
+    OAUTH_AUTH_URL = 'https://accounts.spotify.com/authorize'
+    OAUTH_TOKEN_URL = 'https://accounts.spotify.com/api/token'
+    PORT = 8080
 
-    def __init__(self, client_id: str, client_secret: str, redirect: str, scopes: str, cache: str):
-        self.client_id = client_id
-        self.client_secret = client_secret
-        self.redirect = redirect
-        self.scopes = scopes
-        self.cache = cache
+    def __init__(self):
+        self.client_id = '466a89a53359403b82df7d714030ec5f'
+        self.client_secret = '28147de72c3549e98b1e790f3d080b85'
+        self.redirect = f'http://localhost:{self.PORT}'
+        self.scopes = 'user-top-read playlist-modify-public playlist-modify-private user-read-private ' \
+                      'user-read-email ugc-image-upload'
+        self.cache = f'{Path.home()}/.config/spotirec/spotirecoauth'
 
     def get_credentials(self) -> json:
         """
@@ -49,7 +53,8 @@ class SpotifyOAuth:
         """
         body = {'grant_type': 'refresh_token',
                 'refresh_token': refresh_token}
-        response = requests.post(self.oauth_token_url, data=body, headers=self.encode_header())
+        response = requests.post(self.OAUTH_TOKEN_URL, data=body, headers=self.encode_header())
+        api.error_handle('token refresh', 200, 'POST', response=response)
         token = json.loads(response.content.decode('utf-8'))
         try:
             assert token['refresh_token'] is not None
@@ -76,7 +81,8 @@ class SpotifyOAuth:
         body = {'grant_type': 'authorization_code',
                 'code': code,
                 'redirect_uri': self.redirect}
-        response = requests.post(self.oauth_token_url, data=body, headers=self.encode_header())
+        response = requests.post(self.OAUTH_TOKEN_URL, data=body, headers=self.encode_header())
+        api.error_handle('token retrieve', 200, 'POST', response=response)
         token = json.loads(response.content.decode('utf-8'))
         self.save_token(token)
         return token
@@ -90,7 +96,7 @@ class SpotifyOAuth:
                   'response_type': 'code',
                   'redirect_uri': self.redirect,
                   'scope': self.scopes}
-        return f'{self.oauth_auth_url}?{parse.urlencode(params)}'
+        return f'{self.OAUTH_AUTH_URL}?{parse.urlencode(params)}'
 
     def parse_response_code(self, url: str) -> str:
         """

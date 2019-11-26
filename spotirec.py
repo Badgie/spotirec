@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import requests
 import webbrowser
 import json
 import argparse
@@ -11,27 +10,23 @@ import math
 import base64
 import oauth2
 import recommendation
+import api
 from io import BytesIO
 from PIL import Image
 from bottle import route, run, request
 from pathlib import Path
 
 port = 8080
-client_id = '466a89a53359403b82df7d714030ec5f'
-client_secret = '28147de72c3549e98b1e790f3d080b85'
-redirect_uri = f'http://localhost:{port}'
-scope = 'user-top-read playlist-modify-public playlist-modify-private user-read-private user-read-email ' \
-        'ugc-image-upload'
-cache = f'{Path.home()}/.config/spotirec/spotirecoauth'
-url_base = 'https://api.spotify.com/v1'
+config_path = f'{Path.home()}/.config/spotirec'
 blacklist_path = f'{Path.home()}/.config/spotirec/blacklist'
 preset_path = f'{Path.home()}/.config/spotirec/presets'
 tune_prefix = ['max', 'min', 'target']
 tune_attr = ['acousticness', 'danceability', 'duration_ms', 'energy', 'instrumentalness', 'key', 'liveness',
              'loudness', 'mode', 'popularity', 'speechiness', 'tempo', 'time_signature', 'valence', 'popularity']
+uri_re = r'spotify:(artist|track):[a-zA-Z0-9]'
 
 # OAuth handler
-sp_oauth = oauth2.SpotifyOAuth(client_id, client_secret, redirect_uri, scopes=scope, cache=cache)
+sp_oauth = oauth2.SpotifyOAuth()
 
 # Argument parser
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -67,8 +62,8 @@ blacklist_group.add_argument('-br', metavar='URI', nargs='+', type=str,
 blacklist_group.add_argument('-b list', action='store_true', help='print blacklist entries')
 
 # Ensure config dir and blacklist file exists
-if not os.path.isdir(f'{Path.home()}/.config/spotirec'):
-    os.makedirs(f'{Path.home()}/.config/spotirec')
+if not os.path.isdir(config_path):
+    os.makedirs(config_path)
 if not os.path.exists(blacklist_path):
     f = open(blacklist_path, 'w')
     f.close()
@@ -82,7 +77,7 @@ def authorize():
     Open redirect URL in browser, and host http server on localhost.
     Function index() will be routed on said http server.
     """
-    webbrowser.open(redirect_uri)
+    webbrowser.open(sp_oauth.redirect)
     run(host='', port=port)
 
 
@@ -95,12 +90,9 @@ def index() -> str:
     :return: link to authorization if access token wasn't found
     """
     access_token = ""
-    url = request.url
-    code = sp_oauth.parse_response_code(url)
+    code = sp_oauth.parse_response_code(request.url)
     if code:
-        token_info = sp_oauth.retrieve_access_token(code)
-        access_token = token_info['access_token']
-
+        access_token = sp_oauth.retrieve_access_token(code)['access_token']
     if access_token:
         return "<span>Successfully retrieved OAuth token. You may close this tab and start using Spotirec.</span>"
     else:
@@ -120,26 +112,14 @@ def get_token() -> str:
         exit(1)
 
 
-def get_top_list(list_type: str, top_limit: int) -> json:
-    """
-    Retrieve list of top artists of tracks from user's profile.
-    :param list_type: type of list to retrieve; 'artists' or 'tracks'
-    :param top_limit: amount of entries to retrieve; min 1, max 50
-    :return: top list as json object
-    """
-    params = {'limit': top_limit}
-    response = requests.get(f'{url_base}/me/top/{list_type}', headers=headers, params=params)
-    return json.loads(response.content.decode('utf-8'))
-
-
 def get_user_top_genres() -> dict:
     """
     Extract genres from user's top 50 artists and map them to their amount of occurrences
     :return: dict of genres and their count of occurrences
     """
-    data = get_top_list('artists', 50)
+    data = api.get_top_list('artists', 50, headers=headers)
     genres = {}
-    genre_seeds = get_genre_seeds()
+    genre_seeds = api.get_genre_seeds(headers=headers)
     for x in data['items']:
         for genre in x['genres']:
             genre = genre.replace(' ', '-')
@@ -155,30 +135,167 @@ def add_top_genres_seed():
     """
     Add top 5 genres to recommendation object seed info.
     """
-    genres = get_user_top_genres()
-    sort = sorted(genres.items(), key=lambda kv: kv[1], reverse=True)
-    for x in range(0, 5):
-        rec.add_seed_info(data_string=sort[x][0])
+    sort = sorted(get_user_top_genres().items(), key=lambda kv: kv[1], reverse=True)
+    parse_seed_info([sort[x][0] for x in range(0, 5)])
 
 
-def get_user_id() -> str:
+def print_choices(data=None, prompt=True, sort=False) -> str:
     """
-    Retrieve user ID from API.
-    :return: user ID as a string
+    Used for custom seed creation. All valid choices are printed to terminal and user is prompted
+    to select. If the seed type is genres, seeds are simply added to the recommendations object.
+    :param data: valid choices as a list of names
+    :param prompt: whether or not to prompt user for input
+    :param sort: whether or not printed data should be sorted
+    :return: user input, if seed type is artists or tracks
     """
-    response = requests.get(f'{url_base}/me', headers=headers)
-    return json.loads(response.content.decode('utf-8'))['id']
+    if sort:
+        sorted_data = sorted(data.items(), key=lambda kv: kv[1], reverse=True)
+        data = [sorted_data[x][0] for x in range(0, len(sorted_data))]
+    line = ""
+    for x in range(0, round(len(data)), 3):
+        try:
+            line += f'{x}: {data[x]}'
+            if data[x + 1]:
+                line += f'{" " * (40 - len(data[x]))}{x + 1}: ' \
+                        f'{data[x + 1] if len(data[x + 1]) < 40 else f"{data[x + 1][0:37]}.. "}'
+                if data[x + 2]:
+                    line += f'{" " * (40 - len(data[x + 1]))}{x + 2}: ' \
+                            f'{data[x + 2] if len(data[x + 2]) < 40 else f"{data[x + 2][0:37]}.. "}\n'
+        except IndexError:
+            continue
+    print(line.strip('\n'))
+    if prompt:
+        input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to '
+                             'include:\n')
+        if 'genres' in rec.seed_type:
+            parse_seed_info([data[int(x)] for x in input_string.split(' ')])
+        else:
+            return input_string
 
 
-def create_playlist():
+def add_custom_seed_info(data: json):
     """
-    Creates playlist on user's account.
+    Construct dict only containing artist or track names and IDs and prompt for selection.
+    Seeds are added to recommendation object.
+    :param data: valid choices as json object
     """
-    data = {'name': rec.playlist_name,
-            'description': rec.playlist_description()}
-    print('Creating playlist')
-    response = requests.post(f'{url_base}/users/{get_user_id()}/playlists', json=data, headers=headers)
-    rec.playlist_id = json.loads(response.content.decode('utf-8'))['id']
+    choices = {}
+    for x in data['items']:
+        choices[x['name']] = x['id']
+    selection = print_choices(data=list(choices.keys()))
+    parse_seed_info([data['items'][int(x)] for x in selection.split(' ')])
+
+
+def check_if_valid_genre(genre: str) -> bool:
+    """
+    Checks if input genre is in user's top genres or available genre seeds.
+    :param genre: user input genre
+    :return: True if genre exists, False if not
+    """
+    if genre in get_user_top_genres():
+        return True
+    if genre in api.get_genre_seeds(headers=headers)['genres']:
+        return True
+    return False
+
+
+def parse_seed_info(seeds):
+    """
+    Adds seed data to recommendation object
+    :param seeds: seed data as a string or a list
+    """
+    for x in shlex.split(seeds) if type(seeds) is str else seeds:
+        if rec.seed_type == 'genres':
+            rec.add_seed_info(data_string=x)
+        elif rec.seed_type == 'custom':
+            if check_if_valid_genre(x):
+                rec.add_seed_info(data_string=x)
+            elif re.match(uri_re, x):
+                rec.add_seed_info(data_dict=api.request_data(x, f'{x.split(":")[1]}s', headers=headers))
+            else:
+                print(f'Input \"{x}\" does not match a genre or a valid URI syntax, skipping...')
+        else:
+            rec.add_seed_info(data_dict=x)
+
+
+def add_to_blacklist(entries: list):
+    """
+    Add input uris to blacklist and exit
+    :param entries: list of input uris
+    """
+    with open(blacklist_path, 'r') as file:
+        try:
+            data = json.loads(file.read())
+        except json.decoder.JSONDecodeError:
+            data = {'tracks': {},
+                    'artists': {}}
+        for uri in entries:
+            if re.match(uri_re, uri):
+                uri_data = api.request_data(uri, f'{uri.split(":")[0]}s', headers=headers)
+                data[f'{uri.split(":")[0]}s'][uri] = {'name': uri_data['name'],
+                                                      'uri': uri}
+                try:
+                    data[f'{uri.split(":")[0]}s'][uri]['artists'] = [x['name'] for x in uri_data['artists']]
+                    print(f'Added track \"{uri_data["name"]}\" by '
+                          f'{", ".join(str(x["name"]) for x in uri_data["artists"])} to your blacklist')
+                except KeyError:
+                    print(f'Added artist \"{uri_data["name"]}\" to your blacklist')
+            else:
+                print(f'uri \"{uri}\" is either not a valid uri for a track or artist, or is malformed and has '
+                      f'not been added to the blacklist')
+    with open(blacklist_path, 'w+') as file:
+        file.write(json.dumps(data))
+
+
+def remove_from_blacklist(entries: list):
+    """
+    Remove track(s) and/or artist(s) from blacklist.
+    :param entries: list of uris
+    """
+    try:
+        with open(blacklist_path, 'r') as file:
+            blacklist = json.loads(file.read())
+    except json.decoder.JSONDecodeError:
+        print('Error: blacklist is empty')
+        exit(1)
+    for uri in entries:
+        if re.match(uri_re, uri):
+            try:
+                try:
+                    print(f'Removing track {blacklist["tracks"][uri]["name"]} by '
+                          f'{", ".join(str(x) for x in blacklist["tracks"][uri]["artists"]).strip(", ")} from blacklist')
+                except KeyError:
+                    print(f'Removing artist \"{blacklist["artists"][uri]["name"]}\" from blacklist')
+                del blacklist[f'{uri.split(":")[1]}s'][uri]
+            except KeyError:
+                print(f'uri \"{uri}\" does not exist in your blacklist')
+                # FIXME: Remove this notice at some point
+                print('Blacklist structure was recently re-done, so you may need to remove and re-do your blacklist. '
+                      'Sorry!')
+        else:
+            print(f'uri \"{uri}\" is either not a valid uri for a track or artist or is malformed')
+
+    with open(blacklist_path, 'w+') as file:
+        file.write(json.dumps(blacklist))
+
+
+def print_blacklist():
+    """
+    Format and print blacklist entries
+    """
+    with open(blacklist_path, 'r') as file:
+        try:
+            blacklist = json.loads(file.read())
+            print('Tracks')
+            print('--------------------------')
+            for x in blacklist['tracks']:
+                print(f'{x["name"]} by {", ".join(x["artists"]).strip(", ")} - {x["uri"]}')
+            print('\nArtists')
+            print('--------------------------')
+            for x in blacklist['artists']:
+                print(f'{x["name"]} - {x["uri"]}')
+        except json.decoder.JSONDecodeError:
+            print('Blacklist is empty')
 
 
 def generate_img(tracks: list) -> Image:
@@ -212,30 +329,48 @@ def add_image_to_playlist(tracks: list):
     img_buffer = BytesIO()
     generate_img(tracks).save(img_buffer, format='JPEG')
     img_str = base64.b64encode(img_buffer.getvalue())
-    response = requests.put(f'{url_base}/playlists/{rec.playlist_id}/images', headers=img_headers, data=img_str)
-    if response.reason != 'Accepted':
-        print('Failed to update playlist cover image. If you would like this functionality, you should '
-              f're-authorize your access token by removing \"{cache}\".')
+    api.upload_image(playlist_id=rec.playlist_id, data=img_str, img_headers=img_headers)
 
 
-def add_to_playlist(tracks: list):
-    """
-    Add tracks to playlist.
-    :param tracks: list of track URIs
-    """
-    data = {'uris': tracks}
-    print('Adding tracks to playlist')
-    requests.post(f'{url_base}/playlists/{rec.playlist_id}/tracks', headers=headers, json=data)
-    add_image_to_playlist(tracks)
+def save_preset(name: str):
+    try:
+        with open(preset_path, 'r') as file:
+            preset_data = json.loads(file.read())
+    except json.decoder.JSONDecodeError:
+        preset_data = {}
+    preset_data[name] = {'limit': rec.limit_original,
+                         'based_on': rec.based_on,
+                         'seed': rec.seed,
+                         'seed_type': rec.seed_type,
+                         'seed_info': rec.seed_info,
+                         'rec_params': rec.rec_params}
+    with open(preset_path, 'w+') as file:
+        print(f'Saving preset \"{name}\"')
+        file.write(json.dumps(preset_data))
 
 
-def get_recommendations() -> json:
-    """
-    Retrieve recommendations from API.
-    :return: recommendations as json object
-    """
-    response = requests.get(f'{url_base}/recommendations', params=rec.rec_params, headers=headers)
-    return json.loads(response.content.decode('utf-8'))
+def load_preset(name: str) -> recommendation.Recommendation:
+    print(f'Using preset \"{name}\"')
+    try:
+        with open(preset_path, 'r') as file:
+            preset_data = json.loads(file.read())
+    except json.decoder.JSONDecodeError:
+        print('Error: you do not have any presets')
+        exit(1)
+    try:
+        contents = preset_data[name]
+        preset = recommendation.Recommendation()
+        preset.limit = contents['limit']
+        preset.limit_original = contents['limit']
+        preset.based_on = contents['based_on']
+        preset.seed = contents['seed']
+        preset.seed_type = contents['seed_type']
+        preset.seed_info = contents['seed_info']
+        preset.rec_params = contents['rec_params']
+        return preset
+    except KeyError:
+        print(f'Error: could not find preset \"{name}\", check spelling and try again')
+        exit(1)
 
 
 def filter_recommendations(data: json) -> list:
@@ -272,254 +407,20 @@ def recommend():
     rec.create_seed()
     if args.ps:
         save_preset(args.ps[0])
-    tracks = filter_recommendations(get_recommendations())
+    tracks = filter_recommendations(api.get_recommendations(rec.rec_params, headers=headers))
     if len(tracks) == 0:
         print('Error: received zero tracks with your options - adjust and try again')
         exit(1)
     while True:
-        if len(tracks) < rec.limit:
-            rec.update_limit(rec.limit_fill - len(tracks))
-            tracks += filter_recommendations(get_recommendations())
+        if len(tracks) < rec.limit_original:
+            rec.update_limit(rec.limit_original - len(tracks))
+            tracks += filter_recommendations(api.get_recommendations(rec.rec_params, headers=headers))
         else:
             break
-    create_playlist()
-    add_to_playlist(tracks)
+    rec.playlist_id = api.create_playlist(rec.playlist_name, rec.playlist_description(), headers=headers)
+    api.add_to_playlist(tracks, rec.playlist_id, headers=headers)
+    add_image_to_playlist(tracks)
     rec.print_selection()
-
-
-def print_choices(data: list, prompt=True) -> str:
-    """
-    Used for custom seed creation. All valid choices are printed to terminal and user is prompted
-    to select. If the seed type is genres, seeds are simply added to the recommendations object.
-    :param data: valid choices as a list of names
-    :param prompt: whether or not to prompt user for input
-    :return: user input, if seed type is artists or tracks
-    """
-    line = ""
-    for x in range(0, round(len(data)), 3):
-        try:
-            line += f'{x}: {data[x]}'
-            if data[x + 1]:
-                line += f'{" " * (40 - len(data[x]))}{x + 1}: ' \
-                        f'{data[x + 1] if len(data[x + 1]) < 40 else f"{data[x + 1][0:37]}.. "}'
-                if data[x + 2]:
-                    line += f'{" " * (40 - len(data[x + 1]))}{x + 2}: ' \
-                            f'{data[x + 2] if len(data[x + 2]) < 40 else f"{data[x + 2][0:37]}.. "}\n'
-        except IndexError:
-            continue
-    print(line.strip('\n'))
-    if prompt:
-        input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to '
-                             'include:\n')
-        if 'genres' in rec.seed_type:
-            for x in input_string.split(' '):
-                rec.add_seed_info(data_string=data[int(x)])
-        else:
-            return input_string
-
-
-def add_top_seed_info(data: json):
-    """
-    Add artists or tracks to seed info. This function should only be used in recommendations
-    that use top 5 tracks or artists.
-    :param data: artists or tracks as a json object
-    """
-    for x in data['items']:
-        rec.add_seed_info(data_dict=x)
-
-
-def add_custom_seed_info(data: json):
-    """
-    Construct dict only containing artist or track names and IDs and prompt for selection.
-    Seeds are added to recommendation object.
-    :param data: valid choices as json object
-    """
-    choices = {}
-    for x in data['items']:
-        choices[x['name']] = x['id']
-    selection = print_choices(list(choices.keys()))
-    for x in selection.split(' '):
-        rec.add_seed_info(data_dict=data['items'][int(x)])
-
-
-def request_data(uri: str, data_type: str) -> json:
-    """
-    Requests data about an artist or a track.
-    :param uri: uri for the artist or track
-    :param data_type: the type of data to request; 'artists' or 'tracks'
-    :return: data about artist or track as a json obj
-    """
-    response = requests.get(f'{url_base}/{data_type}/{uri.split(":")[2]}', headers=headers)
-    return json.loads(response.content.decode('utf-8'))
-
-
-def add_to_blacklist(entries: list):
-    """
-    Add input uris to blacklist and exit
-    :param entries: list of input uris
-    """
-    with open(blacklist_path, 'r') as file:
-        try:
-            data = json.loads(file.read())
-        except json.decoder.JSONDecodeError:
-            data = {'tracks': {},
-                    'artists': {}}
-        for uri in entries:
-            if 'track' in uri:
-                track = request_data(uri, 'tracks')
-                artists = [x['name'] for x in track['artists']]
-                data['tracks'][uri] = {'name': track['name'],
-                                       'uri': uri,
-                                       'artists': artists}
-                print(f'Added track \"{track["name"]}\" by {", ".join(str(x) for x in artists).strip(", ")}'
-                      f' to your blacklist')
-            elif 'artist' in uri:
-                artist = request_data(uri, 'artists')
-                data['artists'][uri] = {'name': artist['name'],
-                                        'uri': uri}
-                print(f'Added artist \"{artist["name"]}\" to your blacklist')
-            else:
-                print(f'uri \"{uri}\" is either not a valid uri for a track or artist, or is malformed and has '
-                      f'not been added to the blacklist')
-    with open(blacklist_path, 'w+') as file:
-        file.write(json.dumps(data))
-
-
-def remove_from_blacklist(entries: list):
-    """
-    Remove track(s) and/or artist(s) from blacklist.
-    :param entries: list of uris
-    """
-    try:
-        with open(blacklist_path, 'r') as file:
-            blacklist = json.loads(file.read())
-    except json.decoder.JSONDecodeError:
-        print('Error: blacklist is empty')
-        exit(1)
-    for uri in entries:
-        if 'track' in uri:
-            print(f'Removing track {blacklist["tracks"][uri]["name"]} by '
-                  f'{", ".join(str(x) for x in blacklist["tracks"][uri]["artists"]).strip(", ")} from blacklist')
-            del blacklist['tracks'][uri]
-        elif 'artist' in uri:
-            print(f'Removing artist \"{blacklist["artists"][uri]["name"]}\" from blacklist')
-            del blacklist['artists'][uri]
-        else:
-            print(f'uri \"{uri}\" is either not a valid uri for a track or artist, is malformed, or is not in '
-                  f'your blacklist')
-            # FIXME: Remove this notice at some point
-            print('Blacklist structure was recently re-done, so you may need to remove and re-do your blacklist. '
-                  'Sorry!')
-    with open(blacklist_path, 'w+') as file:
-        file.write(json.dumps(blacklist))
-
-
-def print_blacklist():
-    """
-    Format and print blacklist entries
-    """
-    with open(blacklist_path, 'r') as file:
-        try:
-            blacklist = json.loads(file.read())
-            print('Tracks')
-            print('--------------------------')
-            for x in blacklist['tracks']:
-                print(f'{x["name"]} by {", ".join(x["artists"]).strip(", ")} - {x["uri"]}')
-            print('\nArtists')
-            print('--------------------------')
-            for x in blacklist['artists']:
-                print(f'{x["name"]} - {x["uri"]}')
-        except json.decoder.JSONDecodeError:
-            print('Blacklist is empty')
-
-
-def print_user_genres_sorted(prompt=True):
-    """
-    Print user top genres to terminal in a formatted list.
-    :param prompt: whether or not user should be prompted for input
-    """
-    sort = sorted(get_user_top_genres().items(), key=lambda kv: kv[1], reverse=True)
-    print_choices([sort[x][0] for x in range(0, len(sort))], prompt=prompt)
-
-
-def get_genre_seeds() -> json:
-    """
-    Retrieves available genre seeds from Spotify API.
-    :return: genre seeds as a json obj
-    """
-    response = requests.get(f'{url_base}/recommendations/available-genre-seeds', headers=headers)
-    return json.loads(response.content.decode('utf-8'))
-
-
-def check_if_valid_genre(genre: str) -> bool:
-    """
-    Checks if input genre is in user's top genres or available genre seeds.
-    :param genre: user input genre
-    :return: True if genre exists, False if not
-    """
-    top_genres = get_user_top_genres()
-    seed_genres = get_genre_seeds()['genres']
-    if genre in top_genres:
-        return True
-    if genre in seed_genres:
-        return True
-    return False
-
-
-def parse_custom_input(user_input: str):
-    """
-    Parse custom input from user.
-    :param user_input: input string
-    """
-    for x in shlex.split(user_input):
-        if 'track' in x:
-            rec.add_seed_info(data_dict=request_data(x, 'tracks'))
-        elif 'artist' in x:
-            rec.add_seed_info(data_dict=request_data(x, 'artists'))
-        elif check_if_valid_genre(x):
-            rec.add_seed_info(data_string=x)
-        else:
-            print(f'Error: input \"{x}\" is either a malformed uri or not a valid genre')
-
-
-def save_preset(name: str):
-    try:
-        with open(preset_path, 'r') as file:
-            preset_data = json.loads(file.read())
-    except json.decoder.JSONDecodeError:
-        preset_data = {}
-    preset_data[name] = {'limit': rec.limit,
-                         'based_on': rec.based_on,
-                         'seed': rec.seed,
-                         'seed_type': rec.seed_type,
-                         'seed_info': rec.seed_info,
-                         'rec_params': rec.rec_params}
-    with open(preset_path, 'w+') as file:
-        print(f'Saving preset \"{name}\"')
-        file.write(json.dumps(preset_data))
-
-
-def load_preset(name: str) -> recommendation.Recommendation:
-    print(f'Using preset \"{name}\"')
-    try:
-        with open(preset_path, 'r') as file:
-            preset_data = json.loads(file.read())
-    except json.decoder.JSONDecodeError:
-        print('Error: you do not have any presets')
-        exit(1)
-    try:
-        contents = preset_data[name]
-        preset = recommendation.Recommendation()
-        preset.limit = contents['limit']
-        preset.based_on = contents['based_on']
-        preset.seed = contents['seed']
-        preset.seed_type = contents['seed_type']
-        preset.seed_info = contents['seed_info']
-        preset.rec_params = contents['rec_params']
-        return preset
-    except KeyError:
-        print(f'Error: could not find preset \"{name}\", check spelling and try again')
-        exit(1)
 
 
 def parse():
@@ -540,42 +441,39 @@ def parse():
         print('Basing recommendations off your top 5 artists')
         rec.based_on = 'top artists'
         rec.seed_type = 'artists'
-        add_top_seed_info(get_top_list('artists', 5))
+        parse_seed_info([x for x in api.get_top_list('artists', 5, headers=headers)['items']])
     elif args.t:
         print('Basing recommendations off your top 5 tracks')
         rec.based_on = 'top tracks'
         rec.seed_type = 'tracks'
-        add_top_seed_info(get_top_list('tracks', 5))
+        parse_seed_info([x for x in api.get_top_list('tracks', 5, headers=headers)['items']])
     elif args.gcs:
-        data = get_genre_seeds()
         rec.based_on = 'custom seed genres'
-        print_choices(data['genres'])
+        print_choices(data=api.get_genre_seeds(headers=headers)['genres'])
     elif args.ac:
-        data = get_top_list('artists', 50)
         rec.based_on = 'custom artists'
         rec.seed_type = 'artists'
-        add_custom_seed_info(data)
+        add_custom_seed_info(api.get_top_list('artists', 50, headers=headers))
     elif args.tc:
-        data = get_top_list('tracks', 50)
         rec.based_on = 'custom tracks'
         rec.seed_type = 'tracks'
-        add_custom_seed_info(data)
+        add_custom_seed_info(api.get_top_list('tracks', 50, headers=headers))
     elif args.gc:
         rec.based_on = 'custom top genres'
-        print_user_genres_sorted()
+        print_choices(data=get_user_top_genres(), sort=True)
     elif args.c:
         rec.based_on = 'custom mix'
         rec.seed_type = 'custom'
-        print_user_genres_sorted(prompt=False)
-        user_input = input('Enter a combination of 1-5 whitespace separated genres, track uris, and artist uris. '
-                           '\nGenres with several words should be connected with dashes, e.g.; \"vapor-death-pop\".\n')
-        parse_custom_input(user_input)
+        print_choices(data=get_user_top_genres(), prompt=False, sort=True)
+        user_input = input('Enter a combination of 1-5 whitespace separated genre names, track uris, and artist uris. '
+                           '\nGenres with several words should be connected with dashes, e.g.; vapor-death-pop.\n')
+        parse_seed_info(user_input)
     else:
         print('Basing recommendations off your top 5 genres')
         add_top_genres_seed()
 
     if args.l:
-        rec.update_limit(args.l[0])
+        rec.update_limit(args.l[0], init=True)
     print(f'The playlist will contain {rec.limit} tracks')
 
     if args.tune:
