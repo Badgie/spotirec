@@ -41,7 +41,7 @@ mkdir -p /usr/lib/spotirec
 mkdir -p /usr/bin
 mkdir -p $HOME/.config/spotirec
 
-install spotirec.py oauth2.py recommendation.py -t /usr/lib/spotirec
+install spotirec.py oauth2.py recommendation.py api.py -t /usr/lib/spotirec
 
 ln -s /usr/lib/spotirec/spotirec.py /usr/bin/spotirec
 ```
