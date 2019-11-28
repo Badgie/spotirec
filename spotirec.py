@@ -56,23 +56,21 @@ preset_mutex.add_argument('-ps', metavar='NAME', nargs=1, type=str, help='save o
 rec_options_group.add_argument('--tune', metavar='ATTR', nargs='+', type=str, help='specify tunable attribute(s)')
 play_mutex = rec_options_group.add_mutually_exclusive_group()
 play_mutex.add_argument('--play', action='store_true', help='select playback device to start playing on')
-play_mutex.add_argument('--play-device', metavar='DEVICE', nargs=1, type=str, help='start playback on device')
+play_mutex.add_argument('--play-device', metavar='DEVICE', nargs=1, type=str, help='start playback on saved device')
 
 device_group = parser.add_argument_group(title='Playback devices')
 device_group.add_argument('-d', action='store_true', help='save a device')
 
-blacklist_group = parser.add_argument_group(title='Blacklisting',
-                                            description='Spotirec will exit once these actions are complete')
+blacklist_group = parser.add_argument_group(title='Blacklisting')
 blacklist_group.add_argument('-b', metavar='URI', nargs='+', type=str, help='blacklist track(s) and/or artist(s)')
 blacklist_group.add_argument('-br', metavar='URI', nargs='+', type=str,
                              help='remove track(s) and/or artists(s) from blacklist')
-blacklist_group.add_argument('-b list', action='store_true', help='print blacklist entries')
 
 print_group = parser.add_argument_group(title='Printing')
 print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
-                         choices=['artists', 'tracks', 'genres', 'genre-seeds'],
+                         choices=['artists', 'tracks', 'genres', 'genre-seeds', 'devices', 'blacklist'],
                          help='print a list of genre seeds, or your top artists, tracks, or genres, where'
-                              'TYPE=[artists|tracks|genres|genre-seeds]')
+                              'TYPE=[artists|tracks|genres|genre-seeds|devices|blacklist]')
 
 # Ensure config dir and blacklist file exists
 if not os.path.isdir(config_path):
@@ -463,7 +461,7 @@ def save_device():
         except AssertionError:
             prompt_name()
 
-    name = prompt_name()
+    name = prompt_name().replace(' ', '')
     try:
         with open(devices_path, 'r') as file:
             devices = json.loads(file.read())
@@ -473,6 +471,21 @@ def save_device():
     with open(devices_path, 'w+') as file:
         file.write(json.dumps(devices))
     print(f'Saved device \"{rec.playback_device["name"]}\" as \"{name}\"')
+
+
+def print_saved_devices():
+    try:
+        with open(devices_path, 'r') as file:
+            devices = json.loads(file.read())
+    except json.decoder.JSONDecodeError:
+        print('You have no saved devices')
+        exit(1)
+    print('Saved devices:')
+    print(f'ID{" " * 18}Name{" " * 16}Type')
+    print("-" * 50)
+    for x in devices:
+        print(f'{x}{" " * (20 - len(x))}{devices[x]["name"]}'
+              f'{" " * (20 - len(devices[x]["name"]))}{devices[x]["type"]}')
 
 
 def filter_recommendations(data: json) -> list:
@@ -532,10 +545,7 @@ def parse():
     Parse arguments
     """
     if args.b:
-        if args.b[0] == 'list':
-            print_blacklist()
-        else:
-            add_to_blacklist(args.b)
+        add_to_blacklist(args.b)
         exit(1)
     if args.br:
         remove_from_blacklist(args.br)
@@ -564,6 +574,10 @@ def parse():
         elif args.print[0] == 'genre-seeds':
             print('Genre seeds:')
             print_choices(data=api.get_genre_seeds(headers=headers)['genres'], prompt=False)
+        elif args.print[0] == 'blacklist':
+            print_blacklist()
+        elif args.print[0] == 'devices':
+            print_saved_devices()
         exit(1)
 
     if args.a:
