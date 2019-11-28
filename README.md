@@ -83,6 +83,14 @@ where
 
 By default, the script will base recommendations off of your top valid seed genres extracted from your top artists. For this method, pass none of the above 7 arguments.
 
+On all non-custom schemes, e.g.; `-a`, `-t`, and no-arg, you can specify how many seeds should be included in the recommendation. The value must be in the range 1-5, and the default value is 5
+```
+$ spotirec 3
+$ spotirec -a 2
+$ spotirec -t 4
+```
+Note that if this option is used with no-arg, it **must** be the very first argument
+
 ### Limits
 You can add a limit as an integer value with the `-l` argument
 ```
