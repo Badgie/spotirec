@@ -17,6 +17,8 @@ class Recommendation:
         self.rec_params = {'limit': str(self.limit)}
         self.playlist_name = f'Spotirec-{t.tm_mday}-{t.tm_mon}-{t.tm_year}'
         self.playlist_id = ''
+        self.auto_play = False
+        self.playback_device = {}
 
     def playlist_description(self) -> str:
         """
