@@ -33,12 +33,16 @@ parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpForm
                                  epilog="""
 passing no recommendation scheme argument defaults to basing recommendations off your top 5 valid seed genres
 spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for details read LICENSE""")
-
+parser.add_argument('n', nargs='?', type=int, const=5, help='amount of seeds to use on no-arg recommendations as an '
+                                                            'integer - note that this must appear as the first '
+                                                            'argument if used and can only be used with no-arg')
 # Create mutually exclusive group for recommendation types to ensure only one is given
 rec_scheme_group = parser.add_argument_group(title='Recommendation schemes')
 mutex_group = rec_scheme_group.add_mutually_exclusive_group()
-mutex_group.add_argument('-a', action='store_true', help='base recommendations on your top artists')
-mutex_group.add_argument('-t', action='store_true', help='base recommendations on your top tracks')
+mutex_group.add_argument('-a', metavar='SEED_SIZE', nargs='?', type=int, const=5,
+                         help='base recommendations on your top artists')
+mutex_group.add_argument('-t', metavar='SEED_SIZE', nargs='?', type=int, const=5,
+                         help='base recommendations on your top tracks')
 mutex_group.add_argument('-ac', action='store_true', help='base recommendations on custom top artists')
 mutex_group.add_argument('-tc', action='store_true', help='base recommendations on custom top tracks')
 mutex_group.add_argument('-gc', action='store_true', help='base recommendations on custom top valid seed genres')
@@ -137,12 +141,12 @@ def get_user_top_genres() -> dict:
     return genres
 
 
-def add_top_genres_seed():
+def add_top_genres_seed(seed_count: int):
     """
     Add top 5 genres to recommendation object seed info.
     """
     sort = sorted(get_user_top_genres().items(), key=lambda kv: kv[1], reverse=True)
-    parse_seed_info([sort[x][0] for x in range(0, 5)])
+    parse_seed_info([sort[x][0] for x in range(0, seed_count)])
 
 
 def print_choices(data=None, prompt=True, sort=False) -> str:
@@ -461,15 +465,15 @@ def parse():
         exit(1)
 
     if args.a:
-        print('Basing recommendations off your top 5 artists')
+        print(f'Basing recommendations off your top {args.a} artist(s)')
         rec.based_on = 'top artists'
         rec.seed_type = 'artists'
-        parse_seed_info([x for x in api.get_top_list('artists', 5, headers=headers)['items']])
+        parse_seed_info([x for x in api.get_top_list('artists', args.a, headers=headers)['items']])
     elif args.t:
-        print('Basing recommendations off your top 5 tracks')
+        print(f'Basing recommendations off your top {args.t} track(s)')
         rec.based_on = 'top tracks'
         rec.seed_type = 'tracks'
-        parse_seed_info([x for x in api.get_top_list('tracks', 5, headers=headers)['items']])
+        parse_seed_info([x for x in api.get_top_list('tracks', args.t, headers=headers)['items']])
     elif args.gcs:
         rec.based_on = 'custom seed genres'
         print_choices(data=api.get_genre_seeds(headers=headers)['genres'])
@@ -492,8 +496,8 @@ def parse():
                            '\nGenres with several words should be connected with dashes, e.g.; vapor-death-pop.\n')
         parse_seed_info(user_input)
     else:
-        print('Basing recommendations off your top 5 genres')
-        add_top_genres_seed()
+        print(f'Basing recommendations off your top {args.n} genres')
+        add_top_genres_seed(args.n)
 
     if args.l:
         rec.update_limit(args.l[0], init=True)
