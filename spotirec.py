@@ -350,6 +350,10 @@ def add_image_to_playlist(tracks: list):
 
 
 def save_preset(name: str):
+    """
+    Save recommendation object as preset
+    :param name: name of preset
+    """
     try:
         with open(preset_path, 'r') as file:
             preset_data = json.loads(file.read())
@@ -369,6 +373,11 @@ def save_preset(name: str):
 
 
 def load_preset(name: str) -> recommendation.Recommendation:
+    """
+    Load preset recommendation object from config
+    :param name: name of preset
+    :return: recommendation object with settings from preset
+    """
     print(f'Using preset \"{name}\"')
     try:
         with open(preset_path, 'r') as file:
@@ -475,6 +484,10 @@ def save_device():
 
 
 def remove_devices(devices: list):
+    """
+    Remove device(s) from user config
+    :param devices: list of devices
+    """
     try:
         with open(devices_path, 'r') as file:
             saved_devices = json.loads(file.read())
@@ -493,6 +506,9 @@ def remove_devices(devices: list):
 
 
 def print_saved_devices():
+    """
+    Print all saved devices
+    """
     try:
         with open(devices_path, 'r') as file:
             devices = json.loads(file.read())
