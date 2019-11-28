@@ -60,6 +60,8 @@ blacklist_group.add_argument('-b', metavar='URI', nargs='+', type=str, help='bla
 blacklist_group.add_argument('-br', metavar='URI', nargs='+', type=str,
                              help='remove track(s) and/or artists(s) from blacklist')
 blacklist_group.add_argument('-b list', action='store_true', help='print blacklist entries')
+blacklist_group.add_argument('-bc', metavar='artist|track', nargs=1, choices=['artist', 'track'],
+                             help='blacklist currently playing artist(s) or track')
 
 print_group = parser.add_argument_group(title='Printing')
 print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
@@ -239,11 +241,11 @@ def add_to_blacklist(entries: list):
                     'artists': {}}
         for uri in entries:
             if re.match(uri_re, uri):
-                uri_data = api.request_data(uri, f'{uri.split(":")[0]}s', headers=headers)
-                data[f'{uri.split(":")[0]}s'][uri] = {'name': uri_data['name'],
+                uri_data = api.request_data(uri, f'{uri.split(":")[1]}s', headers=headers)
+                data[f'{uri.split(":")[1]}s'][uri] = {'name': uri_data['name'],
                                                       'uri': uri}
                 try:
-                    data[f'{uri.split(":")[0]}s'][uri]['artists'] = [x['name'] for x in uri_data['artists']]
+                    data[f'{uri.split(":")[1]}s'][uri]['artists'] = [x['name'] for x in uri_data['artists']]
                     print(f'Added track \"{uri_data["name"]}\" by '
                           f'{", ".join(str(x["name"]) for x in uri_data["artists"])} to your blacklist')
                 except KeyError:
@@ -443,6 +445,13 @@ def parse():
         exit(1)
     if args.br:
         remove_from_blacklist(args.br)
+        exit(1)
+    if args.bc:
+        if args.bc[0] == 'track':
+            print(api.get_current_track(headers))
+            add_to_blacklist([api.get_current_track(headers)])
+        elif args.bc[0] == 'artist':
+            add_to_blacklist(api.get_current_artists(headers))
         exit(1)
 
     if args.print:
