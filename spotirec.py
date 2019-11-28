@@ -39,9 +39,9 @@ parser.add_argument('n', nargs='?', type=int, const=5, help='amount of seeds to 
 # Create mutually exclusive group for recommendation types to ensure only one is given
 rec_scheme_group = parser.add_argument_group(title='Recommendation schemes')
 mutex_group = rec_scheme_group.add_mutually_exclusive_group()
-mutex_group.add_argument('-a', metavar='SEED_SIZE', nargs='?', type=int, const=5,
+mutex_group.add_argument('-a', metavar='SEED_SIZE', nargs='?', type=int, const=5, choices=range(1, 6),
                          help='base recommendations on your top artists')
-mutex_group.add_argument('-t', metavar='SEED_SIZE', nargs='?', type=int, const=5,
+mutex_group.add_argument('-t', metavar='SEED_SIZE', nargs='?', type=int, const=5, choices=range(1, 6),
                          help='base recommendations on your top tracks')
 mutex_group.add_argument('-ac', action='store_true', help='base recommendations on custom top artists')
 mutex_group.add_argument('-tc', action='store_true', help='base recommendations on custom top tracks')
