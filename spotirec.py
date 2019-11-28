@@ -497,6 +497,9 @@ def parse():
         print_choices(data=get_user_top_genres(), prompt=False, sort=True)
         user_input = input('Enter a combination of 1-5 whitespace separated genre names, track uris, and artist uris. '
                            '\nGenres with several words should be connected with dashes, e.g.; vapor-death-pop.\n')
+        if not user_input:
+            print('Please enter 1-5 seeds')
+            exit(1)
         parse_seed_info(user_input)
     else:
         print(f'Basing recommendations off your top {args.n} genres')
