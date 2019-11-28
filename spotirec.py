@@ -440,7 +440,7 @@ def print_devices(save_prompt=True, selection_prompt=True):
     if selection_prompt:
         def prompt_selection() -> int:
             try:
-                inp = int(input(f'Please select a device by index number[default: '
+                inp = int(input(f'Please select a device by index number [default: '
                                 f'{devices[0]["name"]}]: ') or 0)
                 assert devices[inp] is not None
                 return inp
