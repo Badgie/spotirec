@@ -207,6 +207,26 @@ def check_if_valid_genre(genre: str) -> bool:
     return False
 
 
+def check_tune_validity(tune: str):
+    """
+    Check validity of tune input - exit program if not valid
+    :param tune: tune input as string
+    """
+    if not tune.split('_', 1)[0] in tune_prefix:
+        print(f'Tune prefix \"{tune.split("_", 1)[0]}\" is malformed - available prefixes:')
+        print(tune_prefix)
+        exit(1)
+    if not tune.split('=')[0].split('_', 1)[1] in tune_attr:
+        print(f'Tune attribute \"{tune.split("=")[0].split("_", 1)[1]}\" is malformed - available attributes:')
+        print(tune_attr)
+        exit(1)
+    try:
+        float(tune.split('=')[1]) if '.' in tune.split('=')[1] else int(tune.split('=')[1])
+    except ValueError:
+        print(f'Tune value {tune.split("=")[1]} is not a valid integer or float value')
+        exit(1)
+
+
 def parse_seed_info(seeds):
     """
     Adds seed data to recommendation object
@@ -501,14 +521,7 @@ def parse():
 
     if args.tune:
         for x in args.tune:
-            if not x.split('_', 1)[0] in tune_prefix:
-                print(f'Tune prefix \"{x.split("_", 1)[0]}\" is malformed - available prefixes:')
-                print(tune_prefix)
-                exit(1)
-            if not x.split('=')[0].split('_', 1)[1] in tune_attr:
-                print(f'Tune attribute \"{x.split("=")[0].split("_", 1)[1]}\" is malformed - available attributes:')
-                print(tune_attr)
-                exit(1)
+            check_tune_validity(args.tune[0])
             rec.rec_params[x.split('=')[0]] = x.split('=')[1]
 
 
