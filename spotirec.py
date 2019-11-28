@@ -60,6 +60,7 @@ play_mutex.add_argument('--play-device', metavar='DEVICE', nargs=1, type=str, he
 
 device_group = parser.add_argument_group(title='Playback devices')
 device_group.add_argument('-d', action='store_true', help='save a device')
+device_group.add_argument('-dr', metavar='DEVICE', nargs="+", type=str, help='remove device(s)')
 
 blacklist_group = parser.add_argument_group(title='Blacklisting')
 blacklist_group.add_argument('-b', metavar='URI', nargs='+', type=str, help='blacklist track(s) and/or artist(s)')
@@ -473,6 +474,24 @@ def save_device():
     print(f'Saved device \"{rec.playback_device["name"]}\" as \"{name}\"')
 
 
+def remove_devices(devices: list):
+    try:
+        with open(devices_path, 'r') as file:
+            saved_devices = json.loads(file.read())
+    except json.decoder.JSONDecodeError:
+        print('You have no saved devices')
+        exit(1)
+    for x in devices:
+        try:
+            del saved_devices[x]
+            print(f'Deleted device \"{x}\"')
+        except KeyError:
+            print(f'Could not find device \"{x}\" in saved devices')
+            pass
+    with open(devices_path, 'w+') as file:
+        file.write(json.dumps(saved_devices))
+
+
 def print_saved_devices():
     try:
         with open(devices_path, 'r') as file:
@@ -560,6 +579,10 @@ def parse():
 
     if args.d:
         print_devices(save_prompt=False)
+        exit(1)
+    if args.dr:
+        remove_devices(args.dr)
+        exit(1)
 
     if args.print:
         if args.print[0] == 'artists':
