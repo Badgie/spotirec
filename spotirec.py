@@ -58,6 +58,9 @@ play_mutex = rec_options_group.add_mutually_exclusive_group()
 play_mutex.add_argument('--play', action='store_true', help='select playback device to start playing on')
 play_mutex.add_argument('--play-device', metavar='DEVICE', nargs=1, type=str, help='start playback on device')
 
+device_group = parser.add_argument_group(title='Playback devices')
+device_group.add_argument('-d', action='store_true', help='save a device')
+
 blacklist_group = parser.add_argument_group(title='Blacklisting',
                                             description='Spotirec will exit once these actions are complete')
 blacklist_group.add_argument('-b', metavar='URI', nargs='+', type=str, help='blacklist track(s) and/or artist(s)')
@@ -544,6 +547,9 @@ def parse():
     elif args.play_device:
         rec.auto_play = True
         get_device(args.play_device[0])
+
+    if args.d:
+        print_devices(save_prompt=False)
 
     if args.print:
         if args.print[0] == 'artists':
