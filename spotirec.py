@@ -45,6 +45,11 @@ mutex_group.add_argument('-gc', action='store_true', help='base recommendations 
 mutex_group.add_argument('-gcs', action='store_true', help='base recommendations on custom seed genres')
 mutex_group.add_argument('-c', action='store_true', help='base recommendations on a custom seed')
 
+save_group = parser.add_argument_group(title='Saving arguments')
+save_mutex_group = save_group.add_mutually_exclusive_group()
+save_mutex_group.add_argument('-s', action='store_true', help='like currently playing track')
+save_mutex_group.add_argument('-sr', action='store_true', help='remove currently playing track from liked tracks')
+
 rec_options_group = parser.add_argument_group(title='Recommendation options',
                                               description='These may only appear when creating a playlist')
 rec_options_group.add_argument('-l', metavar='LIMIT', nargs=1, type=int, choices=range(1, 101),
@@ -443,6 +448,13 @@ def parse():
         exit(1)
     if args.br:
         remove_from_blacklist(args.br)
+        exit(1)
+
+    if args.s:
+        api.like_track(headers=headers)
+        exit(1)
+    elif args.sr:
+        api.unlike_track(headers=headers)
         exit(1)
 
     if args.print:
