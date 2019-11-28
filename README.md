@@ -11,6 +11,8 @@ Script that creates a playlist of recommendations based on the user's top artist
   - [Presets](#presets)
   - [Tuning](#tuning)
   - [Blacklists](#blacklists)
+  - [Autoplay](#autoplay)
+  - [Devices](#devices)
   - [Printing](#printing)
 - [Troubleshooting](#troubleshooting)
 
@@ -143,18 +145,45 @@ To remove entries from your blacklist, pass the `-br` option followed by an arbi
 ```
 $ spotirec -br spotify:track:id spotify:track:id spotify:artist:id
 ```
-To see your current blacklist entries, pass the `list` argument to the `-b` option
+
+### Autoplay
+You can also automatically play your new playlist upon creation using the `--play` option - here you will be prompted to select which device you want to start the playback on
 ```
-$ spotirec -b list
+$ spotirec --play
+Available devices:
+Name                   Type
+----------------------------------------
+0. Phone               Smartphone
+1. Laptop              Computer
+Please select a device by index number [default: Phone]: 1
+Would you like to save "Laptop" for later use? [y/n] y
+Enter an identifier for your device: laptop
+Saved device "Laptop" as "laptop"
+```
+You will also be asked if you want to save the device in your config for later use. If you choose to do so, you can use the `--play-device` option followed by an identifier for a device to play on a saved device
+```
+$ spotirec --play-device laptop
+```
+
+### Devices
+You can also manually save devices using the `-d` option, which provides the same functionality as `--play` without creating a playlist
+```
+$ spotirec -d
+```
+To remove a saved device, pass the `-dr` option followed by an identifier for a device
+```
+$ spotirec -dr laptop
 ```
 
 ### Printing
-You can print lists containing your available choices without having to create a playlist using the `--print` argument followed by `[artists|tracks|genres|genre-seeds]`
+You can print lists of various data contained within your Spotify account and config files using the `--print` argument followed by `[artists|tracks|genres|genre-seeds|blacklist|devices]`
 ```
 $ spotirec --print artists
 $ spotirec --print tracks
 $ spotirec --print genres
 $ spotirec --print genre-seeds
+$ spotirec --print blacklist
+$ spotirec --print devices
 ```
 
 ## Troubleshooting
