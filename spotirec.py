@@ -176,7 +176,7 @@ def print_choices(data=None, prompt=True, sort=False) -> str:
     print(line.strip('\n'))
     if prompt:
         input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to '
-                             'include:\n')
+                             'include [default: top 5]:\n') or '0 1 2 3 4'
         if 'genres' in rec.seed_type:
             parse_seed_info([data[int(x)] for x in input_string.split(' ')])
         else:
@@ -216,6 +216,9 @@ def parse_seed_info(seeds):
     Adds seed data to recommendation object
     :param seeds: seed data as a string or a list
     """
+    if len(shlex.split(seeds) if type(seeds) is str else seeds) > 5:
+        print('Please enter at most 5 seeds')
+        exit(1)
     for x in shlex.split(seeds) if type(seeds) is str else seeds:
         if rec.seed_type == 'genres':
             rec.add_seed_info(data_string=x)
