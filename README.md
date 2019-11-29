@@ -1,3 +1,10 @@
+<p align="center">
+  <img alt="GitHub release" src="https://img.shields.io/github/release/badgie/spotirec.svg">
+  <img alt="GitHub" src="https://img.shields.io/github/license/badgie/spotirec.svg">
+  <img alt="AUR votes" src="https://img.shields.io/aur/votes/spotirec-git.svg?label=AUR%20votes">
+  <img alt="GitHub last commit (master)" src="https://img.shields.io/github/last-commit/badgie/spotirec/master.svg?label=last%20update">
+</p>
+
 # Spotirec
 Script that creates a playlist of recommendations based on the user's top artists or tracks, or genres extracted from top artists. A sort of Discover Weekly on demand.
 
