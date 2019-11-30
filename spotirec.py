@@ -339,11 +339,11 @@ def print_blacklist():
             blacklist = json.loads(file.read())
             print('Tracks')
             print('--------------------------')
-            for x in blacklist['tracks']:
-                print(f'{x["name"]} by {", ".join(x["artists"]).strip(", ")} - {x["uri"]}')
+            for x in blacklist['tracks'].values():
+                print(f'{x["name"]} by {", ".join(x["artists"])} - {x["uri"]}')
             print('\nArtists')
             print('--------------------------')
-            for x in blacklist['artists']:
+            for x in blacklist['artists'].values():
                 print(f'{x["name"]} - {x["uri"]}')
         except json.decoder.JSONDecodeError:
             print('Blacklist is empty')
