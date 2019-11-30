@@ -621,7 +621,6 @@ def parse():
         exit(1)
     if args.bc:
         if args.bc[0] == 'track':
-            print(api.get_current_track(headers))
             add_to_blacklist([api.get_current_track(headers)])
         elif args.bc[0] == 'artist':
             add_to_blacklist(api.get_current_artists(headers))
