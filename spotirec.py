@@ -34,9 +34,9 @@ parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpForm
                                  epilog="""
 passing no recommendation scheme argument defaults to basing recommendations off your top 5 valid seed genres
 spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for details read LICENSE""")
-parser.add_argument('n', nargs='?', type=int, const=5, help='amount of seeds to use on no-arg recommendations as an '
-                                                            'integer - note that this must appear as the first '
-                                                            'argument if used and can only be used with no-arg')
+parser.add_argument('n', nargs='?', type=int, const=5, default=5,
+                    help='amount of seeds to use on no-arg recommendations as an integer - note that this must appear '
+                         'as the first argument if used and can only be used with no-arg')
 # Create mutually exclusive group for recommendation types to ensure only one is given
 rec_scheme_group = parser.add_argument_group(title='Recommendation schemes')
 mutex_group = rec_scheme_group.add_mutually_exclusive_group()
@@ -339,11 +339,11 @@ def print_blacklist():
             blacklist = json.loads(file.read())
             print('Tracks')
             print('--------------------------')
-            for x in blacklist['tracks']:
-                print(f'{x["name"]} by {", ".join(x["artists"]).strip(", ")} - {x["uri"]}')
+            for x in blacklist['tracks'].values():
+                print(f'{x["name"]} by {", ".join(x["artists"])} - {x["uri"]}')
             print('\nArtists')
             print('--------------------------')
-            for x in blacklist['artists']:
+            for x in blacklist['artists'].values():
                 print(f'{x["name"]} - {x["uri"]}')
         except json.decoder.JSONDecodeError:
             print('Blacklist is empty')
@@ -621,16 +621,17 @@ def parse():
         exit(1)
     if args.bc:
         if args.bc[0] == 'track':
-            print(api.get_current_track(headers))
             add_to_blacklist([api.get_current_track(headers)])
         elif args.bc[0] == 'artist':
             add_to_blacklist(api.get_current_artists(headers))
         exit(1)
 
     if args.s:
+        print('Liking current track')
         api.like_track(headers=headers)
         exit(1)
     elif args.sr:
+        print('Unliking current track')
         api.unlike_track(headers=headers)
         exit(1)
 
