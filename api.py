@@ -16,6 +16,9 @@ def error_handle(request_domain: str, expected_code: int, request_type: str, res
     if response.status_code is not expected_code:
         print(f'{request_type} request for {request_domain} failed with status code {response.status_code} '
               f'(expected {expected_code}). Reason: {response.reason}')
+        if response.status_code == 401:
+            print('NOTE: This may be because this is a new function, and additional authorization is required. '
+                  'Try reauthorizing and try again.')
         exit(1)
 
 
@@ -117,3 +120,34 @@ def get_genre_seeds(headers: dict) -> json:
     response = requests.get(f'{url_base}/recommendations/available-genre-seeds', headers=headers)
     error_handle('genre seeds', 200, 'GET', response=response)
     return json.loads(response.content.decode('utf-8'))
+
+
+def get_current_track(headers: dict) -> str:
+    """
+    Retrieve data about currently playing track
+    :param headers: request headers
+    :return: uri of current track
+    """
+    response = requests.get(f'{url_base}/me/player', headers=headers)
+    error_handle('retrieve current track', 200, 'GET', response=response)
+    return json.loads(response.content.decode('utf-8'))['item']['uri']
+
+
+def like_track(headers: dict):
+    """
+    Like currently playing track
+    :param headers: request headers
+    """
+    track = {'ids': get_current_track(headers).split(':')[2]}
+    response = requests.put(f'{url_base}/me/tracks', headers=headers, params=track)
+    error_handle('like track', 200, 'PUT', response=response)
+
+
+def unlike_track(headers: dict):
+    """
+    Remove currently playing track from liked tracks
+    :param headers: request headers
+    """
+    track = {'ids': get_current_track(headers).split(':')[2]}
+    response = requests.delete(f'{url_base}/me/tracks', headers=headers, params=track)
+    error_handle('remove liked track', 200, 'DELETE', response=response)
