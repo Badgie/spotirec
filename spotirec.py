@@ -34,9 +34,9 @@ parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpForm
                                  epilog="""
 passing no recommendation scheme argument defaults to basing recommendations off your top 5 valid seed genres
 spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for details read LICENSE""")
-parser.add_argument('n', nargs='?', type=int, const=5, help='amount of seeds to use on no-arg recommendations as an '
-                                                            'integer - note that this must appear as the first '
-                                                            'argument if used and can only be used with no-arg')
+parser.add_argument('n', nargs='?', type=int, const=5, default=5,
+                    help='amount of seeds to use on no-arg recommendations as an integer - note that this must appear '
+                         'as the first argument if used and can only be used with no-arg')
 # Create mutually exclusive group for recommendation types to ensure only one is given
 rec_scheme_group = parser.add_argument_group(title='Recommendation schemes')
 mutex_group = rec_scheme_group.add_mutually_exclusive_group()
