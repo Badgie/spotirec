@@ -18,7 +18,8 @@ class SpotifyOAuth:
         self.client_secret = '28147de72c3549e98b1e790f3d080b85'
         self.redirect = f'http://localhost:{self.PORT}'
         self.scopes = 'user-top-read playlist-modify-public playlist-modify-private user-read-private ' \
-                      'user-read-email ugc-image-upload user-read-playback-state user-library-modify'
+                      'user-read-email ugc-image-upload user-read-playback-state user-modify-playback-state ' \
+                      'user-library-modify'
         self.cache = f'{Path.home()}/.config/spotirec/spotirecoauth'
 
     def get_credentials(self) -> json:

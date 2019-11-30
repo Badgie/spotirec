@@ -122,6 +122,30 @@ def get_genre_seeds(headers: dict) -> json:
     return json.loads(response.content.decode('utf-8'))
 
 
+def get_available_devices(headers: dict) -> json:
+    """
+    Retrieves user's available playback devices
+    :param headers: request headers
+    :return: devices as json object
+    """
+    response = requests.get(f'{url_base}/me/player/devices', headers=headers)
+    error_handle('playback devices', 200, 'GET', response=response)
+    return json.loads(response.content.decode('utf-8'))
+
+
+def play(device_id: str, context_uri: str, headers: dict):
+    """
+    Begin playback on user's account
+    :param device_id: id of the device to play on
+    :param context_uri: uri of what should be played
+    :param headers: request headers
+    """
+    body = {'context_uri': context_uri}
+    params = {'device_id': device_id}
+    response = requests.put(f'{url_base}/me/player/play', json=body, headers=headers, params=params)
+    error_handle('start playback', 204, 'PUT', response=response)
+
+                            
 def get_current_track(headers: dict) -> str:
     """
     Retrieve data about currently playing track

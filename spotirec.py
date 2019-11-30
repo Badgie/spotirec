@@ -18,8 +18,9 @@ from pathlib import Path
 
 port = 8080
 config_path = f'{Path.home()}/.config/spotirec'
-blacklist_path = f'{Path.home()}/.config/spotirec/blacklist'
-preset_path = f'{Path.home()}/.config/spotirec/presets'
+blacklist_path = f'{config_path}/blacklist'
+preset_path = f'{config_path}/presets'
+devices_path = f'{config_path}/devices'
 tune_prefix = ['max', 'min', 'target']
 tune_attr = ['acousticness', 'danceability', 'duration_ms', 'energy', 'instrumentalness', 'key', 'liveness',
              'loudness', 'mode', 'popularity', 'speechiness', 'tempo', 'time_signature', 'valence', 'popularity']
@@ -58,21 +59,26 @@ preset_mutex = rec_options_group.add_mutually_exclusive_group()
 preset_mutex.add_argument('-p', metavar='NAME', nargs=1, type=str, help='load and use preset')
 preset_mutex.add_argument('-ps', metavar='NAME', nargs=1, type=str, help='save options as preset')
 rec_options_group.add_argument('--tune', metavar='ATTR', nargs='+', type=str, help='specify tunable attribute(s)')
+play_mutex = rec_options_group.add_mutually_exclusive_group()
+play_mutex.add_argument('--play', action='store_true', help='select playback device to start playing on')
+play_mutex.add_argument('--play-device', metavar='DEVICE', nargs=1, type=str, help='start playback on saved device')
 
-blacklist_group = parser.add_argument_group(title='Blacklisting',
-                                            description='Spotirec will exit once these actions are complete')
+device_group = parser.add_argument_group(title='Playback devices')
+device_group.add_argument('-d', action='store_true', help='save a device')
+device_group.add_argument('-dr', metavar='DEVICE', nargs="+", type=str, help='remove device(s)')
+
+blacklist_group = parser.add_argument_group(title='Blacklisting')
 blacklist_group.add_argument('-b', metavar='URI', nargs='+', type=str, help='blacklist track(s) and/or artist(s)')
 blacklist_group.add_argument('-br', metavar='URI', nargs='+', type=str,
                              help='remove track(s) and/or artists(s) from blacklist')
-blacklist_group.add_argument('-b list', action='store_true', help='print blacklist entries')
 blacklist_group.add_argument('-bc', metavar='artist|track', nargs=1, choices=['artist', 'track'],
                              help='blacklist currently playing artist(s) or track')
 
 print_group = parser.add_argument_group(title='Printing')
 print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
-                         choices=['artists', 'tracks', 'genres', 'genre-seeds'],
+                         choices=['artists', 'tracks', 'genres', 'genre-seeds', 'devices', 'blacklist'],
                          help='print a list of genre seeds, or your top artists, tracks, or genres, where'
-                              'TYPE=[artists|tracks|genres|genre-seeds]')
+                              'TYPE=[artists|tracks|genres|genre-seeds|devices|blacklist]')
 
 # Ensure config dir and blacklist file exists
 if not os.path.isdir(config_path):
@@ -82,6 +88,9 @@ if not os.path.exists(blacklist_path):
     f.close()
 if not os.path.exists(preset_path):
     f = open(preset_path, 'w')
+    f.close()
+if not os.path.exists(devices_path):
+    f = open(devices_path, 'w')
     f.close()
 
 
@@ -348,6 +357,10 @@ def add_image_to_playlist(tracks: list):
 
 
 def save_preset(name: str):
+    """
+    Save recommendation object as preset
+    :param name: name of preset
+    """
     try:
         with open(preset_path, 'r') as file:
             preset_data = json.loads(file.read())
@@ -358,13 +371,20 @@ def save_preset(name: str):
                          'seed': rec.seed,
                          'seed_type': rec.seed_type,
                          'seed_info': rec.seed_info,
-                         'rec_params': rec.rec_params}
+                         'rec_params': rec.rec_params,
+                         'auto_play': rec.auto_play,
+                         'playback_device': rec.playback_device}
     with open(preset_path, 'w+') as file:
         print(f'Saving preset \"{name}\"')
         file.write(json.dumps(preset_data))
 
 
 def load_preset(name: str) -> recommendation.Recommendation:
+    """
+    Load preset recommendation object from config
+    :param name: name of preset
+    :return: recommendation object with settings from preset
+    """
     print(f'Using preset \"{name}\"')
     try:
         with open(preset_path, 'r') as file:
@@ -382,10 +402,132 @@ def load_preset(name: str) -> recommendation.Recommendation:
         preset.seed_type = contents['seed_type']
         preset.seed_info = contents['seed_info']
         preset.rec_params = contents['rec_params']
+        preset.auto_play = contents['auto_play']
+        preset.playback_device = contents['playback_device']
         return preset
     except KeyError:
         print(f'Error: could not find preset \"{name}\", check spelling and try again')
         exit(1)
+
+
+def get_device(device_name: str):
+    """
+    Set playback device. Prompt from available devices if none exist.
+    Print saved devices if it does not exist.
+    :param device_name: name of playback device
+    """
+    try:
+        with open(devices_path, 'r') as file:
+            devices = json.loads(file.read())
+            try:
+                rec.playback_device = devices[device_name]
+                return
+            except KeyError:
+                print(f'Error: device \"{device_name}\" not recognized. Saved devices:')
+                for x in devices:
+                    print(x)
+                exit(1)
+    except json.decoder.JSONDecodeError:
+        print('Your device list is empty')
+        print_devices()
+
+
+def print_devices(save_prompt=True, selection_prompt=True):
+    """
+    Print available devices and prompt user to select depending on params
+    :param save_prompt: whether or not user should be prompted if they want to save
+    :param selection_prompt: whether or not user should be prompted for a selection
+    """
+    devices = api.get_available_devices(headers)['devices']
+    print('Available devices:')
+    print(f'Name{" " * 19}Type')
+    print("-" * 40)
+    for x in devices:
+        print(f'{devices.index(x)}. {x["name"]}{" " * (20 - len(x["name"]))}{x["type"]}')
+    if selection_prompt:
+        def prompt_selection() -> int:
+            try:
+                inp = int(input(f'Please select a device by index number [default: '
+                                f'{devices[0]["name"]}]: ') or 0)
+                assert devices[inp] is not None
+                return inp
+            except (IndexError, AssertionError, ValueError):
+                print('Error: please input a valid index number')
+                return prompt_selection()
+
+        selection = prompt_selection()
+        rec.playback_device = {'name': devices[selection]['name'],
+                               'id': devices[selection]['id'],
+                               'type': devices[selection]['type']}
+        save = input(f'Would you like to save \"{rec.playback_device["name"]}\" '
+                     'for later use? [y/n] ') or 'y' if save_prompt else save_device()
+        if save == 'y':
+            save_device()
+
+
+def save_device():
+    """
+    Prompt user for an identifier for device and save to config
+    """
+
+    def prompt_name() -> str:
+        try:
+            inp = input('Enter an identifier for your device: ')
+            assert inp
+            return inp
+        except AssertionError:
+            prompt_name()
+
+    name = prompt_name().replace(' ', '')
+    try:
+        with open(devices_path, 'r') as file:
+            devices = json.loads(file.read())
+    except json.decoder.JSONDecodeError:
+        devices = {}
+    devices[name] = rec.playback_device
+    with open(devices_path, 'w+') as file:
+        file.write(json.dumps(devices))
+    print(f'Saved device \"{rec.playback_device["name"]}\" as \"{name}\"')
+
+
+def remove_devices(devices: list):
+    """
+    Remove device(s) from user config
+    :param devices: list of devices
+    """
+    try:
+        with open(devices_path, 'r') as file:
+            saved_devices = json.loads(file.read())
+    except json.decoder.JSONDecodeError:
+        print('You have no saved devices')
+        exit(1)
+    for x in devices:
+        try:
+            del saved_devices[x]
+            print(f'Deleted device \"{x}\"')
+        except KeyError:
+            print(f'Could not find device \"{x}\" in saved devices')
+            pass
+    with open(devices_path, 'w+') as file:
+        file.write(json.dumps(saved_devices))
+
+
+def print_saved_devices():
+    """
+    Print all saved devices
+    """
+    try:
+        with open(devices_path, 'r') as file:
+            devices = json.loads(file.read())
+    except json.decoder.JSONDecodeError:
+        print('You have no saved devices')
+        exit(1)
+    print('Saved devices:')
+    print(f'ID{" " * 18}Name{" " * 16}Type')
+    print("-" * 50)
+    for x in devices:
+        print(f'{x}{" " * (20 - len(x))}{devices[x]["name"]}'
+              f'{" " * (20 - len(devices[x]["name"]))}{devices[x]["type"]}')
 
 
 def filter_recommendations(data: json) -> list:
@@ -436,6 +578,8 @@ def recommend():
     api.add_to_playlist(tracks, rec.playlist_id, headers=headers)
     add_image_to_playlist(tracks)
     rec.print_selection()
+    if rec.auto_play:
+        api.play(rec.playback_device['id'], f'spotify:playlist:{rec.playlist_id}', headers)
 
 
 def parse():
@@ -443,10 +587,7 @@ def parse():
     Parse arguments
     """
     if args.b:
-        if args.b[0] == 'list':
-            print_blacklist()
-        else:
-            add_to_blacklist(args.b)
+        add_to_blacklist(args.b)
         exit(1)
     if args.br:
         remove_from_blacklist(args.br)
@@ -466,6 +607,20 @@ def parse():
         api.unlike_track(headers=headers)
         exit(1)
 
+    if args.play:
+        rec.auto_play = True
+        print_devices()
+    elif args.play_device:
+        rec.auto_play = True
+        get_device(args.play_device[0])
+
+    if args.d:
+        print_devices(save_prompt=False)
+        exit(1)
+    if args.dr:
+        remove_devices(args.dr)
+        exit(1)
+
     if args.print:
         if args.print[0] == 'artists':
             print('Top artists:')
@@ -479,6 +634,10 @@ def parse():
         elif args.print[0] == 'genre-seeds':
             print('Genre seeds:')
             print_choices(data=api.get_genre_seeds(headers=headers)['genres'], prompt=False)
+        elif args.print[0] == 'blacklist':
+            print_blacklist()
+        elif args.print[0] == 'devices':
+            print_saved_devices()
         exit(1)
 
     if args.a:
