@@ -627,9 +627,11 @@ def parse():
         exit(1)
 
     if args.s:
+        print('Liking current track')
         api.like_track(headers=headers)
         exit(1)
     elif args.sr:
+        print('Unliking current track')
         api.unlike_track(headers=headers)
         exit(1)
 
