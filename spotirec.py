@@ -46,6 +46,11 @@ mutex_group.add_argument('-gc', action='store_true', help='base recommendations 
 mutex_group.add_argument('-gcs', action='store_true', help='base recommendations on custom seed genres')
 mutex_group.add_argument('-c', action='store_true', help='base recommendations on a custom seed')
 
+save_group = parser.add_argument_group(title='Saving arguments')
+save_mutex_group = save_group.add_mutually_exclusive_group()
+save_mutex_group.add_argument('-s', action='store_true', help='like currently playing track')
+save_mutex_group.add_argument('-sr', action='store_true', help='remove currently playing track from liked tracks')
+
 rec_options_group = parser.add_argument_group(title='Recommendation options',
                                               description='These may only appear when creating a playlist')
 rec_options_group.add_argument('-l', metavar='LIMIT', nargs=1, type=int, choices=range(1, 101),
@@ -66,6 +71,8 @@ blacklist_group = parser.add_argument_group(title='Blacklisting')
 blacklist_group.add_argument('-b', metavar='URI', nargs='+', type=str, help='blacklist track(s) and/or artist(s)')
 blacklist_group.add_argument('-br', metavar='URI', nargs='+', type=str,
                              help='remove track(s) and/or artists(s) from blacklist')
+blacklist_group.add_argument('-bc', metavar='artist|track', nargs=1, choices=['artist', 'track'],
+                             help='blacklist currently playing artist(s) or track')
 
 print_group = parser.add_argument_group(title='Printing')
 print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
@@ -248,11 +255,11 @@ def add_to_blacklist(entries: list):
                     'artists': {}}
         for uri in entries:
             if re.match(uri_re, uri):
-                uri_data = api.request_data(uri, f'{uri.split(":")[0]}s', headers=headers)
-                data[f'{uri.split(":")[0]}s'][uri] = {'name': uri_data['name'],
+                uri_data = api.request_data(uri, f'{uri.split(":")[1]}s', headers=headers)
+                data[f'{uri.split(":")[1]}s'][uri] = {'name': uri_data['name'],
                                                       'uri': uri}
                 try:
-                    data[f'{uri.split(":")[0]}s'][uri]['artists'] = [x['name'] for x in uri_data['artists']]
+                    data[f'{uri.split(":")[1]}s'][uri]['artists'] = [x['name'] for x in uri_data['artists']]
                     print(f'Added track \"{uri_data["name"]}\" by '
                           f'{", ".join(str(x["name"]) for x in uri_data["artists"])} to your blacklist')
                 except KeyError:
@@ -584,6 +591,20 @@ def parse():
         exit(1)
     if args.br:
         remove_from_blacklist(args.br)
+        exit(1)
+    if args.bc:
+        if args.bc[0] == 'track':
+            print(api.get_current_track(headers))
+            add_to_blacklist([api.get_current_track(headers)])
+        elif args.bc[0] == 'artist':
+            add_to_blacklist(api.get_current_artists(headers))
+        exit(1)
+
+    if args.s:
+        api.like_track(headers=headers)
+        exit(1)
+    elif args.sr:
+        api.unlike_track(headers=headers)
         exit(1)
 
     if args.play:
