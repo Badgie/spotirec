@@ -107,7 +107,7 @@ def request_data(uri: str, data_type: str, headers: dict) -> json:
     :return: data about artist or track as a json obj
     """
     response = requests.get(f'{url_base}/{data_type}/{uri.split(":")[2]}', headers=headers)
-    error_handle(f'single {data_type.strip("s")}', 200, 'GET', response=response)
+    error_handle(f'single {data_type}', 200, 'GET', response=response)
     return json.loads(response.content.decode('utf-8'))
 
 
@@ -132,7 +132,18 @@ def get_current_track(headers: dict) -> str:
     error_handle('retrieve current track', 200, 'GET', response=response)
     return json.loads(response.content.decode('utf-8'))['item']['uri']
 
+                            
+def get_current_artists(headers: dict) -> list:
+    """
+    Retrieve list of artists from currently playing track
+    :param headers: request headers
+    :return: list of artist uris
+    """
+    response = requests.get(f'{url_base}/me/player', headers=headers)
+    error_handle('retrieve current artists', 200, 'GET', response=response)
+    return [str(x['uri']) for x in json.loads(response.content.decode('utf-8'))['item']['artists']]
 
+                            
 def like_track(headers: dict):
     """
     Like currently playing track
@@ -151,3 +162,4 @@ def unlike_track(headers: dict):
     track = {'ids': get_current_track(headers).split(':')[2]}
     response = requests.delete(f'{url_base}/me/tracks', headers=headers, params=track)
     error_handle('remove liked track', 200, 'DELETE', response=response)
+
