@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import json
+import logging
+
 import requests
 
 url_base = 'https://api.spotify.com/v1'
@@ -14,10 +16,10 @@ def error_handle(request_domain: str, expected_code: int, request_type: str, res
     :param response: response object
     """
     if response.status_code is not expected_code:
-        print(f'{request_type} request for {request_domain} failed with status code {response.status_code} '
+        logging.warning(f'{request_type} request for {request_domain} failed with status code {response.status_code} '
               f'(expected {expected_code}). Reason: {response.reason}')
         if response.status_code == 401:
-            print('NOTE: This may be because this is a new function, and additional authorization is required. '
+            logging.warning('NOTE: This may be because this is a new function, and additional authorization is required. '
                   'Try reauthorizing and try again.')
         exit(1)
 
@@ -57,7 +59,7 @@ def create_playlist(playlist_name: str, playlist_description: str, headers: dict
     """
     data = {'name': playlist_name,
             'description': playlist_description}
-    print('Creating playlist')
+    logging.info('Creating playlist')
     response = requests.post(f'{url_base}/users/{get_user_id(headers)}/playlists', json=data, headers=headers)
     error_handle('playlist creation', 201, 'POST', response=response)
     return json.loads(response.content.decode('utf-8'))['id']

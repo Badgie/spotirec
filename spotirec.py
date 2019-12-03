@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import base64
 import webbrowser
 import json
 import argparse
@@ -7,10 +8,10 @@ import os
 import hashlib
 import re
 import math
-import base64
 import oauth2
 import recommendation
 import api
+import logging
 from io import BytesIO
 from PIL import Image
 from bottle import route, run, request
@@ -34,6 +35,8 @@ parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpForm
                                  epilog="""
 passing no recommendation scheme argument defaults to basing recommendations off your top 5 valid seed genres
 spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for details read LICENSE""")
+parser.add_argument('-v', "--verbose", help="increase verbosity", action="store_true")
+parser.add_argument('-q', "--quiet", help="decrease verbosity", action="store_true")
 parser.add_argument('n', nargs='?', type=int, const=5, default=5,
                     help='amount of seeds to use on no-arg recommendations as an integer - note that this must appear '
                          'as the first argument if used and can only be used with no-arg')
@@ -189,7 +192,7 @@ def print_choices(data=None, prompt=True, sort=False) -> str:
                             f'{data[x + 2] if len(data[x + 2]) < 40 else f"{data[x + 2][0:37]}.. "}\n'
         except IndexError:
             continue
-    print(line.strip('\n'))
+    logging.info(line.strip('\n'))
     if prompt:
         input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to '
                              'include [default: top 5]:\n') or '0 1 2 3 4'
@@ -233,17 +236,17 @@ def check_tune_validity(tune: str):
     :param tune: tune input as string
     """
     if not tune.split('_', 1)[0] in tune_prefix:
-        print(f'Tune prefix \"{tune.split("_", 1)[0]}\" is malformed - available prefixes:')
-        print(tune_prefix)
+        logging.warning(f'Tune prefix \"{tune.split("_", 1)[0]}\" is malformed - available prefixes:')
+        logging.warning(tune_prefix)
         exit(1)
     if not tune.split('=')[0].split('_', 1)[1] in tune_attr:
-        print(f'Tune attribute \"{tune.split("=")[0].split("_", 1)[1]}\" is malformed - available attributes:')
-        print(tune_attr)
+        logging.warning(f'Tune attribute \"{tune.split("=")[0].split("_", 1)[1]}\" is malformed - available attributes:')
+        logging.warning(tune_attr)
         exit(1)
     try:
         float(tune.split('=')[1]) if '.' in tune.split('=')[1] else int(tune.split('=')[1])
     except ValueError:
-        print(f'Tune value {tune.split("=")[1]} is not a valid integer or float value')
+        logging.error(f'Tune value {tune.split("=")[1]} is not a valid integer or float value')
         exit(1)
 
 
@@ -253,7 +256,7 @@ def parse_seed_info(seeds):
     :param seeds: seed data as a string or a list
     """
     if len(shlex.split(seeds) if type(seeds) is str else seeds) > 5:
-        print('Please enter at most 5 seeds')
+        logging.info('Please enter at most 5 seeds')
         exit(1)
     for x in shlex.split(seeds) if type(seeds) is str else seeds:
         if rec.seed_type == 'genres':
@@ -264,7 +267,7 @@ def parse_seed_info(seeds):
             elif re.match(uri_re, x):
                 rec.add_seed_info(data_dict=api.request_data(x, f'{x.split(":")[1]}s', headers=headers))
             else:
-                print(f'Input \"{x}\" does not match a genre or a valid URI syntax, skipping...')
+                logging.warning(f'Input \"{x}\" does not match a genre or a valid URI syntax, skipping...')
         else:
             rec.add_seed_info(data_dict=x)
 
@@ -287,12 +290,12 @@ def add_to_blacklist(entries: list):
                                                       'uri': uri}
                 try:
                     data[f'{uri.split(":")[1]}s'][uri]['artists'] = [x['name'] for x in uri_data['artists']]
-                    print(f'Added track \"{uri_data["name"]}\" by '
+                    logging.info(f'Added track \"{uri_data["name"]}\" by '
                           f'{", ".join(str(x["name"]) for x in uri_data["artists"])} to your blacklist')
                 except KeyError:
-                    print(f'Added artist \"{uri_data["name"]}\" to your blacklist')
+                    logging.info(f'Added artist \"{uri_data["name"]}\" to your blacklist')
             else:
-                print(f'uri \"{uri}\" is either not a valid uri for a track or artist, or is malformed and has '
+                logging.warning(f'uri \"{uri}\" is either not a valid uri for a track or artist, or is malformed and has '
                       f'not been added to the blacklist')
     with open(blacklist_path, 'w+') as file:
         file.write(json.dumps(data))
@@ -307,24 +310,24 @@ def remove_from_blacklist(entries: list):
         with open(blacklist_path, 'r') as file:
             blacklist = json.loads(file.read())
     except json.decoder.JSONDecodeError:
-        print('Error: blacklist is empty')
+        logging.error('Error: blacklist is empty')
         exit(1)
     for uri in entries:
         if re.match(uri_re, uri):
             try:
                 try:
-                    print(f'Removing track {blacklist["tracks"][uri]["name"]} by '
+                    logging.info(f'Removing track {blacklist["tracks"][uri]["name"]} by '
                           f'{", ".join(str(x) for x in blacklist["tracks"][uri]["artists"]).strip(", ")} from blacklist')
                 except KeyError:
-                    print(f'Removing artist \"{blacklist["artists"][uri]["name"]}\" from blacklist')
+                    logging.info(f'Removing artist \"{blacklist["artists"][uri]["name"]}\" from blacklist')
                 del blacklist[f'{uri.split(":")[1]}s'][uri]
             except KeyError:
-                print(f'uri \"{uri}\" does not exist in your blacklist')
+                logging.error(f'uri \"{uri}\" does not exist in your blacklist')
                 # FIXME: Remove this notice at some point
-                print('Blacklist structure was recently re-done, so you may need to remove and re-do your blacklist. '
+                logging.info('Blacklist structure was recently re-done, so you may need to remove and re-do your blacklist. '
                       'Sorry!')
         else:
-            print(f'uri \"{uri}\" is either not a valid uri for a track or artist or is malformed')
+            logging.warning(f'uri \"{uri}\" is either not a valid uri for a track or artist or is malformed')
 
     with open(blacklist_path, 'w+') as file:
         file.write(json.dumps(blacklist))
@@ -337,16 +340,16 @@ def print_blacklist():
     with open(blacklist_path, 'r') as file:
         try:
             blacklist = json.loads(file.read())
-            print('Tracks')
-            print('--------------------------')
+            logging.info('Tracks')
+            logging.info('--------------------------')
             for x in blacklist['tracks'].values():
-                print(f'{x["name"]} by {", ".join(x["artists"])} - {x["uri"]}')
-            print('\nArtists')
-            print('--------------------------')
+                logging.info(f'{x["name"]} by {", ".join(x["artists"])} - {x["uri"]}')
+            logging.info('\nArtists')
+            logging.info('--------------------------')
             for x in blacklist['artists'].values():
-                print(f'{x["name"]} - {x["uri"]}')
+                logging.info(f'{x["name"]} - {x["uri"]}')
         except json.decoder.JSONDecodeError:
-            print('Blacklist is empty')
+            logging.info('Blacklist is empty')
 
 
 def generate_img(tracks: list) -> Image:
@@ -374,7 +377,7 @@ def add_image_to_playlist(tracks: list):
     base64 encode image data and upload to playlist.
     :param tracks: list of track uris
     """
-    print('Generating and uploading playlist cover image')
+    logging.info('Generating and uploading playlist cover image')
     img_headers = {'Content-Type': 'image/jpeg',
                    'Authorization': f'Bearer {get_token()}'}
     img_buffer = BytesIO()
@@ -402,7 +405,7 @@ def save_preset(name: str):
                          'auto_play': rec.auto_play,
                          'playback_device': rec.playback_device}
     with open(preset_path, 'w+') as file:
-        print(f'Saving preset \"{name}\"')
+        logging.info(f'Saving preset \"{name}\"')
         file.write(json.dumps(preset_data))
 
 
@@ -412,12 +415,12 @@ def load_preset(name: str) -> recommendation.Recommendation:
     :param name: name of preset
     :return: recommendation object with settings from preset
     """
-    print(f'Using preset \"{name}\"')
+    logging.info(f'Using preset \"{name}\"')
     try:
         with open(preset_path, 'r') as file:
             preset_data = json.loads(file.read())
     except json.decoder.JSONDecodeError:
-        print('Error: you do not have any presets')
+        logging.error('Error: you do not have any presets')
         exit(1)
     try:
         contents = preset_data[name]
@@ -433,7 +436,7 @@ def load_preset(name: str) -> recommendation.Recommendation:
         preset.playback_device = contents['playback_device']
         return preset
     except KeyError:
-        print(f'Error: could not find preset \"{name}\", check spelling and try again')
+        logging.error(f'Error: could not find preset \"{name}\", check spelling and try again')
         exit(1)
 
 
@@ -450,12 +453,12 @@ def get_device(device_name: str):
                 rec.playback_device = devices[device_name]
                 return
             except KeyError:
-                print(f'Error: device \"{device_name}\" not recognized. Saved devices:')
+                logging.error(f'Error: device \"{device_name}\" not recognized. Saved devices:')
                 for x in devices:
-                    print(x)
+                    logging.error(x)
                 exit(1)
     except json.decoder.JSONDecodeError:
-        print('Your device list is empty')
+        logging.warning('Your device list is empty')
         print_devices()
 
 
@@ -466,11 +469,11 @@ def print_devices(save_prompt=True, selection_prompt=True):
     :param selection_prompt: whether or not user should be prompted for a selection
     """
     devices = api.get_available_devices(headers)['devices']
-    print('Available devices:')
-    print(f'Name{" " * 19}Type')
-    print("-" * 40)
+    logging.info('Available devices:')
+    logging.info(f'Name{" " * 19}Type')
+    logging.info("-" * 40)
     for x in devices:
-        print(f'{devices.index(x)}. {x["name"]}{" " * (20 - len(x["name"]))}{x["type"]}')
+        logging.info(f'{devices.index(x)}. {x["name"]}{" " * (20 - len(x["name"]))}{x["type"]}')
     if selection_prompt:
         def prompt_selection() -> int:
             try:
@@ -479,7 +482,7 @@ def print_devices(save_prompt=True, selection_prompt=True):
                 assert devices[inp] is not None
                 return inp
             except (IndexError, AssertionError, ValueError):
-                print('Error: please input a valid index number')
+                logging.error('Error: please input a valid index number')
                 return prompt_selection()
 
         selection = prompt_selection()
@@ -514,7 +517,7 @@ def save_device():
     devices[name] = rec.playback_device
     with open(devices_path, 'w+') as file:
         file.write(json.dumps(devices))
-    print(f'Saved device \"{rec.playback_device["name"]}\" as \"{name}\"')
+    logging.info(f'Saved device \"{rec.playback_device["name"]}\" as \"{name}\"')
 
 
 def remove_devices(devices: list):
@@ -526,14 +529,14 @@ def remove_devices(devices: list):
         with open(devices_path, 'r') as file:
             saved_devices = json.loads(file.read())
     except json.decoder.JSONDecodeError:
-        print('You have no saved devices')
+        logging.warning('You have no saved devices')
         exit(1)
     for x in devices:
         try:
             del saved_devices[x]
-            print(f'Deleted device \"{x}\"')
+            logging.info(f'Deleted device \"{x}\"')
         except KeyError:
-            print(f'Could not find device \"{x}\" in saved devices')
+            logging.warning(f'Could not find device \"{x}\" in saved devices')
             pass
     with open(devices_path, 'w+') as file:
         file.write(json.dumps(saved_devices))
@@ -547,13 +550,13 @@ def print_saved_devices():
         with open(devices_path, 'r') as file:
             devices = json.loads(file.read())
     except json.decoder.JSONDecodeError:
-        print('You have no saved devices')
+        logging.warning('You have no saved devices')
         exit(1)
-    print('Saved devices:')
-    print(f'ID{" " * 18}Name{" " * 16}Type')
-    print("-" * 50)
+    logging.info('Saved devices:')
+    logging.info(f'ID{" " * 18}Name{" " * 16}Type')
+    logging.info("-" * 50)
     for x in devices:
-        print(f'{x}{" " * (20 - len(x))}{devices[x]["name"]}'
+        logging.info(f'{x}{" " * (20 - len(x))}{devices[x]["name"]}'
               f'{" " * (20 - len(devices[x]["name"]))}{devices[x]["type"]}')
 
 
@@ -587,13 +590,13 @@ def recommend():
     were removed by the blacklist filter. Playlist is created and tracks are added. Seed info
     is printed to terminal.
     """
-    print('Getting recommendations')
+    logging.info('Getting recommendations')
     rec.create_seed()
     if args.ps:
         save_preset(args.ps[0])
     tracks = filter_recommendations(api.get_recommendations(rec.rec_params, headers=headers))
     if len(tracks) == 0:
-        print('Error: received zero tracks with your options - adjust and try again')
+        logging.error('Error: received zero tracks with your options - adjust and try again')
         exit(1)
     while True:
         if len(tracks) < rec.limit_original:
@@ -613,6 +616,13 @@ def parse():
     """
     Parse arguments
     """
+    # Check for verbosity arguments, assume INFO for default, WARN for quiet, and DEBUG for verbose
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    elif args.quiet:
+        logging.basicConfig(level=logging.WARNING)
+    else:
+        logging.basicConfig(level=logging.INFO)
     if args.b:
         add_to_blacklist(args.b)
         exit(1)
@@ -627,11 +637,11 @@ def parse():
         exit(1)
 
     if args.s:
-        print('Liking current track')
+        logging.info('Liking current track')
         api.like_track(headers=headers)
         exit(1)
     elif args.sr:
-        print('Unliking current track')
+        logging.info('Unliking current track')
         api.unlike_track(headers=headers)
         exit(1)
 
@@ -651,16 +661,16 @@ def parse():
 
     if args.print:
         if args.print[0] == 'artists':
-            print('Top artists:')
+            logging.info('Top artists:')
             print_artists_or_tracks(data=api.get_top_list('artists', 50, headers=headers), prompt=False)
         elif args.print[0] == 'tracks':
-            print('Top tracks:')
+            logging.info('Top tracks:')
             print_artists_or_tracks(data=api.get_top_list('tracks', 50, headers=headers), prompt=False)
         elif args.print[0] == 'genres':
-            print('Top genres:')
+            logging.info('Top genres:')
             print_choices(data=get_user_top_genres(), sort=True, prompt=False)
         elif args.print[0] == 'genre-seeds':
-            print('Genre seeds:')
+            logging.info('Genre seeds:')
             print_choices(data=api.get_genre_seeds(headers=headers)['genres'], prompt=False)
         elif args.print[0] == 'blacklist':
             print_blacklist()
@@ -669,12 +679,12 @@ def parse():
         exit(1)
 
     if args.a:
-        print(f'Basing recommendations off your top {args.a} artist(s)')
+        logging.info(f'Basing recommendations off your top {args.a} artist(s)')
         rec.based_on = 'top artists'
         rec.seed_type = 'artists'
         parse_seed_info([x for x in api.get_top_list('artists', args.a, headers=headers)['items']])
     elif args.t:
-        print(f'Basing recommendations off your top {args.t} track(s)')
+        logging.info(f'Basing recommendations off your top {args.t} track(s)')
         rec.based_on = 'top tracks'
         rec.seed_type = 'tracks'
         parse_seed_info([x for x in api.get_top_list('tracks', args.t, headers=headers)['items']])
@@ -703,12 +713,12 @@ def parse():
             exit(1)
         parse_seed_info(user_input)
     else:
-        print(f'Basing recommendations off your top {args.n} genres')
+        logging.info(f'Basing recommendations off your top {args.n} genres')
         add_top_genres_seed(args.n)
 
     if args.l:
         rec.update_limit(args.l[0], init=True)
-    print(f'The playlist will contain {rec.limit} tracks')
+    logging.info(f'The playlist will contain {rec.limit} tracks')
 
     if args.tune:
         for x in args.tune:

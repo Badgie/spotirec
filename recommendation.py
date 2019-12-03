@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import logging
 import time
 
 
@@ -47,12 +48,12 @@ class Recommendation:
         """
         Print seed selection into terminal.
         """
-        print('Selection:')
+        logging.info('Selection:')
         for x in self.seed_info.values():
             try:
-                print(f'\t{x["type"].capitalize()}: {x["name"]} - {", ".join(str(y) for y in x["artists"])}')
+                logging.info(f'\t{x["type"].capitalize()}: {x["name"]} - {", ".join(str(y) for y in x["artists"])}')
             except KeyError:
-                print(f'\t{x["type"].capitalize()}: {x["name"]}')
+                logging.info(f'\t{x["type"].capitalize()}: {x["name"]}')
 
     def add_seed_info(self, data_dict=None, data_string=None):
         """
