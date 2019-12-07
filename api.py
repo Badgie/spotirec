@@ -16,11 +16,8 @@ def error_handle(request_domain: str, expected_code: int, request_type: str, res
     :param response: response object
     """
     if response.status_code is not expected_code:
-        logging.warning(f'{request_type} request for {request_domain} failed with status code {response.status_code} '
+        logging.error(f'{request_type} request for {request_domain} failed with status code {response.status_code} '
               f'(expected {expected_code}). Reason: {response.reason}')
-        if response.status_code == 401:
-            logging.warning('NOTE: This may be because this is a new function, and additional authorization is required. '
-                  'Try reauthorizing and try again.')
         exit(1)
 
 

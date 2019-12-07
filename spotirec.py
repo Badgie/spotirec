@@ -192,7 +192,7 @@ def print_choices(data=None, prompt=True, sort=False) -> str:
                             f'{data[x + 2] if len(data[x + 2]) < 40 else f"{data[x + 2][0:37]}.. "}\n'
         except IndexError:
             continue
-    logging.info(line.strip('\n'))
+    print(line.strip('\n'))
     if prompt:
         input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to '
                              'include [default: top 5]:\n') or '0 1 2 3 4'
@@ -246,7 +246,7 @@ def check_tune_validity(tune: str):
     try:
         float(tune.split('=')[1]) if '.' in tune.split('=')[1] else int(tune.split('=')[1])
     except ValueError:
-        logging.error(f'Tune value {tune.split("=")[1]} is not a valid integer or float value')
+        logging.warning(f'Tune value {tune.split("=")[1]} is not a valid integer or float value')
         exit(1)
 
 
@@ -256,7 +256,7 @@ def parse_seed_info(seeds):
     :param seeds: seed data as a string or a list
     """
     if len(shlex.split(seeds) if type(seeds) is str else seeds) > 5:
-        logging.info('Please enter at most 5 seeds')
+        logging.error('Please enter at most 5 seeds')
         exit(1)
     for x in shlex.split(seeds) if type(seeds) is str else seeds:
         if rec.seed_type == 'genres':
@@ -340,16 +340,16 @@ def print_blacklist():
     with open(blacklist_path, 'r') as file:
         try:
             blacklist = json.loads(file.read())
-            logging.info('Tracks')
-            logging.info('--------------------------')
+            print('Tracks')
+            print('--------------------------')
             for x in blacklist['tracks'].values():
-                logging.info(f'{x["name"]} by {", ".join(x["artists"])} - {x["uri"]}')
-            logging.info('\nArtists')
-            logging.info('--------------------------')
+                print(f'{x["name"]} by {", ".join(x["artists"])} - {x["uri"]}')
+            print('\nArtists')
+            print('--------------------------')
             for x in blacklist['artists'].values():
-                logging.info(f'{x["name"]} - {x["uri"]}')
+                print(f'{x["name"]} - {x["uri"]}')
         except json.decoder.JSONDecodeError:
-            logging.info('Blacklist is empty')
+            logging.warning('Blacklist is empty')
 
 
 def generate_img(tracks: list) -> Image:
@@ -469,11 +469,11 @@ def print_devices(save_prompt=True, selection_prompt=True):
     :param selection_prompt: whether or not user should be prompted for a selection
     """
     devices = api.get_available_devices(headers)['devices']
-    logging.info('Available devices:')
-    logging.info(f'Name{" " * 19}Type')
-    logging.info("-" * 40)
+    print('Available devices:')
+    print(f'Name{" " * 19}Type')
+    print("-" * 40)
     for x in devices:
-        logging.info(f'{devices.index(x)}. {x["name"]}{" " * (20 - len(x["name"]))}{x["type"]}')
+        print(f'{devices.index(x)}. {x["name"]}{" " * (20 - len(x["name"]))}{x["type"]}')
     if selection_prompt:
         def prompt_selection() -> int:
             try:
@@ -529,7 +529,7 @@ def remove_devices(devices: list):
         with open(devices_path, 'r') as file:
             saved_devices = json.loads(file.read())
     except json.decoder.JSONDecodeError:
-        logging.warning('You have no saved devices')
+        logging.error('You have no saved devices')
         exit(1)
     for x in devices:
         try:
@@ -550,13 +550,13 @@ def print_saved_devices():
         with open(devices_path, 'r') as file:
             devices = json.loads(file.read())
     except json.decoder.JSONDecodeError:
-        logging.warning('You have no saved devices')
+        logging.error('You have no saved devices')
         exit(1)
-    logging.info('Saved devices:')
-    logging.info(f'ID{" " * 18}Name{" " * 16}Type')
-    logging.info("-" * 50)
+    print('Saved devices:')
+    print(f'ID{" " * 18}Name{" " * 16}Type')
+    print("-" * 50)
     for x in devices:
-        logging.info(f'{x}{" " * (20 - len(x))}{devices[x]["name"]}'
+        print(f'{x}{" " * (20 - len(x))}{devices[x]["name"]}'
               f'{" " * (20 - len(devices[x]["name"]))}{devices[x]["type"]}')
 
 
