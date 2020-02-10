@@ -194,9 +194,9 @@ def print_choices(data=None, prompt=True, sort=False) -> str:
         input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to '
                              'include [default: top 5]:\n') or '0 1 2 3 4'
         if 'genres' in rec.seed_type:
-            parse_seed_info([data[int(x)] for x in input_string.split(' ')])
+            parse_seed_info([data[int(x)] for x in input_string.strip(' ').split(' ')])
         else:
-            return input_string
+            return input_string.strip(' ')
 
 
 def print_artists_or_tracks(data: json, prompt=True):
@@ -501,7 +501,7 @@ def save_device():
         try:
             inp = input('Enter an identifier for your device: ')
             assert inp
-            return inp
+            return inp.strip(' ')
         except AssertionError:
             prompt_name()
 
@@ -701,7 +701,7 @@ def parse():
         if not user_input:
             print('Please enter 1-5 seeds')
             exit(1)
-        parse_seed_info(user_input)
+        parse_seed_info(user_input.strip(' '))
     else:
         print(f'Basing recommendations off your top {args.n} genres')
         add_top_genres_seed(args.n)
