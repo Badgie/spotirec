@@ -191,8 +191,11 @@ def print_choices(data=None, prompt=True, sort=False) -> str:
             continue
     print(line.strip('\n'))
     if prompt:
-        input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to '
-                             'include [default: top 5]:\n') or '0 1 2 3 4'
+        try:
+            input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to '
+                                 'include [default: top 5]:\n') or '0 1 2 3 4'
+        except KeyboardInterrupt:
+            exit(0)
         if 'genres' in rec.seed_type:
             parse_seed_info([data[int(x)] for x in input_string.split(' ')])
         else:
@@ -474,8 +477,11 @@ def print_devices(save_prompt=True, selection_prompt=True):
     if selection_prompt:
         def prompt_selection() -> int:
             try:
-                inp = int(input(f'Please select a device by index number [default: '
-                                f'{devices[0]["name"]}]: ') or 0)
+                try:
+                    inp = int(input(f'Please select a device by index number [default: '
+                                    f'{devices[0]["name"]}]: ') or 0)
+                except KeyboardInterrupt:
+                    exit(0)
                 assert devices[inp] is not None
                 return inp
             except (IndexError, AssertionError, ValueError):
@@ -486,8 +492,11 @@ def print_devices(save_prompt=True, selection_prompt=True):
         rec.playback_device = {'name': devices[selection]['name'],
                                'id': devices[selection]['id'],
                                'type': devices[selection]['type']}
-        save = input(f'Would you like to save \"{rec.playback_device["name"]}\" '
-                     'for later use? [y/n] ') or 'y' if save_prompt else save_device()
+        try:
+            save = input(f'Would you like to save \"{rec.playback_device["name"]}\" '
+                         'for later use? [y/n] ') or 'y' if save_prompt else save_device()
+        except KeyboardInterrupt:
+            exit(0)
         if save == 'y':
             save_device()
 
@@ -499,7 +508,10 @@ def save_device():
 
     def prompt_name() -> str:
         try:
-            inp = input('Enter an identifier for your device: ')
+            try:
+                inp = input('Enter an identifier for your device: ')
+            except KeyboardInterrupt:
+                exit(0)
             assert inp
             return inp
         except AssertionError:
@@ -696,8 +708,12 @@ def parse():
         rec.based_on = 'custom mix'
         rec.seed_type = 'custom'
         print_choices(data=get_user_top_genres(), prompt=False, sort=True)
-        user_input = input('Enter a combination of 1-5 whitespace separated genre names, track uris, and artist uris. '
-                           '\nGenres with several words should be connected with dashes, e.g.; vapor-death-pop.\n')
+        try:
+            user_input = input(
+                'Enter a combination of 1-5 whitespace separated genre names, track uris, and artist uris. '
+                '\nGenres with several words should be connected with dashes, e.g.; vapor-death-pop.\n')
+        except KeyboardInterrupt:
+            exit(0)
         if not user_input:
             print('Please enter 1-5 seeds')
             exit(1)
