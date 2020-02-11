@@ -17,6 +17,7 @@ from bottle import route, run, request
 from pathlib import Path
 
 port = 8080
+socket_unavailable = 98  # OSError code for in-use sockets
 config_path = f'{Path.home()}/.config/spotirec'
 blacklist_path = f'{config_path}/blacklist'
 preset_path = f'{config_path}/presets'
@@ -98,13 +99,24 @@ if not os.path.exists(devices_path):
     f.close()
 
 
+def host():
+    run(host='', port=port)
+
+
 def authorize():
     """
     Open redirect URL in browser, and host http server on localhost.
     Function index() will be routed on said http server.
     """
     webbrowser.open(sp_oauth.redirect)
-    run(host='', port=port)
+    global port
+    try:
+        host()
+    except OSError as x:
+        if x.errno == socket_unavailable:
+            print('Socket already in use, trying another...')
+            port += 1
+            host()
 
 
 @route('/')
