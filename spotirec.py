@@ -100,7 +100,17 @@ if not os.path.exists(devices_path):
 
 
 def host():
-    run(host='', port=port)
+    """
+    Host authorization on locahost, increment and try again if port is in use.
+    """
+    global port
+    try:
+        run(host='', port=port)
+    except OSError as x:
+        if x.errno == socket_unavailable:
+            print('Socket already in use, trying another...')
+            port += 1
+            host()
 
 
 def authorize():
@@ -109,14 +119,7 @@ def authorize():
     Function index() will be routed on said http server.
     """
     webbrowser.open(sp_oauth.redirect)
-    global port
-    try:
-        host()
-    except OSError as x:
-        if x.errno == socket_unavailable:
-            print('Socket already in use, trying another...')
-            port += 1
-            host()
+    host()
 
 
 @route('/')
