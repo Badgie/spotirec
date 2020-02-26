@@ -14,6 +14,7 @@ Script that creates a playlist of recommendations based on the user's top artist
   - [Manual](#manual)
 - [Usage](#usage)
   - [Recommendation Schemes](#recommendation-schemes)
+  - [Preserving Playlists](#preserving-playlists)
   - [Limits](#limits)
   - [Presets](#presets)
   - [Tuning](#tuning)
@@ -99,6 +100,9 @@ $ spotirec -a 2
 $ spotirec -t 4
 ```
 Note that if this option is used with no-arg, it **must** be the very first argument
+
+### Preserving Playlists
+By default, Spotirec caches the id of the first playlist created and uses this every time new recommendations are requested, meaning that any old tracks are overwritten. To avoid this and create a new playlist instead, pass the `--preserve` flag. 
 
 ### Limits
 You can add a limit as an integer value with the `-l` argument
