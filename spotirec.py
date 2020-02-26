@@ -49,6 +49,7 @@ mutex_group.add_argument('-tc', action='store_true', help='base recommendations 
 mutex_group.add_argument('-gc', action='store_true', help='base recommendations on custom top valid seed genres')
 mutex_group.add_argument('-gcs', action='store_true', help='base recommendations on custom seed genres')
 mutex_group.add_argument('-c', action='store_true', help='base recommendations on a custom seed')
+rec_scheme_group.add_argument('--preserve', action='store_true', help='preserve previous playlist and create new')
 
 save_group = parser.add_argument_group(title='Saving arguments')
 save_mutex_group = save_group.add_mutually_exclusive_group()
@@ -601,8 +602,17 @@ def recommend():
             tracks += filter_recommendations(api.get_recommendations(rec.rec_params, headers=headers))
         else:
             break
-    rec.playlist_id = api.create_playlist(rec.playlist_name, rec.playlist_description(), headers=headers)
-    api.add_to_playlist(tracks, rec.playlist_id, headers=headers)
+    if args.preserve:
+        rec.playlist_id = api.create_playlist(rec.playlist_name, rec.playlist_description(), headers, sp_oauth)
+        api.add_to_playlist(tracks, rec.playlist_id, headers=headers)
+    else:
+        try:
+            rec.playlist_id = sp_oauth.get_credentials()['playlist_id']
+            api.replace_playlist_tracks(rec.playlist_id, tracks, headers=headers)
+            api.update_playlist_details(rec.playlist_name, rec.playlist_description(), rec.playlist_id, headers=headers)
+        except KeyError:
+            rec.playlist_id = api.create_playlist(rec.playlist_name, rec.playlist_description(), headers, sp_oauth)
+            api.add_to_playlist(tracks, rec.playlist_id, headers=headers)
     add_image_to_playlist(tracks)
     rec.print_selection()
     if rec.auto_play:
