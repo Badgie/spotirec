@@ -1,0 +1,15 @@
+Attribute           Data type   Range   Recommended range   Function
+duration_ms         int         R+      N/A                 The duration of the track in milliseconds
+key                 int         0-11    N/A                 Pitch class of the track
+mode                int         0-1     N/A                 Modality of the track. 1 is major, 0 is minor
+time_signature      int         N/A     N/A                 Estimated overall time signature of the track
+popularity          int         0-100   0-100               Popularity of the track. High is popular, low is barely known
+acousticness        float        0-1     0-1                 Confidence measure for whether or not the track is acoustic. High value is acoustic
+danceability        float        0-1     0.1-0.9             How well fit a track is for dancing. Measurement includes among others tempo, rhythm stability, and beat strength. High value is suitable for dancing
+energy              float        0-1     0-1                 Perceptual measure of intensity and activity. High energy is fast, loud, and noisy, and low is slow and mellow
+instrumentalness    float        0-1     0-1                 Whether or not a track contains vocals. Low contains vocals, high is purely instrumental
+liveness            float        0-1     0-0.4               Predicts whether or not a track is live. High value is live
+loudness            float        -60-0   -20-0               Overall loudness of the track, measured in decibels
+speechiness         float        0-1     0-0.3               Presence of spoken words. Low is a song, and high is likely to be a talk show or podcast
+valence             float        0-1     0-1                 Positivity of the track. High value is positive, low value is negative
+tempo               float        0-220   60-210              Overall estimated beats per minute of the track

@@ -80,7 +80,7 @@ blacklist_group.add_argument('-bc', metavar='artist|track', nargs=1, choices=['a
 
 print_group = parser.add_argument_group(title='Printing')
 print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
-                         choices=['artists', 'tracks', 'genres', 'genre-seeds', 'devices', 'blacklist'],
+                         choices=['artists', 'tracks', 'genres', 'genre-seeds', 'devices', 'blacklist', 'tuning'],
                          help='print a list of genre seeds, or your top artists, tracks, or genres, where'
                               'TYPE=[artists|tracks|genres|genre-seeds|devices|blacklist]')
 
@@ -581,6 +581,25 @@ def filter_recommendations(data: json) -> list:
     return tracks
 
 
+def print_tuning_options():
+    try:
+        with open(f'{Path.home()}/.config/spotirec/tuning-opts', 'r') as file:
+            tuning_opts = file.readlines()
+    except FileNotFoundError:
+        print('Error: could not find tuning options file.')
+        exit(1)
+    if len(tuning_opts) == 0:
+        print('Error: tuning options file is empty.')
+        exit(1)
+    for x in tuning_opts:
+        if tuning_opts.index(x) == 0:
+            print('\033[1m' + x.strip('\n') + '\033[0m')
+        else:
+            print(x.strip('\n'))
+    print('Note that recommendations may be scarce outside the recommended ranges. If the recommended range is not '
+          'available, they may only be scarce at extreme values.')
+
+
 def recommend():
     """
     Main function for recommendations. Retrieves recommendations and tops up list if any tracks
@@ -666,6 +685,8 @@ def parse():
             print_blacklist()
         elif args.print[0] == 'devices':
             print_saved_devices()
+        elif args.print[0] == 'tuning':
+            print_tuning_options()
         exit(1)
 
     if args.a:
