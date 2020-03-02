@@ -33,7 +33,7 @@ yay -S spotirec-git
 ```
 
 #### Manual
-On any other distribution you need to install Spotirec manually. Spotirec has two dependencies
+On any other distribution you need to install Spotirec manually. Spotirec has three dependencies
 ```
 bottle>=0.12.17
 requests>=2.22.0
@@ -146,11 +146,11 @@ $ spotirec --tune prefix_attribute=value prefix_attribute=value
 | instrumentalness | float | 0.0-1.0 | 0.0-1.0 | Whether or not a track contains vocals. Low contains vocals, high is purely instrumental. |
 | liveness | float | 0.0-1.0 | 0.0-0.4 | Predicts whether or not a track is live. High value is live. |
 | loudness | float | -60-0 | -20-0 | Overall loudness of the track, measured in decibels. |
-| speechiness | float | 0.0-1.0 | 0.0-0.3 | Presence of spoken words. Low is a song, and high is likely to be a talk show or podcast. |
-| valence | float | 0.0-1.0 | Any | Positivity of the track. High value is positive, and low value is negative. |
+| speechiness | float | 0.0-1.0 | 0.0-0.3 | Presence of spoken words. Low is a song, high is likely to be a talk show or podcast. |
+| valence | float | 0.0-1.0 | Any | Positivity of the track. High value is positive, low value is negative. |
 | tempo | float | 0.0-220.0 | 60.0-210.0 | Overall estimated beats per minute of the track. |
 
-Recommendations may be sparce outside the recommended range.
+Recommendations may be scarce outside the recommended range.
 
 ### Blacklists
 To blacklist tracks or artists, pass the `-b` option followed by an arbitrary number of whitespace separated Spotify URIs
