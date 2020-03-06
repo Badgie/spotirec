@@ -20,8 +20,6 @@ from pathlib import Path
 port = 8080
 config_path = f'{Path.home()}/.config/spotirec'
 blacklist_path = f'{config_path}/blacklist'
-preset_path = f'{config_path}/presets'
-devices_path = f'{config_path}/devices'
 tune_prefix = ['max', 'min', 'target']
 tune_attr = ['acousticness', 'danceability', 'duration_ms', 'energy', 'instrumentalness', 'key', 'liveness',
              'loudness', 'mode', 'popularity', 'speechiness', 'tempo', 'time_signature', 'valence', 'popularity']
@@ -93,15 +91,6 @@ print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
 # Ensure config dir and blacklist file exists
 if not os.path.isdir(config_path):
     os.makedirs(config_path)
-if not os.path.exists(blacklist_path):
-    f = open(blacklist_path, 'w')
-    f.close()
-if not os.path.exists(preset_path):
-    f = open(preset_path, 'w')
-    f.close()
-if not os.path.exists(devices_path):
-    f = open(devices_path, 'w')
-    f.close()
 
 
 def authorize():
@@ -280,28 +269,9 @@ def add_to_blacklist(entries: list):
     Add input uris to blacklist and exit
     :param entries: list of input uris
     """
-    with open(blacklist_path, 'r') as file:
-        try:
-            data = json.loads(file.read())
-        except json.decoder.JSONDecodeError:
-            data = {'tracks': {},
-                    'artists': {}}
-        for uri in entries:
-            if re.match(uri_re, uri):
-                uri_data = api.request_data(uri, f'{uri.split(":")[1]}s', headers=headers)
-                data[f'{uri.split(":")[1]}s'][uri] = {'name': uri_data['name'],
-                                                      'uri': uri}
-                try:
-                    data[f'{uri.split(":")[1]}s'][uri]['artists'] = [x['name'] for x in uri_data['artists']]
-                    print(f'Added track \"{uri_data["name"]}\" by '
-                          f'{", ".join(str(x["name"]) for x in uri_data["artists"])} to your blacklist')
-                except KeyError:
-                    print(f'Added artist \"{uri_data["name"]}\" to your blacklist')
-            else:
-                print(f'uri \"{uri}\" is either not a valid uri for a track or artist, or is malformed and has '
-                      f'not been added to the blacklist')
-    with open(blacklist_path, 'w+') as file:
-        file.write(json.dumps(data))
+    for x in entries:
+        uri_data = api.request_data(x, f'{x.split(":")[1]}s', headers=headers)
+        conf.add_to_blacklist(uri_data, x)
 
 
 def remove_from_blacklist(entries: list):
@@ -309,29 +279,8 @@ def remove_from_blacklist(entries: list):
     Remove track(s) and/or artist(s) from blacklist.
     :param entries: list of uris
     """
-    blacklist = conf.get_blacklist()
-    if len(blacklist['tracks']) == 0 and len(blacklist['artists']) == 0:
-        print('Error: blacklist is empty')
-        exit(1)
-    for uri in entries:
-        if re.match(uri_re, uri):
-            try:
-                try:
-                    print(f'Removing track {blacklist["tracks"][uri]["name"]} by '
-                          f'{", ".join(str(x) for x in blacklist["tracks"][uri]["artists"]).strip(", ")} from blacklist')
-                except KeyError:
-                    print(f'Removing artist \"{blacklist["artists"][uri]["name"]}\" from blacklist')
-                del blacklist[f'{uri.split(":")[1]}s'][uri]
-            except KeyError:
-                print(f'uri \"{uri}\" does not exist in your blacklist')
-                # FIXME: Remove this notice at some point
-                print('Blacklist structure was recently re-done, so you may need to remove and re-do your blacklist. '
-                      'Sorry!')
-        else:
-            print(f'uri \"{uri}\" is either not a valid uri for a track or artist or is malformed')
-
-    with open(blacklist_path, 'w+') as file:
-        file.write(json.dumps(blacklist))
+    for x in entries:
+        conf.remove_from_blacklist(x)
 
 
 def print_blacklist():

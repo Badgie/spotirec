@@ -28,6 +28,7 @@ class SpotifyOAuth:
         """
         try:
             creds = conf.get_oauth()
+            print(creds)
             if self.is_token_expired(int(creds['expires_at'])):
                 print('OAuth token is expired, refreshing...')
                 creds = self.refresh_token(creds['refresh_token'])
@@ -119,5 +120,5 @@ class SpotifyOAuth:
             token['refresh_token'] = refresh_token
         c = conf.open_config()
         for x in token.items():
-            c.set('spotirecoauth', x[0], str(x[1]))
+            c['spotirecoauth'][x[0]] = str(x[1])
         conf.save_config(c)
