@@ -17,14 +17,13 @@ from PIL import Image
 from bottle import route, run, request
 from pathlib import Path
 
-port = 8080
-config_path = f'{Path.home()}/.config/spotirec'
-blacklist_path = f'{config_path}/blacklist'
-tune_prefix = ['max', 'min', 'target']
-tune_attr = ['acousticness', 'danceability', 'duration_ms', 'energy', 'instrumentalness', 'key', 'liveness',
+PORT = 8080
+CONFIG_PATH = f'{Path.home()}/.config/spotirec'
+TUNE_PREFIX = ['max', 'min', 'target']
+TUNE_ATTR = ['acousticness', 'danceability', 'duration_ms', 'energy', 'instrumentalness', 'key', 'liveness',
              'loudness', 'mode', 'popularity', 'speechiness', 'tempo', 'time_signature', 'valence', 'popularity']
-uri_re = r'spotify:(artist|track):[a-zA-Z0-9]'
-playlist_uri_re = r'spotify:playlist:[a-zA-Z0-9]'
+URI_RE = r'spotify:(artist|track):[a-zA-Z0-9]'
+PLAYLIST_URI_RE = r'spotify:playlist:[a-zA-Z0-9]'
 
 # OAuth handler
 sp_oauth = oauth2.SpotifyOAuth()
@@ -52,18 +51,20 @@ mutex_group.add_argument('-c', action='store_true', help='base recommendations o
 
 save_group = parser.add_argument_group(title='Saving arguments')
 save_mutex_group = save_group.add_mutually_exclusive_group()
-save_mutex_group.add_argument('-s', metavar='[PLAYLIST | URI]', nargs='?', type=str,
-                              help='like currently playing track, save to input playlist if present')
-save_mutex_group.add_argument('-sr', metavar='[PLAYLIST | URI]', nargs='?', type=str,
-                              help='remove currently playing track from liked tracks, remove from input playlist if '
-                                   'present')
-save_mutex_group.add_argument('--save-playlist', action='store_true', help='save a playlist')
-save_mutex_group.add_argument('--remove-playlists', metavar='ID', nargs='+', type=str, help='remove playlist(s)')
-save_mutex_group.add_argument('--save-device', action='store_true', help='save a playback device')
-save_mutex_group.add_argument('--remove-devices', metavar='ID', nargs='+', type=str, help='remove playback device(s)')
-save_mutex_group.add_argument('--load-preset', metavar='ID', nargs=1, type=str, help='load and use preset')
-save_mutex_group.add_argument('--save-preset', metavar='ID', nargs=1, type=str, help='save options as preset')
-save_mutex_group.add_argument('--remove-presets', metavar='ID', nargs='+', type=str, help='remove preset(s)')
+add_mutex_group = save_group.add_mutually_exclusive_group()
+save_mutex_group.add_argument('-s', action='store_true', help='like currently playing track')
+save_mutex_group.add_argument('-sr', action='store_true', help='remove currently playing track from liked tracks')
+add_mutex_group.add_argument('--add-to', metavar='[PLAYLIST | URI]', nargs=1, type=str,
+                             help='add currently playing track to input playlist')
+add_mutex_group.add_argument('--remove-from', metavar='[PLAYLIST | URI]', nargs=1, type=str,
+                             help='remove currently playing track from input playlist')
+save_group.add_argument('--save-playlist', action='store_true', help='save a playlist')
+save_group.add_argument('--remove-playlists', metavar='ID', nargs='+', type=str, help='remove playlist(s)')
+save_group.add_argument('--save-device', action='store_true', help='save a playback device')
+save_group.add_argument('--remove-devices', metavar='ID', nargs='+', type=str, help='remove playback device(s)')
+save_group.add_argument('--load-preset', metavar='ID', nargs=1, type=str, help='load and use preset')
+save_group.add_argument('--save-preset', metavar='ID', nargs=1, type=str, help='save options as preset')
+save_group.add_argument('--remove-presets', metavar='ID', nargs='+', type=str, help='remove preset(s)')
 
 rec_options_group = parser.add_argument_group(title='Recommendation options',
                                               description='These may only appear when creating a playlist')
@@ -71,8 +72,7 @@ rec_options_group.add_argument('-l', metavar='LIMIT', nargs=1, type=int, choices
                                help='amount of tracks to add (default: 20, max: 100)')
 
 rec_options_group.add_argument('--tune', metavar='ATTR', nargs='+', type=str, help='specify tunable attribute(s)')
-play_mutex = rec_options_group.add_mutually_exclusive_group()
-play_mutex.add_argument('--play', metavar='DEVICE', nargs=1, help='select playback device to start playing on')
+rec_options_group.add_argument('--play', metavar='DEVICE', nargs=1, help='select playback device to start playing on')
 
 blacklist_group = parser.add_argument_group(title='Blacklisting')
 blacklist_group.add_argument('-b', metavar='URI', nargs='+', type=str, help='blacklist track(s) and/or artist(s)')
@@ -88,9 +88,9 @@ print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
                          help='print a list of genre seeds, or your top artists, tracks, or genres, where'
                               'TYPE=[artists|tracks|genres|genre-seeds|devices|blacklist|presets|playlists]')
 
-# Ensure config dir and blacklist file exists
-if not os.path.isdir(config_path):
-    os.makedirs(config_path)
+# Ensure config dir exists
+if not os.path.isdir(CONFIG_PATH):
+    os.makedirs(CONFIG_PATH)
 
 
 def authorize():
@@ -99,7 +99,7 @@ def authorize():
     Function index() will be routed on said http server.
     """
     webbrowser.open(sp_oauth.redirect)
-    run(host='', port=port)
+    run(host='', port=PORT)
 
 
 @route('/')
@@ -227,13 +227,13 @@ def check_tune_validity(tune: str):
     Check validity of tune input - exit program if not valid
     :param tune: tune input as string
     """
-    if not tune.split('_', 1)[0] in tune_prefix:
+    if not tune.split('_', 1)[0] in TUNE_PREFIX:
         print(f'Tune prefix \"{tune.split("_", 1)[0]}\" is malformed - available prefixes:')
-        print(tune_prefix)
+        print(TUNE_PREFIX)
         exit(1)
-    if not tune.split('=')[0].split('_', 1)[1] in tune_attr:
+    if not tune.split('=')[0].split('_', 1)[1] in TUNE_ATTR:
         print(f'Tune attribute \"{tune.split("=")[0].split("_", 1)[1]}\" is malformed - available attributes:')
-        print(tune_attr)
+        print(TUNE_ATTR)
         exit(1)
     try:
         float(tune.split('=')[1]) if '.' in tune.split('=')[1] else int(tune.split('=')[1])
@@ -256,7 +256,7 @@ def parse_seed_info(seeds):
         elif rec.seed_type == 'custom':
             if check_if_valid_genre(x):
                 rec.add_seed_info(data_string=x)
-            elif re.match(uri_re, x):
+            elif re.match(URI_RE, x):
                 rec.add_seed_info(data_dict=api.request_data(x, f'{x.split(":")[1]}s', headers=headers))
             else:
                 print(f'Input \"{x}\" does not match a genre or a valid URI syntax, skipping...')
@@ -487,7 +487,7 @@ def save_playlist():
         uri = input('Please input the URI for your playlist: ')
         try:
             assert uri
-            assert re.match(playlist_uri_re, uri)
+            assert re.match(PLAYLIST_URI_RE, uri)
             return uri
         except AssertionError:
             print(f'Error: playlist uri \"{uri}\" is malformed.')
@@ -502,6 +502,34 @@ def save_playlist():
 def remove_playlists(playlists: list):
     for x in playlists:
         conf.remove_playlist(x)
+
+
+def add_current_track(playlist: str):
+    if re.match(URI_RE, playlist):
+        playlist_id = playlist.split(':')[2]
+    else:
+        playlists = conf.get_playlists()
+        try:
+            playlist_id = playlists[playlist]['uri'].split(':')[2]
+        except KeyError:
+            print(f'Error: playlist {playlist} does not exist in config')
+            exit(1)
+    print(f'Adding currently playing track to playlist {playlists[playlist]["name"]}')
+    api.add_to_playlist([api.get_current_track(headers)], playlist_id, headers)
+
+
+def remove_current_track(playlist: str):
+    if re.match(URI_RE, playlist):
+        playlist_id = playlist.split(':')[2]
+    else:
+        playlists = conf.get_playlists()
+        try:
+            playlist_id = playlists[playlist]['uri'].split(':')[2]
+        except KeyError:
+            print(f'Error: playlist {playlist} does not exist in config')
+            exit(1)
+    print(f'Removing currently playing track to playlist {playlists[playlist]["name"]}')
+    api.remove_from_playlist([api.get_current_track(headers)], playlist_id, headers)
 
 
 def filter_recommendations(data: json) -> list:
@@ -583,25 +611,27 @@ def parse():
         print('Unliking current track')
         api.unlike_track(headers=headers)
         exit(1)
-    elif args.save_playlist:
+    if args.save_playlist:
         save_playlist()
         exit(1)
-    elif args.remove_playlists:
+    if args.remove_playlists:
         remove_playlists(args.remove_playlists)
         exit(1)
-    elif args.save_device:
+    if args.save_device:
         save_device()
         exit(1)
-    elif args.remove_devices:
+    if args.remove_devices:
         remove_devices(args.remove_devices)
         exit(1)
-    elif args.remove_presets:
+    if args.remove_presets:
         remove_presets(args.remove_presets)
         exit(1)
-
-    if args.play:
-        rec.auto_play = True
-        rec.playback_device = get_device(args.play)
+    if args.add_to:
+        add_current_track(args.add_to[0])
+        exit(1)
+    if args.remove_from:
+        remove_current_track(args.remove_from[0])
+        exit(1)
 
     if args.print:
         if args.print[0] == 'artists':
@@ -625,6 +655,10 @@ def parse():
         elif args.print[0] == 'playlists':
             print_playlists()
         exit(1)
+
+    if args.play:
+        rec.auto_play = True
+        rec.playback_device = get_device(args.play)
 
     if args.a:
         print(f'Basing recommendations off your top {args.a} artist(s)')
