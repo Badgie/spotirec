@@ -4,8 +4,8 @@ import time
 import requests
 import base64
 import api
+import conf
 from urllib import parse
-from pathlib import Path
 
 
 class SpotifyOAuth:
@@ -20,7 +20,6 @@ class SpotifyOAuth:
         self.scopes = 'user-top-read playlist-modify-public playlist-modify-private user-read-private ' \
                       'user-read-email ugc-image-upload user-read-playback-state user-modify-playback-state ' \
                       'user-library-modify'
-        self.cache = f'{Path.home()}/.config/spotirec/spotirecoauth'
 
     def get_credentials(self) -> json:
         """
@@ -28,11 +27,10 @@ class SpotifyOAuth:
         :return: token contents as a json object
         """
         try:
-            with open(self.cache, 'r') as file:
-                creds = json.loads(file.read())
-                if self.is_token_expired(creds['expires_at']):
-                    print('OAuth token is expired, refreshing...')
-                    creds = self.refresh_token(creds['refresh_token'])
+            creds = conf.get_oauth()
+            if self.is_token_expired(int(creds['expires_at'])):
+                print('OAuth token is expired, refreshing...')
+                creds = self.refresh_token(creds['refresh_token'])
         except (IOError, json.decoder.JSONDecodeError):
             print('Error: cache does not exist or is empty')
             return None
@@ -119,5 +117,7 @@ class SpotifyOAuth:
         token['expires_at'] = round(time.time()) + int(token['expires_in'])
         if refresh_token:
             token['refresh_token'] = refresh_token
-        with open(self.cache, 'w') as file:
-            file.write(json.dumps(token))
+        c = conf.open_config()
+        for x in token.items():
+            c.set('spotirecoauth', x[0], str(x[1]))
+        conf.save_config(c)

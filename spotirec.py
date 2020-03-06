@@ -11,6 +11,7 @@ import base64
 import oauth2
 import recommendation
 import api
+import conf
 from io import BytesIO
 from PIL import Image
 from bottle import route, run, request
@@ -25,6 +26,7 @@ tune_prefix = ['max', 'min', 'target']
 tune_attr = ['acousticness', 'danceability', 'duration_ms', 'energy', 'instrumentalness', 'key', 'liveness',
              'loudness', 'mode', 'popularity', 'speechiness', 'tempo', 'time_signature', 'valence', 'popularity']
 uri_re = r'spotify:(artist|track):[a-zA-Z0-9]'
+playlist_uri_re = r'spotify:playlist:[a-zA-Z0-9]'
 
 # OAuth handler
 sp_oauth = oauth2.SpotifyOAuth()
@@ -52,37 +54,41 @@ mutex_group.add_argument('-c', action='store_true', help='base recommendations o
 
 save_group = parser.add_argument_group(title='Saving arguments')
 save_mutex_group = save_group.add_mutually_exclusive_group()
-save_mutex_group.add_argument('-s', action='store_true', help='like currently playing track')
-save_mutex_group.add_argument('-sr', action='store_true', help='remove currently playing track from liked tracks')
+save_mutex_group.add_argument('-s', metavar='[PLAYLIST | URI]', nargs='?', type=str,
+                              help='like currently playing track, save to input playlist if present')
+save_mutex_group.add_argument('-sr', metavar='[PLAYLIST | URI]', nargs='?', type=str,
+                              help='remove currently playing track from liked tracks, remove from input playlist if '
+                                   'present')
+save_mutex_group.add_argument('--save-playlist', action='store_true', help='save a playlist')
+save_mutex_group.add_argument('--remove-playlists', metavar='ID', nargs='+', type=str, help='remove playlist(s)')
+save_mutex_group.add_argument('--save-device', action='store_true', help='save a playback device')
+save_mutex_group.add_argument('--remove-devices', metavar='ID', nargs='+', type=str, help='remove playback device(s)')
+save_mutex_group.add_argument('--load-preset', metavar='ID', nargs=1, type=str, help='load and use preset')
+save_mutex_group.add_argument('--save-preset', metavar='ID', nargs=1, type=str, help='save options as preset')
+save_mutex_group.add_argument('--remove-presets', metavar='ID', nargs='+', type=str, help='remove preset(s)')
 
 rec_options_group = parser.add_argument_group(title='Recommendation options',
                                               description='These may only appear when creating a playlist')
 rec_options_group.add_argument('-l', metavar='LIMIT', nargs=1, type=int, choices=range(1, 101),
                                help='amount of tracks to add (default: 20, max: 100)')
-preset_mutex = rec_options_group.add_mutually_exclusive_group()
-preset_mutex.add_argument('-p', metavar='NAME', nargs=1, type=str, help='load and use preset')
-preset_mutex.add_argument('-ps', metavar='NAME', nargs=1, type=str, help='save options as preset')
+
 rec_options_group.add_argument('--tune', metavar='ATTR', nargs='+', type=str, help='specify tunable attribute(s)')
 play_mutex = rec_options_group.add_mutually_exclusive_group()
-play_mutex.add_argument('--play', action='store_true', help='select playback device to start playing on')
-play_mutex.add_argument('--play-device', metavar='DEVICE', nargs=1, type=str, help='start playback on saved device')
-
-device_group = parser.add_argument_group(title='Playback devices')
-device_group.add_argument('-d', action='store_true', help='save a device')
-device_group.add_argument('-dr', metavar='DEVICE', nargs="+", type=str, help='remove device(s)')
+play_mutex.add_argument('--play', metavar='DEVICE', nargs=1, help='select playback device to start playing on')
 
 blacklist_group = parser.add_argument_group(title='Blacklisting')
 blacklist_group.add_argument('-b', metavar='URI', nargs='+', type=str, help='blacklist track(s) and/or artist(s)')
 blacklist_group.add_argument('-br', metavar='URI', nargs='+', type=str,
                              help='remove track(s) and/or artists(s) from blacklist')
-blacklist_group.add_argument('-bc', metavar='artist|track', nargs=1, choices=['artist', 'track'],
+blacklist_group.add_argument('-bc', metavar='artist | track', nargs=1, choices=['artist', 'track'],
                              help='blacklist currently playing artist(s) or track')
 
 print_group = parser.add_argument_group(title='Printing')
 print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
-                         choices=['artists', 'tracks', 'genres', 'genre-seeds', 'devices', 'blacklist'],
+                         choices=['artists', 'tracks', 'genres', 'genre-seeds', 'devices', 'blacklist', 'presets',
+                                  'playlists'],
                          help='print a list of genre seeds, or your top artists, tracks, or genres, where'
-                              'TYPE=[artists|tracks|genres|genre-seeds|devices|blacklist]')
+                              'TYPE=[artists|tracks|genres|genre-seeds|devices|blacklist|presets|playlists]')
 
 # Ensure config dir and blacklist file exists
 if not os.path.isdir(config_path):
@@ -303,10 +309,8 @@ def remove_from_blacklist(entries: list):
     Remove track(s) and/or artist(s) from blacklist.
     :param entries: list of uris
     """
-    try:
-        with open(blacklist_path, 'r') as file:
-            blacklist = json.loads(file.read())
-    except json.decoder.JSONDecodeError:
+    blacklist = conf.get_blacklist()
+    if len(blacklist['tracks']) == 0 and len(blacklist['artists']) == 0:
         print('Error: blacklist is empty')
         exit(1)
     for uri in entries:
@@ -334,19 +338,13 @@ def print_blacklist():
     """
     Format and print blacklist entries
     """
-    with open(blacklist_path, 'r') as file:
-        try:
-            blacklist = json.loads(file.read())
-            print('Tracks')
-            print('--------------------------')
-            for x in blacklist['tracks'].values():
-                print(f'{x["name"]} by {", ".join(x["artists"])} - {x["uri"]}')
-            print('\nArtists')
-            print('--------------------------')
-            for x in blacklist['artists'].values():
-                print(f'{x["name"]} - {x["uri"]}')
-        except json.decoder.JSONDecodeError:
-            print('Blacklist is empty')
+    blacklist = conf.get_blacklist()
+    print('\033[1m' + 'Tracks' + '\033[0m')
+    for x in blacklist['tracks'].values():
+        print(f'{x["name"]} by {", ".join(x["artists"])} - {x["uri"]}')
+    print('\n' + '\033[1m' + 'Artists' + '\033[0m')
+    for x in blacklist['artists'].values():
+        print(f'{x["name"]} - {x["uri"]}')
 
 
 def generate_img(tracks: list) -> Image:
@@ -388,22 +386,15 @@ def save_preset(name: str):
     Save recommendation object as preset
     :param name: name of preset
     """
-    try:
-        with open(preset_path, 'r') as file:
-            preset_data = json.loads(file.read())
-    except json.decoder.JSONDecodeError:
-        preset_data = {}
-    preset_data[name] = {'limit': rec.limit_original,
-                         'based_on': rec.based_on,
-                         'seed': rec.seed,
-                         'seed_type': rec.seed_type,
-                         'seed_info': rec.seed_info,
-                         'rec_params': rec.rec_params,
-                         'auto_play': rec.auto_play,
-                         'playback_device': rec.playback_device}
-    with open(preset_path, 'w+') as file:
-        print(f'Saving preset \"{name}\"')
-        file.write(json.dumps(preset_data))
+    preset = {'limit': rec.limit_original,
+              'based_on': rec.based_on,
+              'seed': rec.seed,
+              'seed_type': rec.seed_type,
+              'seed_info': rec.seed_info,
+              'rec_params': rec.rec_params,
+              'auto_play': rec.auto_play,
+              'playback_device': rec.playback_device}
+    conf.save_preset(preset, name)
 
 
 def load_preset(name: str) -> recommendation.Recommendation:
@@ -413,83 +404,55 @@ def load_preset(name: str) -> recommendation.Recommendation:
     :return: recommendation object with settings from preset
     """
     print(f'Using preset \"{name}\"')
+    presets = conf.get_presets()
     try:
-        with open(preset_path, 'r') as file:
-            preset_data = json.loads(file.read())
-    except json.decoder.JSONDecodeError:
-        print('Error: you do not have any presets')
-        exit(1)
-    try:
-        contents = preset_data[name]
-        preset = recommendation.Recommendation()
-        preset.limit = contents['limit']
-        preset.limit_original = contents['limit']
-        preset.based_on = contents['based_on']
-        preset.seed = contents['seed']
-        preset.seed_type = contents['seed_type']
-        preset.seed_info = contents['seed_info']
-        preset.rec_params = contents['rec_params']
-        preset.auto_play = contents['auto_play']
-        preset.playback_device = contents['playback_device']
-        return preset
+        contents = presets[name]
     except KeyError:
         print(f'Error: could not find preset \"{name}\", check spelling and try again')
         exit(1)
+    preset = recommendation.Recommendation()
+    preset.limit = contents['limit']
+    preset.limit_original = contents['limit']
+    preset.based_on = contents['based_on']
+    preset.seed = contents['seed']
+    preset.seed_type = contents['seed_type']
+    preset.seed_info = contents['seed_info']
+    preset.rec_params = contents['rec_params']
+    preset.auto_play = contents['auto_play']
+    preset.playback_device = contents['playback_device']
+    return preset
 
 
-def get_device(device_name: str):
+def remove_presets(presets: list):
+    """
+    Remove preset(s) from user config
+    :param presets: list of devices
+    """
+    for x in presets:
+        conf.remove_preset(x)
+
+
+def print_presets():
+    presets = conf.get_presets()
+    print('\033[1m' + f'Name{" " * 16}Type{" " * 21}Params{" " * 44}Seeds' + '\033[0m')
+    for x in presets.items():
+        params = ",".join(f"{y[0]}={y[1]}" if "seed" not in y[0] else "" for y in x[1]["rec_params"].items()).strip(',')
+        print(f'{x[0]}{" " * (20 - len(x[0]))}{x[1]["based_on"]}{" " * (25 - len(x[1]["based_on"]))}'
+              f'{params}{" " * (50 - len(params))}{",".join(str(y["name"]) for y in x[1]["seed_info"].values())}')
+
+
+def get_device(device_name: str) -> dict:
     """
     Set playback device. Prompt from available devices if none exist.
     Print saved devices if it does not exist.
     :param device_name: name of playback device
     """
+    devices = conf.get_devices()
     try:
-        with open(devices_path, 'r') as file:
-            devices = json.loads(file.read())
-            try:
-                rec.playback_device = devices[device_name]
-                return
-            except KeyError:
-                print(f'Error: device \"{device_name}\" not recognized. Saved devices:')
-                for x in devices:
-                    print(x)
-                exit(1)
-    except json.decoder.JSONDecodeError:
-        print('Your device list is empty')
-        print_devices()
-
-
-def print_devices(save_prompt=True, selection_prompt=True):
-    """
-    Print available devices and prompt user to select depending on params
-    :param save_prompt: whether or not user should be prompted if they want to save
-    :param selection_prompt: whether or not user should be prompted for a selection
-    """
-    devices = api.get_available_devices(headers)['devices']
-    print('Available devices:')
-    print(f'Name{" " * 19}Type')
-    print("-" * 40)
-    for x in devices:
-        print(f'{devices.index(x)}. {x["name"]}{" " * (20 - len(x["name"]))}{x["type"]}')
-    if selection_prompt:
-        def prompt_selection() -> int:
-            try:
-                inp = int(input(f'Please select a device by index number [default: '
-                                f'{devices[0]["name"]}]: ') or 0)
-                assert devices[inp] is not None
-                return inp
-            except (IndexError, AssertionError, ValueError):
-                print('Error: please input a valid index number')
-                return prompt_selection()
-
-        selection = prompt_selection()
-        rec.playback_device = {'name': devices[selection]['name'],
-                               'id': devices[selection]['id'],
-                               'type': devices[selection]['type']}
-        save = input(f'Would you like to save \"{rec.playback_device["name"]}\" '
-                     'for later use? [y/n] ') or 'y' if save_prompt else save_device()
-        if save == 'y':
-            save_device()
+        return devices[device_name]
+    except KeyError:
+        print(f'Error: device {device_name} does not exist in config')
+        exit(1)
 
 
 def save_device():
@@ -497,24 +460,35 @@ def save_device():
     Prompt user for an identifier for device and save to config
     """
 
-    def prompt_name() -> str:
+    def prompt_device_index() -> int:
+        ind = input('Select a device by index[0]: ') or 0
         try:
-            inp = input('Enter an identifier for your device: ')
+            assert devices[int(ind)] is not None
+            return int(ind)
+        except (ValueError, AssertionError, IndexError):
+            print(f'Error: input \"{ind}\" is malformed.')
+            print('Please ensure that your input is an integer and is a valid index.')
+            return prompt_device_index()
+
+    def prompt_name() -> str:
+        inp = input('Enter an identifier for your device: ')
+        try:
             assert inp
+            assert ' ' not in inp
             return inp
         except AssertionError:
-            prompt_name()
+            print(f'Error: device identifier \"{inp}\" is malformed.')
+            print('Please ensure that the identifier contains at least one character, and no whitespaces.')
+            return prompt_name()
 
-    name = prompt_name().replace(' ', '')
-    try:
-        with open(devices_path, 'r') as file:
-            devices = json.loads(file.read())
-    except json.decoder.JSONDecodeError:
-        devices = {}
-    devices[name] = rec.playback_device
-    with open(devices_path, 'w+') as file:
-        file.write(json.dumps(devices))
-    print(f'Saved device \"{rec.playback_device["name"]}\" as \"{name}\"')
+    devices = api.get_available_devices(headers)['devices']
+    print('Available devices:')
+    print('\033[1m' + f'Name{" " * 19}Type' + '\033[0m')
+    for x in devices:
+        print(f'{devices.index(x)}. {x["name"]}{" " * (20 - len(x["name"]))}{x["type"]}')
+    device = devices[prompt_device_index()]
+    name = prompt_name()
+    conf.save_device(device, name)
 
 
 def remove_devices(devices: list):
@@ -522,39 +496,62 @@ def remove_devices(devices: list):
     Remove device(s) from user config
     :param devices: list of devices
     """
-    try:
-        with open(devices_path, 'r') as file:
-            saved_devices = json.loads(file.read())
-    except json.decoder.JSONDecodeError:
-        print('You have no saved devices')
-        exit(1)
     for x in devices:
-        try:
-            del saved_devices[x]
-            print(f'Deleted device \"{x}\"')
-        except KeyError:
-            print(f'Could not find device \"{x}\" in saved devices')
-            pass
-    with open(devices_path, 'w+') as file:
-        file.write(json.dumps(saved_devices))
+        conf.remove_device(x)
 
 
 def print_saved_devices():
     """
     Print all saved devices
     """
-    try:
-        with open(devices_path, 'r') as file:
-            devices = json.loads(file.read())
-    except json.decoder.JSONDecodeError:
-        print('You have no saved devices')
-        exit(1)
-    print('Saved devices:')
-    print(f'ID{" " * 18}Name{" " * 16}Type')
-    print("-" * 50)
-    for x in devices:
-        print(f'{x}{" " * (20 - len(x))}{devices[x]["name"]}'
-              f'{" " * (20 - len(devices[x]["name"]))}{devices[x]["type"]}')
+    devices = conf.get_devices()
+    print('\033[1m' + f'ID{" " * 18}Name{" " * 16}Type' + '\033[0m')
+    for x in devices.items():
+        print(f'{x[0]}{" " * (20 - len(x[0]))}{x[1]["name"]}'
+              f'{" " * (20 - len(x[1]["name"]))}{x[1]["type"]}')
+
+
+def print_playlists():
+    """
+    Print all saved playlists
+    """
+    playlists = conf.get_playlists()
+    print('\033[1m' + f'ID{" " * 18}Name{" " * 26}URI' + '\033[0m')
+    for x in playlists.items():
+        print(f'{x[0]}{" " * (20 - len(x[0]))}{x[1]["name"]}{" " * (30 - len(x[1]["name"]))}{x[1]["uri"]}')
+
+
+def save_playlist():
+    def input_id() -> str:
+        iden = input('Please input an identifier for your playlist: ')
+        try:
+            assert iden
+            assert ' ' not in iden
+            return iden
+        except AssertionError:
+            print(f'Error: playlist identifier \"{iden}\" is malformed.')
+            print('Please ensure that the identifier contains at least one character, and no whitespaces.')
+            return input_id()
+
+    def input_uri() -> str:
+        uri = input('Please input the URI for your playlist: ')
+        try:
+            assert uri
+            assert re.match(playlist_uri_re, uri)
+            return uri
+        except AssertionError:
+            print(f'Error: playlist uri \"{uri}\" is malformed.')
+            return input_uri()
+
+    playlist_id = input_id()
+    playlist_uri = input_uri()
+    playlist = {'name': api.get_playlist(headers, playlist_uri.split(':')[2])["name"], 'uri': playlist_uri}
+    conf.save_playlist(playlist, playlist_id)
+
+
+def remove_playlists(playlists: list):
+    for x in playlists:
+        conf.remove_playlist(x)
 
 
 def filter_recommendations(data: json) -> list:
@@ -589,8 +586,8 @@ def recommend():
     """
     print('Getting recommendations')
     rec.create_seed()
-    if args.ps:
-        save_preset(args.ps[0])
+    if args.save_preset:
+        save_preset(args.save_preset[0])
     tracks = filter_recommendations(api.get_recommendations(rec.rec_params, headers=headers))
     if len(tracks) == 0:
         print('Error: received zero tracks with your options - adjust and try again')
@@ -627,6 +624,8 @@ def parse():
         exit(1)
 
     if args.s:
+        if len(args.s) > 0:
+            exit(1)
         print('Liking current track')
         api.like_track(headers=headers)
         exit(1)
@@ -634,20 +633,26 @@ def parse():
         print('Unliking current track')
         api.unlike_track(headers=headers)
         exit(1)
+    elif args.save_playlist:
+        save_playlist()
+        exit(1)
+    elif args.remove_playlists:
+        print('Removing playlist from config')
+        remove_playlists(args.remove_playlist)
+        exit(1)
+    elif args.save_device:
+        save_device()
+        exit(1)
+    elif args.remove_devices:
+        remove_devices(args.remove_device)
+        exit(1)
+    elif args.remove_presets:
+        remove_presets(args.remove_presets)
+        exit(1)
 
     if args.play:
         rec.auto_play = True
-        print_devices()
-    elif args.play_device:
-        rec.auto_play = True
-        get_device(args.play_device[0])
-
-    if args.d:
-        print_devices(save_prompt=False)
-        exit(1)
-    if args.dr:
-        remove_devices(args.dr)
-        exit(1)
+        rec.playback_device = get_device(args.play)
 
     if args.print:
         if args.print[0] == 'artists':
@@ -666,6 +671,10 @@ def parse():
             print_blacklist()
         elif args.print[0] == 'devices':
             print_saved_devices()
+        elif args.print[0] == 'presets':
+            print_presets()
+        elif args.print[0] == 'playlists':
+            print_playlists()
         exit(1)
 
     if args.a:
@@ -720,8 +729,8 @@ args = parser.parse_args()
 
 headers = {'Content-Type': 'application/json',
            'Authorization': f'Bearer {get_token()}'}
-if args.p:
-    rec = load_preset(args.p[0])
+if args.load_preset:
+    rec = load_preset(args.load_preset[0])
 else:
     rec = recommendation.Recommendation()
     parse()
