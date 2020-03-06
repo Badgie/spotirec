@@ -20,6 +20,8 @@ Script that creates a playlist of recommendations based on the user's top artist
   - [Blacklists](#blacklists)
   - [Autoplay](#autoplay)
   - [Devices](#devices)
+  - [Saving Playlists](#saving-playlists)
+  - [Saving Tracks](#saving-tracks)
   - [Printing](#printing)
 - [Troubleshooting](#troubleshooting)
 
@@ -50,7 +52,7 @@ mkdir -p /usr/lib/spotirec
 mkdir -p /usr/bin
 mkdir -p $HOME/.config/spotirec
 
-install spotirec.py oauth2.py recommendation.py api.py -t /usr/lib/spotirec
+install spotirec.py oauth2.py conf.py recommendation.py api.py -t /usr/lib/spotirec
 
 ln -s /usr/lib/spotirec/spotirec.py /usr/bin/spotirec
 ```
@@ -108,17 +110,22 @@ $ spotirec -l 50
 This option determines how many tracks should be added to your new playlist. The default value is 20, the minimum value is 1, and the max value is 100.
 
 ### Presets
-You can save the settings for a recommendation with the `-ps` argument followed by a name
+You can save the settings for a recommendation with the `--save-preset` flag followed by a name
 ```
-$ spotirec -t -ps name -l 50 --tune prefix_attribute=value prefix_attribute=value
+$ spotirec -t --save-preset preset_name -l 50 --tune prefix_attribute=value prefix_attribute=value
 ```
-To load and use a saved preset, pass the `-p` argument followed by the name of the preset
+To load and use a saved preset, pass the `--load-preset` flag followed by the name of the preset
 ```
-$ spotirec -p name
+$ spotirec --load-preset preset_name
 ```
+To remove one or more saved presets, pass the `--remove-presets` flag followed by a sequence of preset names
+```
+$ spotirec --remove-presets preset_name0 preset_name1 preset_name2
+```
+If you forgot which presets you have saved, see [printing](#printing)
 
 ### Tuning
-You can also specify tunable attributes with the `--tune` option, followed by any number of whitespace separated arguments on the form `prefix_attribute=value`
+You can also specify tunable attributes with the `--tune` flag, followed by any number of whitespace separated inputs on the form `prefix_attribute=value`
 ```
 $ spotirec --tune prefix_attribute=value prefix_attribute=value
 ```
@@ -138,67 +145,104 @@ $ spotirec --tune prefix_attribute=value prefix_attribute=value
 | key | int | 0-11 | N/A | [Pitch class](https://en.wikipedia.org/wiki/Pitch_class#Other_ways_to_label_pitch_classes) of the track. |
 | mode | int | 0-1 | N/A | Modality of the track. 1 is major, 0 is minor. |
 | time_signature | int | N/A | N/A | Estimated overall [time signature](https://en.wikipedia.org/wiki/Time_signature) of the track. |
-| popularity | int | 0-100 | 0-100 | Popularity of the track. High is popular, low is barely known |
+| popularity | int | 0-100 | 0-100 | Popularity of the track. High is popular, low is barely known. |
 | acousticness | float | 0.0-1.0 | Any | Confidence measure for whether or not the track is acoustic. High value is acoustic. |
 | danceability | float | 0.0-1.0 | 0.1-0.9 | How well fit a track is for dancing. Measurement includes among others tempo, rhythm stability, and beat strength. High value is suitable for dancing. |
 | energy | float | 0.0-1.0 | Any | Perceptual measure of intensity and activity. High energy is fast, loud, and noisy, and low is slow and mellow. |
 | instrumentalness | float | 0.0-1.0 | 0.0-1.0 | Whether or not a track contains vocals. Low contains vocals, high is purely instrumental. |
 | liveness | float | 0.0-1.0 | 0.0-0.4 | Predicts whether or not a track is live. High value is live. |
 | loudness | float | -60-0 | -20-0 | Overall loudness of the track, measured in decibels. |
-| speechiness | float | 0.0-1.0 | 0.0-0.3 | Presence of spoken words. Low is a song, and high is likely to be a talk show or podcast. |
-| valence | float | 0.0-1.0 | Any | Positivity of the track. High value is positive, and low value is negative. |
+| speechiness | float | 0.0-1.0 | 0.0-0.3 | Presence of spoken words. Low is a song, high is likely to be a talk show or podcast. |
+| valence | float | 0.0-1.0 | Any | Positivity of the track. High value is positive, low value is negative. |
 | tempo | float | 0.0-220.0 | 60.0-210.0 | Overall estimated beats per minute of the track. |
 
-Recommendations may be sparce outside the recommended range.
+Recommendations may be scarce outside the recommended range.
 
 ### Blacklists
-To blacklist tracks or artists, pass the `-b` option followed by an arbitrary number of whitespace separated Spotify URIs
+To blacklist tracks or artists, pass the `-b` argument followed by an arbitrary number of whitespace separated Spotify URIs
 ```
 $ spotirec -b spotify:track:id spotify:track:id spotify:artist:id
 ```
-To remove entries from your blacklist, pass the `-br` option followed by an arbitrary number of whitespace separated Spotify URIs
+To remove entries from your blacklist, pass the `-br` argument followed by an arbitrary number of whitespace separated Spotify URIs
 ```
 $ spotirec -br spotify:track:id spotify:track:id spotify:artist:id
 ```
+To blacklist the currently playing track, or the artists that created the track, pass the `-bc` argument followed by either 'artist' or 'track'
+```
+$ spotirec -bc track
+$ spotirec -bc artist
+```
+If you forgot which tracks and artists you have blacklisted, see [printing](#printing)
 
 ### Autoplay
-You can also automatically play your new playlist upon creation using the `--play` option - here you will be prompted to select which device you want to start the playback on
+You can also automatically play your new playlist upon creation using the `--play` flag followed by a name of a saved device - see [devices](#devices)
 ```
-$ spotirec --play
-Available devices:
-Name                   Type
-----------------------------------------
-0. Phone               Smartphone
-1. Laptop              Computer
-Please select a device by index number [default: Phone]: 1
-Would you like to save "Laptop" for later use? [y/n] y
-Enter an identifier for your device: laptop
-Saved device "Laptop" as "laptop"
-```
-You will also be asked if you want to save the device in your config for later use. If you choose to do so, you can use the `--play-device` option followed by an identifier for a device to play on a saved device
-```
-$ spotirec --play-device laptop
+$ spotirec --play device_name
 ```
 
 ### Devices
-You can also manually save devices using the `-d` option, which provides the same functionality as `--play` without creating a playlist
+You can save devices using the `--save-device` flag, whereafter you will be prompted to select a device from your currently connected devices, and to input a name that will serve as an identifier
 ```
-$ spotirec -d
+$ spotirec --save-device
+**Name**                   **Type**
+0. Phone               Smartphone
+1. Laptop              Computer
+Select a device by index [0]: 1
+Enter an identifier for your device: laptop
+Added device laptop to config
 ```
-To remove a saved device, pass the `-dr` option followed by an identifier for a device
+To remove one or more saved devices, pass the `--remove-devices` flag followed by a sequence of names for devices
 ```
-$ spotirec -dr laptop
+$ spotirec --remove-devices device_name0 device_name1 device_name2
+```
+If you forgot which devices you have saved, see [printing](#printing)
+
+### Saving playlists
+You can save playlists using the `--save-playlist` flag, whereafter you will be prompted to input an identifier for the playlist, and then a URI for the playlist. For further usage of this, see [saving tracks](#saving-tracks)
+```
+$ spotirec --save-playlist
+Please input an identifier for your playlist: test
+Please input the URI for your playlist: spotify:playlist:0Vu97Y7WoJgBlFzAwbrZ8h
+Added playlist test to config
+```
+To remove one or more saved playlists, pass the `--remove-playlists` flag followed by a sequence of names for playlists
+```
+$ spotirec --remove-playlists playlist_name0 playlist_name1 playlist_name2
+```
+If you forgot which playlists you have saved, see [printing](#printing)
+
+### Saving Tracks
+To like the currently playing track, pass the `-s` argument
+```
+$ spotirec -s
+```
+To remove the currently playing track from liked tracks, pass the `-sr` argument
+```
+$ spotirec -sr
+```
+
+To add the currently playing track to a specific playlist, pass the `--add-to` flag followed by a name for a saved playlist, or a playlist URI
+```
+$ spotirec --add-to playlist_name
+$ spotirec --add-to spotify:playlist:0Vu97Y7WoJgBlFzAwbrZ8h
+```
+To remove the currently playing track from a specific playlist, pass the `--remove-from` flag followed by a name for a saved playlist, or a playlist URI
+```
+$ spotirec --remove-from playlist_name
+$ spotirec --remove-from spotify:playlist:0Vu97Y7WoJgBlFzAwbrZ8h
 ```
 
 ### Printing
-You can print lists of various data contained within your Spotify account and config files using the `--print` argument followed by `[artists|tracks|genres|genre-seeds|blacklist|devices]`
+You can print lists of various data contained within your Spotify account and config files using the `--print` flag followed by any of the following strings, depending on what you would like to print
 ```
 $ spotirec --print artists
 $ spotirec --print tracks
 $ spotirec --print genres
 $ spotirec --print genre-seeds
-$ spotirec --print blacklist
 $ spotirec --print devices
+$ spotirec --print blacklist
+$ spotirec --print presets
+$ spotirec --print playlists
 ```
 
 ## Troubleshooting
