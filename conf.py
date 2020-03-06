@@ -7,11 +7,6 @@ from pathlib import Path
 
 CONFIG_DIR = f'{Path.home()}/.config/spotirec'
 URI_RE = r'spotify:(artist|track):[a-zA-Z0-9]'
-SECTION_RE = r'^\[([a-zA-Z]+)\]$'
-OPTION_RE = r'([a-z\_]*) = ([a-zA-Z0-9{}\[\]:,\"])'
-INT_RE = r'^([0-9]+)$'
-FLOAT_RE = r'^([0-9]+)\.([0-9]+)$'
-DICT_RE = r'\{.+\}'
 
 
 def open_config() -> configparser.ConfigParser:
@@ -21,6 +16,7 @@ def open_config() -> configparser.ConfigParser:
         assert len(c.keys()) > 0
         return c
     except (FileNotFoundError, AssertionError):
+        print('Config file not found, generating...')
         convert_or_create_config()
         return open_config()
 
@@ -40,6 +36,8 @@ def convert_or_create_config():
                     c.set(x, y[0], str(y[1]))
         except (FileNotFoundError, json.JSONDecodeError):
             pass
+    print('Done')
+    print('If you have the old style config files you may safely delete these, or save them as backup')
     save_config(c)
 
 
