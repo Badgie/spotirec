@@ -127,7 +127,7 @@ def get_token() -> str:
     """
     creds = sp_oauth.get_credentials()
     if creds:
-        return creds['access_token']
+        return creds.get('access_token')
     else:
         authorize()
         exit(1)
@@ -289,10 +289,10 @@ def print_blacklist():
     """
     blacklist = conf.get_blacklist()
     print('\033[1m' + 'Tracks' + '\033[0m')
-    for x in blacklist['tracks'].values():
+    for x in blacklist.get('tracks').values():
         print(f'{x["name"]} by {", ".join(x["artists"])} - {x["uri"]}')
     print('\n' + '\033[1m' + 'Artists' + '\033[0m')
-    for x in blacklist['artists'].values():
+    for x in blacklist.get('artists').values():
         print(f'{x["name"]} - {x["uri"]}')
 
 
@@ -355,7 +355,7 @@ def load_preset(name: str) -> recommendation.Recommendation:
     print(f'Using preset \"{name}\"')
     presets = conf.get_presets()
     try:
-        contents = presets[name]
+        contents = presets.get(name)
     except KeyError:
         print(f'Error: could not find preset \"{name}\", check spelling and try again')
         exit(1)
@@ -398,7 +398,7 @@ def get_device(device_name: str) -> dict:
     """
     devices = conf.get_devices()
     try:
-        return devices[device_name]
+        return devices.get(device_name)
     except KeyError:
         print(f'Error: device {device_name} does not exist in config')
         exit(1)
@@ -436,8 +436,9 @@ def save_device():
     for x in devices:
         print(f'{devices.index(x)}. {x["name"]}{" " * (20 - len(x["name"]))}{x["type"]}')
     device = devices[prompt_device_index()]
+    device_dict = {'id': device['id'], 'name': device['name'], 'type': device['type']}
     name = prompt_name()
-    conf.save_device(device, name)
+    conf.save_device(device_dict, name)
 
 
 def remove_devices(devices: list):
@@ -586,14 +587,13 @@ def parse():
         save_playlist()
         exit(1)
     elif args.remove_playlists:
-        print('Removing playlist from config')
-        remove_playlists(args.remove_playlist)
+        remove_playlists(args.remove_playlists)
         exit(1)
     elif args.save_device:
         save_device()
         exit(1)
     elif args.remove_devices:
-        remove_devices(args.remove_device)
+        remove_devices(args.remove_devices)
         exit(1)
     elif args.remove_presets:
         remove_presets(args.remove_presets)

@@ -28,12 +28,11 @@ class SpotifyOAuth:
         """
         try:
             creds = conf.get_oauth()
-            print(creds)
             if self.is_token_expired(int(creds['expires_at'])):
                 print('OAuth token is expired, refreshing...')
                 creds = self.refresh_token(creds['refresh_token'])
         except (IOError, json.decoder.JSONDecodeError):
-            print('Error: cache does not exist or is empty')
+            print('Error: OAuth config does not exist or is empty')
             return None
         return creds
 

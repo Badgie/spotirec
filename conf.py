@@ -1,6 +1,7 @@
-import configparser
 import json
 import re
+import configparser
+import ast
 from pathlib import Path
 
 
@@ -13,90 +14,41 @@ FLOAT_RE = r'^([0-9]+)\.([0-9]+)$'
 DICT_RE = r'\{.+\}'
 
 
-def config_test():
-    config = {}
-    current_section = ''
-    with open(f'{CONFIG_DIR}/spotirec.conf') as f:
-        for x in f.readlines():
-            line = x.strip('\n')
-            if re.match(SECTION_RE, line):
-                config[line.strip('[]')] = {}
-                current_section = line.strip('[]')
-            elif re.match(OPTION_RE, line):
-                option = line.split(' = ')
-                if re.match(INT_RE, option[1]):
-                    val = int(option[1])
-                elif re.match(FLOAT_RE, option[1]):
-                    val = float(option[1])
-                elif re.match(DICT_RE, option[1]):
-                    print(option[1])
-                    val = json.loads(option[1])
-                else:
-                    val = str(option[1])
-                config[current_section][option[0]] = val
-    print(type(config['blacklist']['artists']))
-
-
-def open_config() -> dict:
-    config = {}
-    current_section = ''
+def open_config() -> configparser.ConfigParser:
     try:
-        with open(f'{CONFIG_DIR}/spotirec.conf') as f:
-            for x in f.readlines():
-                line = x.strip('\n')
-                if re.match(SECTION_RE, line):
-                    config[line.strip('[]')] = {}
-                    current_section = line.strip('[]')
-                elif re.match(OPTION_RE, line):
-                    option = line.split(' = ')
-                    if re.match(INT_RE, option[1]):
-                        val = int(option[1])
-                    elif re.match(FLOAT_RE, option[1]):
-                        val = float(option[1])
-                    elif re.match(DICT_RE, option[1]):
-                        val = dict(option[1])
-                    else:
-                        val = str(option[1])
-                    config[current_section][option[0]] = val
-            assert len(config) > 0
-            return config
+        c = configparser.ConfigParser()
+        c.read_file(open(f'{CONFIG_DIR}/spotirec.conf'))
+        assert len(c.keys()) > 0
+        return c
     except (FileNotFoundError, AssertionError):
         convert_or_create_config()
         return open_config()
 
 
-def save_config(c: dict):
-    conf = ''
-    for x in c.items():
-        conf += f'[{x[0]}]\n'
-        for y in x[1].items():
-            conf += f'{y[0]} = {y[1]}\n'
-        conf += '\n'
-    with open(f'{CONFIG_DIR}/spotirec.conf', 'w') as f:
-        f.write(conf)
+def save_config(c: configparser.ConfigParser):
+    c.write(open(f'{CONFIG_DIR}/spotirec.conf', 'w'))
 
 
 def convert_or_create_config():
-    c = {}
+    c = configparser.ConfigParser()
     old_conf = ['spotirecoauth', 'presets', 'blacklist', 'devices', 'playlists']
     for x in old_conf:
-        c[x] = {}
+        c.add_section(x)
         try:
             with open(f'{CONFIG_DIR}/{x}', 'r') as f:
                 for y in json.loads(f.read()).items():
-                    c[x][y[0]] = json.dumps(y[1]) if type(y[1]) == dict else str(y[1])
-        except FileNotFoundError:
+                    c.set(x, y[0], str(y[1]))
+        except (FileNotFoundError, json.JSONDecodeError):
             pass
     save_config(c)
 
 
 def get_oauth() -> dict:
     c = open_config()
-    print(c)
     try:
         c['spotirecoauth']
     except KeyError:
-        c['spotirecoauth'] = {}
+        c.add_section('spotirecoauth')
         save_config(c)
     return c['spotirecoauth']
 
@@ -106,22 +58,26 @@ def get_blacklist() -> dict:
     try:
         blacklist = {}
         for x in c['blacklist'].items():
-            blacklist[x[0]] = json.loads(x[1])
+            blacklist[x[0]] = ast.literal_eval(x[1])
         return blacklist
     except KeyError:
-        c['blacklist'] = {}
+        c.add_section('blacklist')
         save_config(c)
         return c['blacklist']
 
 
 def add_to_blacklist(uri_data: json, uri: str):
+    uri_type = uri.split(':')[1]
     data = {'name': uri_data['name'], 'uri': uri}
     try:
         data['artists'] = [x['name'] for x in uri_data['artists']]
     except KeyError:
         pass
     c = open_config()
-    c['blacklist'][f'{uri.split(":")[1]}s'][uri] = data
+    print(f'Adding {uri_type} {data["name"]} to blacklist')
+    blacklist = ast.literal_eval(c.get('blacklist', f'{uri_type}s'))
+    blacklist[uri] = data
+    c.set('blacklist', f'{uri_type}s', str(blacklist))
     save_config(c)
 
 
@@ -130,11 +86,12 @@ def remove_from_blacklist(uri: str):
         print(f'Error: uri {uri} is not a valid uri')
         return
     c = open_config()
-    print(type(c['blacklist']['artists']))
     uri_type = uri.split(':')[1]
     try:
-        print(f'Removing {uri_type} {c["blacklist"][f"{uri_type}s"][uri]["name"]} from blacklist')
-        del c['blacklist'][f'{uri_type}s'][uri]
+        blacklist = ast.literal_eval(c.get('blacklist', f'{uri_type}s'))
+        print(f'Removing {uri_type} {blacklist[uri]["name"]} from blacklist')
+        del blacklist[uri]
+        c.set('blacklist', f'{uri_type}s', str(blacklist))
     except KeyError:
         print(f'Error: {uri_type} {uri} does not exist in blacklist')
     save_config(c)
@@ -145,10 +102,10 @@ def get_presets() -> dict:
     try:
         presets = {}
         for x in c['presets'].items():
-            presets[x[0]] = json.loads(x[1])
+            presets[x[0]] = ast.literal_eval(x[1])
         return presets
     except KeyError:
-        c['presets'] = {}
+        c.add_section('presets')
         save_config(c)
         return c['presets']
 
@@ -158,8 +115,8 @@ def save_preset(preset: dict, preset_id: str):
     try:
         c['presets']
     except KeyError:
-        c['presets'] = {}
-    c['presets'][preset_id] = json.dumps(preset)
+        c.add_section('presets')
+    c.set('presets', preset_id, str(preset))
     print(f'Added preset {preset_id} to config')
     save_config(c)
 
@@ -167,7 +124,7 @@ def save_preset(preset: dict, preset_id: str):
 def remove_preset(iden: str):
     c = open_config()
     try:
-        del c['presets'][iden]
+        c.remove_option('presets', iden)
         print(f'Deleted preset {iden} from config')
         save_config(c)
     except KeyError:
@@ -179,10 +136,10 @@ def get_devices() -> dict:
     try:
         devices = {}
         for x in c['devices'].items():
-            devices[x[0]] = json.loads(x[1])
+            devices[x[0]] = ast.literal_eval(x[1])
         return devices
     except KeyError:
-        c['devices'] = {}
+        c.add_section('devices')
         save_config(c)
         return c['devices']
 
@@ -192,8 +149,8 @@ def save_device(device: dict, device_id: str):
     try:
         c['devices']
     except KeyError:
-        c['devices'] = {}
-    c['devices'][device_id] = json.dumps(device)
+        c.add_section('devices')
+    c.set('devices', device_id, str(device))
     print(f'Added device {device_id} to config')
     save_config(c)
 
@@ -201,7 +158,7 @@ def save_device(device: dict, device_id: str):
 def remove_device(iden: str):
     c = open_config()
     try:
-        del c['devices'][iden]
+        c.remove_option('devices', iden)
         print(f'Deleted device {iden} from config')
         save_config(c)
     except KeyError:
@@ -213,12 +170,12 @@ def get_playlists() -> dict:
     try:
         playlists = {}
         for x in c['playlists'].items():
-            playlists[x[0]] = json.loads(x[1])
+            playlists[x[0]] = ast.literal_eval(x[1])
         return playlists
     except KeyError:
-        c['playlists'] = {}
+        c.add_section('playlists')
         save_config(c)
-    return c['playlists']
+        return c['playlists']
 
 
 def save_playlist(playlist: dict, playlist_id: str):
@@ -226,8 +183,8 @@ def save_playlist(playlist: dict, playlist_id: str):
     try:
         c['playlists']
     except KeyError:
-        c['playlists'] = {}
-    c['playlists'][playlist_id] = json.dumps(playlist)
+        c.add_section('playlists')
+    c.set('playlists', playlist_id, str(playlist))
     print(f'Added playlist {playlist_id} to config')
     save_config(c)
 
@@ -235,7 +192,7 @@ def save_playlist(playlist: dict, playlist_id: str):
 def remove_playlist(iden: str):
     c = open_config()
     try:
-        del c['playlists'][iden]
+        c.remove_option('playlists', iden)
         print(f'Deleted playlist {iden} from config')
         save_config(c)
     except KeyError:
