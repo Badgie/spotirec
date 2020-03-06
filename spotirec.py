@@ -144,10 +144,10 @@ def get_user_top_genres() -> dict:
     for x in data['items']:
         for genre in x['genres']:
             genre = genre.replace(' ', '-')
-            if genre in genre_seeds['genres']:
-                if genre in genres.keys():
+            if any(g == genre for g in genre_seeds['genres']):
+                try:
                     genres[genre] += 1
-                else:
+                except KeyError:
                     genres[genre] = 1
     return genres
 
@@ -215,9 +215,7 @@ def check_if_valid_genre(genre: str) -> bool:
     :param genre: user input genre
     :return: True if genre exists, False if not
     """
-    if genre in get_user_top_genres():
-        return True
-    if genre in api.get_genre_seeds(headers=headers)['genres']:
+    if any(g == genre for g in get_user_top_genres()) or any(g == genre for g in api.get_genre_seeds(headers)['genres']):
         return True
     return False
 
@@ -539,20 +537,12 @@ def filter_recommendations(data: json) -> list:
     :return: list of eligible track URIs
     """
     tracks = []
-    with open(blacklist_path, 'r+') as file:
-        try:
-            blacklist = json.loads(file.read())
-            blacklist_artists = [x for x in blacklist['artists'].keys()]
-            blacklist_tracks = [x for x in blacklist['tracks'].keys()]
-            for x in data['tracks']:
-                if x['uri'] in blacklist_artists:
-                    continue
-                elif x['uri'] in blacklist_tracks:
-                    continue
-                else:
-                    tracks.append(x['uri'])
-        except json.decoder.JSONDecodeError:
-            tracks = [x['uri'] for x in data['tracks']]
+    blacklist = conf.get_blacklist()
+    for x in data['tracks']:
+        if any(x['uri'] == s for s in blacklist['tracks'].keys()) or len(set(blacklist['artists'].keys()) & set(y['uri'] for y in x['artists'])) > 0:
+            continue
+        else:
+            tracks.append(x['uri'])
     return tracks
 
 
