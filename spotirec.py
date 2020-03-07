@@ -503,7 +503,7 @@ def remove_playlists(playlists: list):
 
 
 def add_current_track(playlist: str):
-    if re.match(URI_RE, playlist):
+    if re.match(PLAYLIST_URI_RE, playlist):
         playlist_id = playlist.split(':')[2]
     else:
         playlists = conf.get_playlists()
@@ -512,12 +512,12 @@ def add_current_track(playlist: str):
         except KeyError:
             print(f'Error: playlist {playlist} does not exist in config')
             exit(1)
-    print(f'Adding currently playing track to playlist {playlists[playlist]["name"]}')
+    print(f'Adding currently playing track to playlist')
     api.add_to_playlist([api.get_current_track(headers)], playlist_id, headers)
 
 
 def remove_current_track(playlist: str):
-    if re.match(URI_RE, playlist):
+    if re.match(PLAYLIST_URI_RE, playlist):
         playlist_id = playlist.split(':')[2]
     else:
         playlists = conf.get_playlists()
@@ -526,7 +526,7 @@ def remove_current_track(playlist: str):
         except KeyError:
             print(f'Error: playlist {playlist} does not exist in config')
             exit(1)
-    print(f'Removing currently playing track to playlist {playlists[playlist]["name"]}')
+    print(f'Removing currently playing track to playlist')
     api.remove_from_playlist([api.get_current_track(headers)], playlist_id, headers)
 
 
@@ -592,8 +592,6 @@ def parse():
         exit(1)
 
     if args.s:
-        if len(args.s) > 0:
-            exit(1)
         print('Liking current track')
         api.like_track(headers=headers)
         exit(1)
@@ -648,7 +646,7 @@ def parse():
 
     if args.play:
         rec.auto_play = True
-        rec.playback_device = get_device(args.play)
+        rec.playback_device = get_device(args.play[0])
 
     if args.a:
         print(f'Basing recommendations off your top {args.a} artist(s)')
