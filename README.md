@@ -6,7 +6,7 @@
 </p>
 
 # Spotirec
-Script that creates a playlist of recommendations based on the user's top artists or tracks, or genres extracted from top artists. A sort of Discover Weekly on demand.
+A CLI that can creates a playlist of recommendations based on the user's top artists or tracks, or genres extracted from top artists with various parameters - a sort of Discover Weekly on demand. Also includes functionality for various other Spotify-related actions, such as saving the currently playing track.
 
 ## Table of Contents
 - [Installation](#installation)
