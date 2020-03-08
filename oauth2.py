@@ -24,7 +24,7 @@ class SpotifyOAuth:
     def get_credentials(self) -> json:
         """
         Get credentials from cache file. Refresh token if it's about to expire.
-        :return: token contents as a json object
+        :return: token contents as a config object
         """
         try:
             creds = conf.get_oauth()
@@ -110,8 +110,8 @@ class SpotifyOAuth:
 
     def save_token(self, token: json, refresh_token=None):
         """
-        Add 'expires at' field and reapplies refresh token to token, and save to cache
-        :param token: credentials as a json object
+        Add 'expires at' field and reapplies refresh token to token, and save to config
+        :param token: credentials as a config object
         :param refresh_token: user refresh token
         """
         token['expires_at'] = round(time.time()) + int(token['expires_in'])

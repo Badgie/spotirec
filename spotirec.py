@@ -36,8 +36,10 @@ spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for de
 parser.add_argument('n', nargs='?', type=int, const=5, default=5,
                     help='amount of seeds to use on no-arg recommendations as an integer - note that this must appear '
                          'as the first argument if used and can only be used with no-arg')
-# Create mutually exclusive group for recommendation types to ensure only one is given
+
+# Recommendation schemes
 rec_scheme_group = parser.add_argument_group(title='Recommendation schemes')
+# Create mutually exclusive group for recommendation types to ensure only one is given
 mutex_group = rec_scheme_group.add_mutually_exclusive_group()
 mutex_group.add_argument('-a', metavar='SEED_SIZE', nargs='?', type=int, const=5, choices=range(1, 6),
                          help='base recommendations on your top artists')
@@ -49,7 +51,9 @@ mutex_group.add_argument('-gc', action='store_true', help='base recommendations 
 mutex_group.add_argument('-gcs', action='store_true', help='base recommendations on custom seed genres')
 mutex_group.add_argument('-c', action='store_true', help='base recommendations on a custom seed')
 
+# Saving arguments
 save_group = parser.add_argument_group(title='Saving arguments')
+# You should only be able to save or remove the current track at once, not both
 save_mutex_group = save_group.add_mutually_exclusive_group()
 add_mutex_group = save_group.add_mutually_exclusive_group()
 save_mutex_group.add_argument('-s', action='store_true', help='like currently playing track')
@@ -66,14 +70,15 @@ save_group.add_argument('--load-preset', metavar='ID', nargs=1, type=str, help='
 save_group.add_argument('--save-preset', metavar='ID', nargs=1, type=str, help='save options as preset')
 save_group.add_argument('--remove-presets', metavar='ID', nargs='+', type=str, help='remove preset(s)')
 
+# Recommendation modifications
 rec_options_group = parser.add_argument_group(title='Recommendation options',
                                               description='These may only appear when creating a playlist')
 rec_options_group.add_argument('-l', metavar='LIMIT', nargs=1, type=int, choices=range(1, 101),
                                help='amount of tracks to add (default: 20, max: 100)')
-
 rec_options_group.add_argument('--tune', metavar='ATTR', nargs='+', type=str, help='specify tunable attribute(s)')
 rec_options_group.add_argument('--play', metavar='DEVICE', nargs=1, help='select playback device to start playing on')
 
+# Blacklisting
 blacklist_group = parser.add_argument_group(title='Blacklisting')
 blacklist_group.add_argument('-b', metavar='URI', nargs='+', type=str, help='blacklist track(s) and/or artist(s)')
 blacklist_group.add_argument('-br', metavar='URI', nargs='+', type=str,
@@ -81,6 +86,7 @@ blacklist_group.add_argument('-br', metavar='URI', nargs='+', type=str,
 blacklist_group.add_argument('-bc', metavar='artist | track', nargs=1, choices=['artist', 'track'],
                              help='blacklist currently playing artist(s) or track')
 
+# Printing
 print_group = parser.add_argument_group(title='Printing')
 print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
                          choices=['artists', 'tracks', 'genres', 'genre-seeds', 'devices', 'blacklist', 'presets',
@@ -141,9 +147,11 @@ def get_user_top_genres() -> dict:
     data = api.get_top_list('artists', 50, headers=headers)
     genres = {}
     genre_seeds = api.get_genre_seeds(headers=headers)
+    # Loop through each genre of each artist
     for x in data['items']:
         for genre in x['genres']:
             genre = genre.replace(' ', '-')
+            # Check if genre is a valid seed
             if any(g == genre for g in genre_seeds['genres']):
                 try:
                     genres[genre] += 1
@@ -173,6 +181,7 @@ def print_choices(data=None, prompt=True, sort=False) -> str:
         sorted_data = sorted(data.items(), key=lambda kv: kv[1], reverse=True)
         data = [sorted_data[x][0] for x in range(0, len(sorted_data))]
     line = ""
+    # Format output lines, three seeds per line
     for x in range(0, round(len(data)), 3):
         try:
             line += f'{x}: {data[x]}'
@@ -188,6 +197,7 @@ def print_choices(data=None, prompt=True, sort=False) -> str:
     if prompt:
         input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to '
                              'include [default: top 5]:\n') or '0 1 2 3 4'
+        # If seed type is genres, simply parse the seed, else return the input for further processing
         if 'genres' in rec.seed_type:
             parse_seed_info([data[int(x)] for x in input_string.split(' ')])
         else:
@@ -225,14 +235,17 @@ def check_tune_validity(tune: str):
     Check validity of tune input - exit program if not valid
     :param tune: tune input as string
     """
+    # Check prefix validity
     if not tune.split('_', 1)[0] in TUNE_PREFIX:
         print(f'Tune prefix \"{tune.split("_", 1)[0]}\" is malformed - available prefixes:')
         print(TUNE_PREFIX)
         exit(1)
+    # Check attribute validity
     if not tune.split('=')[0].split('_', 1)[1] in TUNE_ATTR:
         print(f'Tune attribute \"{tune.split("=")[0].split("_", 1)[1]}\" is malformed - available attributes:')
         print(TUNE_ATTR)
         exit(1)
+    # Try parsing value to number
     try:
         float(tune.split('=')[1]) if '.' in tune.split('=')[1] else int(tune.split('=')[1])
     except ValueError:
@@ -248,6 +261,7 @@ def parse_seed_info(seeds):
     if len(shlex.split(seeds) if type(seeds) is str else seeds) > 5:
         print('Please enter at most 5 seeds')
         exit(1)
+    # Parse each seed in input and add to seed string depending on type
     for x in shlex.split(seeds) if type(seeds) is str else seeds:
         if rec.seed_type == 'genres':
             rec.add_seed_info(data_string=x)
@@ -301,15 +315,21 @@ def generate_img(tracks: list) -> Image:
     :param tracks: list of track uris
     :return: a 320x320 image generated from playlist hash
     """
+    # Hash tracks to a playlist-unique string
     track_hash = hashlib.sha256(''.join(str(x) for x in tracks).encode('utf-8')).hexdigest()
+    # Use the first six chars of the hash to generate a color
+    # The hex value of three pairs of chars are converted to integers, yielding a list on the form [r, g, b]
     color = [int(track_hash[i:i + 2], 16) for i in (0, 2, 4)]
+    # Create an image object the size of the squared square root of the hash string - always 8x8
     img = Image.new('RGB', (int(math.sqrt(len(track_hash))), int(math.sqrt(len(track_hash)))))
     pixel_map = []
+    # Iterate over hash string and assign to pixel map each digit to the generated color, each letter to light gray
     for x in track_hash:
         if re.match(r'[0-9]', x):
             pixel_map.append(color)
         else:
             pixel_map.append([200, 200, 200])
+    # Add the pixel map to the image object and return as a size suited for the Spotify API
     img.putdata([tuple(x) for x in pixel_map])
     return img.resize((320, 320), Image.AFFINE)
 
@@ -380,6 +400,9 @@ def remove_presets(presets: list):
 
 
 def print_presets():
+    """
+    Format and print preset entries
+    """
     presets = conf.get_presets()
     print('\033[1m' + f'Name{" " * 16}Type{" " * 21}Params{" " * 44}Seeds' + '\033[0m')
     for x in presets.items():
@@ -428,11 +451,13 @@ def save_device():
             print('Please ensure that the identifier contains at least one character, and no whitespaces.')
             return prompt_name()
 
+    # Get available devices from API and print
     devices = api.get_available_devices(headers)['devices']
     print('Available devices:')
     print('\033[1m' + f'Name{" " * 19}Type' + '\033[0m')
     for x in devices:
         print(f'{devices.index(x)}. {x["name"]}{" " * (20 - len(x["name"]))}{x["type"]}')
+    # Prompt device selection and identifier, and save to config
     device = devices[prompt_device_index()]
     device_dict = {'id': device['id'], 'name': device['name'], 'type': device['type']}
     name = prompt_name()
@@ -442,7 +467,7 @@ def save_device():
 def remove_devices(devices: list):
     """
     Remove device(s) from user config
-    :param devices: list of devices
+    :param devices: list of device(s)
     """
     for x in devices:
         conf.remove_device(x)
@@ -470,6 +495,10 @@ def print_playlists():
 
 
 def save_playlist():
+    """
+    Prompt user for an identifier and URI for playlist and save to config
+    """
+
     def input_id() -> str:
         iden = input('Please input an identifier for your playlist: ')
         try:
@@ -491,6 +520,7 @@ def save_playlist():
             print(f'Error: playlist uri \"{uri}\" is malformed.')
             return input_uri()
 
+    # Prompt device identifier and URI, and save to config
     playlist_id = input_id()
     playlist_uri = input_uri()
     playlist = {'name': api.get_playlist(headers, playlist_uri.split(':')[2])["name"], 'uri': playlist_uri}
@@ -498,11 +528,20 @@ def save_playlist():
 
 
 def remove_playlists(playlists: list):
+    """
+    Remove playlist(s) from user config
+    :param playlists: list of playlist(s)
+    """
     for x in playlists:
         conf.remove_playlist(x)
 
 
 def add_current_track(playlist: str):
+    """
+    Add currently playing track to input playlist
+    :param playlist: identifier or URI for playlist
+    """
+    # Check whether input is URI or identifier
     if re.match(PLAYLIST_URI_RE, playlist):
         playlist_id = playlist.split(':')[2]
     else:
@@ -517,6 +556,11 @@ def add_current_track(playlist: str):
 
 
 def remove_current_track(playlist: str):
+    """
+    Remove currently playing track from input playlist
+    :param playlist: identifier or URI for playlist
+    """
+    # Check whether input is URI or identifier
     if re.match(PLAYLIST_URI_RE, playlist):
         playlist_id = playlist.split(':')[2]
     else:
@@ -536,14 +580,16 @@ def filter_recommendations(data: json) -> list:
     :param data: recommendations as json object.
     :return: list of eligible track URIs
     """
-    tracks = []
+    valid_tracks = []
     blacklist = conf.get_blacklist()
     for x in data['tracks']:
+        # If the URI of the current track is blacklisted or there is an intersection between the set of blacklisted
+        # artists and the set of artists of the current track, then skip - otherwise add to valid tracks
         if any(x['uri'] == s for s in blacklist['tracks'].keys()) or len(set(blacklist['artists'].keys()) & set(y['uri'] for y in x['artists'])) > 0:
             continue
         else:
-            tracks.append(x['uri'])
-    return tracks
+            valid_tracks.append(x['uri'])
+    return valid_tracks
 
 
 def recommend():
@@ -553,23 +599,32 @@ def recommend():
     is printed to terminal.
     """
     print('Getting recommendations')
+    # Create seed from user preferences
     rec.create_seed()
+    # Save as preset if requested
     if args.save_preset:
         save_preset(args.save_preset[0])
+    # Filter blacklisted artists and tracks from recommendations
     tracks = filter_recommendations(api.get_recommendations(rec.rec_params, headers=headers))
+    # If no tracks are left, notify an error and exit
     if len(tracks) == 0:
         print('Error: received zero tracks with your options - adjust and try again')
         exit(1)
+    # Filter recommendations until length of track list matches limit preference
     while True:
         if len(tracks) < rec.limit_original:
             rec.update_limit(rec.limit_original - len(tracks))
             tracks += filter_recommendations(api.get_recommendations(rec.rec_params, headers=headers))
         else:
             break
+    # Create playlist and add tracks
     rec.playlist_id = api.create_playlist(rec.playlist_name, rec.playlist_description(), headers=headers)
     api.add_to_playlist(tracks, rec.playlist_id, headers=headers)
+    # Generate and upload dank-ass image
     add_image_to_playlist(tracks)
+    # Print seed selection
     rec.print_selection()
+    # Start playing on input device if auto-play is present
     if rec.auto_play:
         api.play(rec.playback_device['id'], f'spotify:playlist:{rec.playlist_id}', headers)
 

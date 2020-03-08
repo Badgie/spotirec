@@ -201,6 +201,12 @@ def get_playlist(headers: dict, playlist_id: str):
 
 
 def remove_from_playlist(tracks: list, playlist_id: str, headers: dict):
+    """
+    Remove track(s) from a playlist
+    :param tracks: the tracks to remove
+    :param playlist_id: identifier of the playlist to remove tracks from
+    :param headers: request headers
+    """
     data = {'tracks': [{'uri': x} for x in tracks]}
     response = requests.delete(f'{url_base}/playlists/{playlist_id}/tracks', headers=headers, json=data)
     error_handle('delete track from playlist', 200, 'DELETE', response=response)

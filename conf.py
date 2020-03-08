@@ -10,31 +10,47 @@ URI_RE = r'spotify:(artist|track):[a-zA-Z0-9]'
 
 
 def open_config() -> configparser.ConfigParser:
+    """
+    Open configuration file as object
+    :return: config object
+    """
     try:
+        # Read config and assert size
         c = configparser.ConfigParser()
         c.read_file(open(f'{CONFIG_DIR}/spotirec.conf'))
         assert len(c.keys()) > 0
         return c
     except (FileNotFoundError, AssertionError):
         print('Config file not found, generating...')
+        # If config does not exist or is empty, convert old or create new and do recursive call
         convert_or_create_config()
         return open_config()
 
 
 def save_config(c: configparser.ConfigParser):
+    """
+    Write config to file
+    :param c: config object
+    """
     c.write(open(f'{CONFIG_DIR}/spotirec.conf', 'w'))
 
 
 def convert_or_create_config():
+    """
+    Convert old config files to new. If old files do not exist, simply add the necessary sections.
+    """
     c = configparser.ConfigParser()
     old_conf = ['spotirecoauth', 'presets', 'blacklist', 'devices', 'playlists']
     for x in old_conf:
+        # Add new section
         c.add_section(x)
         try:
             with open(f'{CONFIG_DIR}/{x}', 'r') as f:
+                # Set each configuration to section
                 for y in json.loads(f.read()).items():
                     c.set(x, y[0], str(y[1]))
         except (FileNotFoundError, json.JSONDecodeError):
+            # If file isn't found or is empty, pass and leave section empty
             pass
     print('Done')
     print('If you have the old style config files you may safely delete these, or save them as backup')
@@ -42,6 +58,10 @@ def convert_or_create_config():
 
 
 def get_oauth() -> dict:
+    """
+    Retrieve OAuth section from config
+    :return: OAuth section as dict
+    """
     c = open_config()
     try:
         c['spotirecoauth']
@@ -52,10 +72,15 @@ def get_oauth() -> dict:
 
 
 def get_blacklist() -> dict:
+    """
+    Retrieve blacklist section from config
+    :return: blacklist section as dict
+    """
     c = open_config()
     try:
         blacklist = {}
         for x in c['blacklist'].items():
+            # Parse each blacklist entry as dict
             blacklist[x[0]] = ast.literal_eval(x[1])
         return blacklist
     except KeyError:
@@ -65,7 +90,14 @@ def get_blacklist() -> dict:
 
 
 def add_to_blacklist(uri_data: json, uri: str):
+    """
+    Add entry to blacklist
+    :param uri_data: data regarding blacklist entry retrieved from API
+    :param uri: URI of blacklist entry
+    :return:
+    """
     uri_type = uri.split(':')[1]
+    # Convert entry to dict
     data = {'name': uri_data['name'], 'uri': uri}
     try:
         data['artists'] = [x['name'] for x in uri_data['artists']]
@@ -73,6 +105,7 @@ def add_to_blacklist(uri_data: json, uri: str):
         pass
     c = open_config()
     print(f'Adding {uri_type} {data["name"]} to blacklist')
+    # Get the blacklist type entry from config and parse as dict, and add entry
     blacklist = ast.literal_eval(c.get('blacklist', f'{uri_type}s'))
     blacklist[uri] = data
     c.set('blacklist', f'{uri_type}s', str(blacklist))
@@ -80,11 +113,18 @@ def add_to_blacklist(uri_data: json, uri: str):
 
 
 def remove_from_blacklist(uri: str):
+    """
+    Remove entry from blacklsit
+    :param uri:
+    :return:
+    """
+    # Ensure input is valid
     if not re.match(URI_RE, uri):
         print(f'Error: uri {uri} is not a valid uri')
         return
     c = open_config()
     uri_type = uri.split(':')[1]
+    # Ensure entry exists and delete if so
     try:
         blacklist = ast.literal_eval(c.get('blacklist', f'{uri_type}s'))
         print(f'Removing {uri_type} {blacklist[uri]["name"]} from blacklist')
@@ -96,6 +136,10 @@ def remove_from_blacklist(uri: str):
 
 
 def get_presets() -> dict:
+    """
+    Retrieve preset section from config
+    :return: preset section as dict
+    """
     c = open_config()
     try:
         presets = {}
@@ -109,6 +153,11 @@ def get_presets() -> dict:
 
 
 def save_preset(preset: dict, preset_id: str):
+    """
+    Add entry to presets
+    :param preset: preset data
+    :param preset_id: identifier of new preset
+    """
     c = open_config()
     try:
         c['presets']
@@ -120,6 +169,11 @@ def save_preset(preset: dict, preset_id: str):
 
 
 def remove_preset(iden: str):
+    """
+    Remove entry from presets
+    :param iden: identifier of preset to remove
+    :return:
+    """
     c = open_config()
     try:
         c.remove_option('presets', iden)
@@ -130,10 +184,15 @@ def remove_preset(iden: str):
 
 
 def get_devices() -> dict:
+    """
+    Retrieve device section from config
+    :return: device section as dict
+    """
     c = open_config()
     try:
         devices = {}
         for x in c['devices'].items():
+            # Parse each preset entry as dict
             devices[x[0]] = ast.literal_eval(x[1])
         return devices
     except KeyError:
@@ -143,6 +202,12 @@ def get_devices() -> dict:
 
 
 def save_device(device: dict, device_id: str):
+    """
+    Add entry to devices
+    :param device: device data
+    :param device_id: identifier of the new device
+    :return:
+    """
     c = open_config()
     try:
         c['devices']
@@ -154,6 +219,11 @@ def save_device(device: dict, device_id: str):
 
 
 def remove_device(iden: str):
+    """
+    Remove entry from devices
+    :param iden: identifier of the device to remove
+    :return:
+    """
     c = open_config()
     try:
         c.remove_option('devices', iden)
@@ -164,10 +234,15 @@ def remove_device(iden: str):
 
 
 def get_playlists() -> dict:
+    """
+    Retrieve playlist section from config
+    :return: playlist section as dict
+    """
     c = open_config()
     try:
         playlists = {}
         for x in c['playlists'].items():
+            # Parse each playlist entry as dict
             playlists[x[0]] = ast.literal_eval(x[1])
         return playlists
     except KeyError:
@@ -177,6 +252,12 @@ def get_playlists() -> dict:
 
 
 def save_playlist(playlist: dict, playlist_id: str):
+    """
+    Add entry to playlists
+    :param playlist: playlist data
+    :param playlist_id: identifier of the new playlist
+    :return:
+    """
     c = open_config()
     try:
         c['playlists']
@@ -188,6 +269,11 @@ def save_playlist(playlist: dict, playlist_id: str):
 
 
 def remove_playlist(iden: str):
+    """
+    Remove entry from playlists
+    :param iden: identifier of the playlist to remove
+    :return:
+    """
     c = open_config()
     try:
         c.remove_option('playlists', iden)
