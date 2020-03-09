@@ -26,7 +26,6 @@ URI_RE = r'spotify:(artist|track):[a-zA-Z0-9]+'
 PLAYLIST_URI_RE = r'spotify:playlist:[a-zA-Z0-9]+'
 TRACK_URI_RE = r'spotify:track:[a-zA-Z0-9]+'
 
-
 # OAuth handler
 sp_oauth = oauth2.SpotifyOAuth()
 
