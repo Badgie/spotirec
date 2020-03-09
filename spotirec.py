@@ -12,6 +12,7 @@ import oauth2
 import recommendation
 import api
 import conf
+import sys
 from io import BytesIO
 from PIL import Image
 from bottle import route, run, request
@@ -19,9 +20,22 @@ from pathlib import Path
 
 PORT = 8080
 CONFIG_PATH = f'{Path.home()}/.config/spotirec'
+
 TUNE_PREFIX = ['max', 'min', 'target']
-TUNE_ATTR = ['acousticness', 'danceability', 'duration_ms', 'energy', 'instrumentalness', 'key', 'liveness',
-             'loudness', 'mode', 'popularity', 'speechiness', 'tempo', 'time_signature', 'valence', 'popularity']
+TUNE_ATTR = {'int': {'duration_ms': {'min': 0, 'max': sys.maxsize * 2 + 1, 'rec_min': 0, 'rec_max': 3600000},
+                     'key': {'min': 0, 'max': 11, 'rec_min': 0, 'rec_max': 11},
+                     'mode': {'min': 0, 'max': 1, 'rec_min': 0, 'rec_max': 1},
+                     'time_signature': {'min': 0, 'max': 500, 'rec_min': 0, 'rec_max': 500},
+                     'popularity': {'min': 0, 'max': 100, 'rec_min': 0, 'rec_max': 100}},
+             'float': {'acousticness': {'min': 0.0, 'max': 1.0, 'rec_min': 0.0, 'rec_max': 1.0},
+                       'danceability': {'min': 0.0, 'max': 1.0, 'rec_min': 0.1, 'rec_max': 0.9},
+                       'energy': {'min': 0.0, 'max': 1.0, 'rec_min': 0.0, 'rec_max': 1.0},
+                       'instrumentalness': {'min': 0.0, 'max': 1.0, 'rec_min': 0.0, 'rec_max': 1.0},
+                       'liveness': {'min': 0.0, 'max': 1.0, 'rec_min': 0.0, 'rec_max': 0.4},
+                       'loudness': {'min': -60, 'max': 0, 'rec_min': -20, 'rec_max': 0},
+                       'speechiness': {'min': 0.0, 'max': 1.0, 'rec_min': 0.0, 'rec_max': 0.3},
+                       'valence': {'min': 0.0, 'max': 1.0, 'rec_min': 0.0, 'rec_max': 1.0},
+                       'tempo': {'min': 0.0, 'max': 220.0, 'rec_min': 60.0, 'rec_max': 210.0}}}
 URI_RE = r'spotify:(artist|track):[a-zA-Z0-9]'
 PLAYLIST_URI_RE = r'spotify:playlist:[a-zA-Z0-9]'
 
@@ -225,7 +239,8 @@ def check_if_valid_genre(genre: str) -> bool:
     :param genre: user input genre
     :return: True if genre exists, False if not
     """
-    if any(g == genre for g in get_user_top_genres()) or any(g == genre for g in api.get_genre_seeds(headers)['genres']):
+    if any(g == genre for g in get_user_top_genres()) or any(
+            g == genre for g in api.get_genre_seeds(headers)['genres']):
         return True
     return False
 
@@ -235,21 +250,36 @@ def check_tune_validity(tune: str):
     Check validity of tune input - exit program if not valid
     :param tune: tune input as string
     """
+    prefix = tune.split('_', 1)[0]
+    key = tune.split('=')[0].split('_', 1)[1]
+    value = tune.split('=')[1]
     # Check prefix validity
-    if not tune.split('_', 1)[0] in TUNE_PREFIX:
+    if prefix not in TUNE_PREFIX:
         print(f'Tune prefix \"{tune.split("_", 1)[0]}\" is malformed - available prefixes:')
         print(TUNE_PREFIX)
         exit(1)
     # Check attribute validity
-    if not tune.split('=')[0].split('_', 1)[1] in TUNE_ATTR:
+    if key not in list(TUNE_ATTR['int'].keys()) + list(TUNE_ATTR['float'].keys()):
         print(f'Tune attribute \"{tune.split("=")[0].split("_", 1)[1]}\" is malformed - available attributes:')
-        print(TUNE_ATTR)
+        print(list(TUNE_ATTR['int'].keys()) + list(TUNE_ATTR['float'].keys()))
         exit(1)
-    # Try parsing value to number
     try:
-        float(tune.split('=')[1]) if '.' in tune.split('=')[1] else int(tune.split('=')[1])
+        # Try parsing value to number
+        value = int(float(value)) if key in TUNE_ATTR['int'].keys() else float(value)
+        value_type = 'int' if key in TUNE_ATTR['int'].keys() else 'float'
+        # Ensure value is within accepted range
+        if not TUNE_ATTR[value_type][key]['max'] >= value >= TUNE_ATTR[value_type][key]['min']:
+            print(f'Error: value {value} for attribute {key} is outside the accepted range (min: '
+                  f'{TUNE_ATTR[value_type][key]["min"]}, max: {TUNE_ATTR[value_type][key]["max"]})')
+            exit(1)
+        # Warn if value is outside recommended range
+        if not TUNE_ATTR[value_type][key]['rec_max'] >= value >= TUNE_ATTR[value_type][key]['rec_min']:
+            print(f'Warning: value {value} for attribute {key} is outside the recommended range (min: '
+                  f'{TUNE_ATTR[value_type][key]["rec_min"]}, max: {TUNE_ATTR[value_type][key]["rec_max"]}), '
+                  f'recommendations may be scarce')
+        exit(0)
     except ValueError:
-        print(f'Tune value {tune.split("=")[1]} is not a valid integer or float value')
+        print(f'Tune value {value} does not match attribute {key} data type requirements')
         exit(1)
 
 
@@ -585,7 +615,8 @@ def filter_recommendations(data: json) -> list:
     for x in data['tracks']:
         # If the URI of the current track is blacklisted or there is an intersection between the set of blacklisted
         # artists and the set of artists of the current track, then skip - otherwise add to valid tracks
-        if any(x['uri'] == s for s in blacklist['tracks'].keys()) or len(set(blacklist['artists'].keys()) & set(y['uri'] for y in x['artists'])) > 0:
+        if any(x['uri'] == s for s in blacklist['tracks'].keys()) or len(
+                set(blacklist['artists'].keys()) & set(y['uri'] for y in x['artists'])) > 0:
             continue
         else:
             valid_tracks.append(x['uri'])
@@ -747,7 +778,7 @@ def parse():
 
     if args.tune:
         for x in args.tune:
-            check_tune_validity(args.tune[0])
+            check_tune_validity(x)
             rec.rec_params[x.split('=')[0]] = x.split('=')[1]
 
 
