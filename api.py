@@ -210,3 +210,15 @@ def remove_from_playlist(tracks: list, playlist_id: str, headers: dict):
     data = {'tracks': [{'uri': x} for x in tracks]}
     response = requests.delete(f'{url_base}/playlists/{playlist_id}/tracks', headers=headers, json=data)
     error_handle('delete track from playlist', 200, 'DELETE', response=response)
+
+
+def get_audio_features(track_id: str, headers: dict) -> json:
+    """
+    Get audio features of a track
+    :param track_id: id of the track
+    :param headers: request headers
+    :return: audio features object
+    """
+    response = requests.get(f'{url_base}/audio-features/{track_id}', headers=headers)
+    error_handle('retrieve audio features', 200, 'GET', response=response)
+    return json.loads(response.content.decode('utf-8'))
