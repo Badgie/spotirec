@@ -187,3 +187,26 @@ def unlike_track(headers: dict):
     response = requests.delete(f'{url_base}/me/tracks', headers=headers, params=track)
     error_handle('remove liked track', 200, 'DELETE', response=response)
 
+
+def get_playlist(headers: dict, playlist_id: str):
+    """
+    Retrieve playlist from API
+    :param headers: request headers
+    :param playlist_id: ID of the playlist
+    :return: playlist object
+    """
+    response = requests.get(f'{url_base}/playlists/{playlist_id}', headers=headers)
+    error_handle('retrieve playlist', 200, 'GET', response=response)
+    return json.loads(response.content.decode('utf-8'))
+
+
+def remove_from_playlist(tracks: list, playlist_id: str, headers: dict):
+    """
+    Remove track(s) from a playlist
+    :param tracks: the tracks to remove
+    :param playlist_id: identifier of the playlist to remove tracks from
+    :param headers: request headers
+    """
+    data = {'tracks': [{'uri': x} for x in tracks]}
+    response = requests.delete(f'{url_base}/playlists/{playlist_id}/tracks', headers=headers, json=data)
+    error_handle('delete track from playlist', 200, 'DELETE', response=response)
