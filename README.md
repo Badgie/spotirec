@@ -245,5 +245,11 @@ $ spotirec --print presets
 $ spotirec --print playlists
 ```
 
+You can also print various features of a track with the `--track-features` flag followed by either a URI or 'current' if you want information about the currently playing track. Features include track attributes (as used in [tuning](#tuning)) and URIs.
+```
+$ spotirec --track-features current
+$ spotirec --track-features spotify:track:4uLU6hMCjMI75M1A2tKUQC
+```
+
 ## Troubleshooting
 If you encounter issues adding tracks to your playlist, try running the script from a terminal. This should output a status code of the request, as well as some information about the code. Should you need additional help regarding status codes, consult the table in the `Response Status Codes` section [here](https://developer.spotify.com/documentation/web-api/)

@@ -22,8 +22,10 @@ CONFIG_PATH = f'{Path.home()}/.config/spotirec'
 TUNE_PREFIX = ['max', 'min', 'target']
 TUNE_ATTR = ['acousticness', 'danceability', 'duration_ms', 'energy', 'instrumentalness', 'key', 'liveness',
              'loudness', 'mode', 'popularity', 'speechiness', 'tempo', 'time_signature', 'valence', 'popularity']
-URI_RE = r'spotify:(artist|track):[a-zA-Z0-9]'
-PLAYLIST_URI_RE = r'spotify:playlist:[a-zA-Z0-9]'
+URI_RE = r'spotify:(artist|track):[a-zA-Z0-9]+'
+PLAYLIST_URI_RE = r'spotify:playlist:[a-zA-Z0-9]+'
+TRACK_URI_RE = r'spotify:track:[a-zA-Z0-9]+'
+
 
 # OAuth handler
 sp_oauth = oauth2.SpotifyOAuth()
@@ -93,6 +95,8 @@ print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
                                   'playlists'],
                          help='print a list of genre seeds, or your top artists, tracks, or genres, where'
                               'TYPE=[artists|tracks|genres|genre-seeds|devices|blacklist|presets|playlists]')
+print_group.add_argument('--track-features', metavar='[URI | current]', nargs=1, type=str,
+                         help='print track features of URI or currently playing track')
 
 # Ensure config dir exists
 if not os.path.isdir(CONFIG_PATH):
@@ -574,6 +578,52 @@ def remove_current_track(playlist: str):
     api.remove_from_playlist([api.get_current_track(headers)], playlist_id, headers)
 
 
+def print_track_features(uri: str):
+    """
+    Prints various information about a track
+    :param uri: URI of track
+    """
+    if not re.match(TRACK_URI_RE, uri):
+        print(f'Error: {uri} is not a valid track URI')
+        exit(1)
+    audio_features = api.get_audio_features(uri.split(':')[2], headers)
+    track_info = api.request_data(uri, 'tracks', headers)
+    print('\t' + '\033[1m' + f'{track_info["name"]} - {", ".join(x["name"] for x in track_info["artists"])}' + '\033[0m')
+    print(f'Track URI{" " * 21}{track_info["uri"]}')
+    print(f'Artist URI(s){" " * 17}{", ".join(x["name"] + ": " + x["uri"] for x in track_info["artists"])}')
+    print(f'Album URI{" " * 21}{track_info["album"]["uri"]}')
+    print(f'Release date{" " * 18}{track_info["album"]["release_date"]}')
+    print(f'Duration{" " * 22}{audio_features["duration_ms"]}ms ({millis_to_stamp(audio_features["duration_ms"])})')
+    print(f'Key{" " * 27}{audio_features["key"]}')
+    print(f'Mode{" " * 26}{audio_features["mode"]} ({"minor" if audio_features["mode"] == 0 else "major"})')
+    print(f'Time signature{" " * 16}{audio_features["time_signature"]}')
+    print(f'Popularity{" " * 20}{track_info["popularity"]}')
+    print(f'Acousticness{" " * 18}{audio_features["acousticness"]}')
+    print(f'Danceability{" " * 18}{audio_features["danceability"]}')
+    print(f'Energy{" " * 24}{audio_features["energy"]}')
+    print(f'Instrumentalness{" " * 14}{audio_features["instrumentalness"]}')
+    print(f'Liveness{" " * 22}{audio_features["liveness"]}')
+    print(f'Loudness{" " * 22}{audio_features["loudness"]} dB')
+    print(f'Speechiness{" " * 19}{audio_features["speechiness"]}')
+    print(f'Valence{" " * 23}{audio_features["valence"]}')
+    print(f'Tempo{" " * 25}{audio_features["tempo"]} bpm')
+
+
+def millis_to_stamp(x: int):
+    """
+    Convert milliseconds to a timestamp on the form "{hours}h {minutes}m {seconds}s". Hours and minutes are only
+    included if they are present.
+    :param x: milliseconds
+    :return: formatted timestamp
+    """
+    sec_total = int(x / 1000)
+    sec = sec_total % 60
+    mins_total = math.floor(sec_total / 60)
+    mins = mins_total % 60
+    hours = int(mins_total / 60)
+    return f'{f"{hours}h " if hours != 0 else ""}{f"{mins}m " if mins != 0 else ""}{sec}s'
+
+
 def filter_recommendations(data: json) -> list:
     """
     Filter blacklisted artists and tracks from recommendations.
@@ -697,6 +747,10 @@ def parse():
             print_presets()
         elif args.print[0] == 'playlists':
             print_playlists()
+        exit(1)
+    if args.track_features:
+        print_track_features(api.get_current_track(headers) if
+                             args.track_features[0] == 'current' else args.track_features[0])
         exit(1)
 
     if args.play:
