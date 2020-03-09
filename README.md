@@ -227,34 +227,6 @@ $ spotirec --add-to playlist_name
 $ spotirec --add-to spotify:playlist:0Vu97Y7WoJgBlFzAwbrZ8h
 ```
 
-```
-$ spotirec --save-playlist
-Please input an identifier for your playlist: test
-Please input the URI for your playlist: spotify:playlist:0Vu97Y7WoJgBlFzAwbrZ8h
-Added playlist test to config
-```
-To remove one or more saved playlists, pass the `--remove-playlists` flag followed by a sequence of names for playlists
-```
-$ spotirec --remove-playlists playlist_name0 playlist_name1 playlist_name2
-```
-If you forgot which playlists you have saved, see [printing](#printing)
-
-### Saving Tracks
-To like the currently playing track, pass the `-s` argument
-```
-$ spotirec -s
-```
-To remove the currently playing track from liked tracks, pass the `-sr` argument
-```
-$ spotirec -sr
-```
-
-To add the currently playing track to a specific playlist, pass the `--add-to` flag followed by a name for a saved playlist, or a playlist URI
-```
-$ spotirec --add-to playlist_name
-$ spotirec --add-to spotify:playlist:0Vu97Y7WoJgBlFzAwbrZ8h
-```
-
 To remove the currently playing track from a specific playlist, pass the `--remove-from` flag followed by a name for a saved playlist, or a playlist URI
 ```
 $ spotirec --remove-from playlist_name
