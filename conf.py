@@ -63,12 +63,12 @@ def get_oauth() -> dict:
     :return: OAuth section as dict
     """
     c = open_config()
-    try:
-        c['spotirecoauth']
+    try:    
+        return c['spotirecoauth']
     except KeyError:
         c.add_section('spotirecoauth')
         save_config(c)
-    return c['spotirecoauth']
+        return c['spotirecoauth']
 
 
 def get_blacklist() -> dict:

@@ -6,7 +6,7 @@
 </p>
 
 # Spotirec
-A CLI that can creates a playlist of recommendations based on the user's top artists or tracks, or genres extracted from top artists with various parameters - a sort of Discover Weekly on demand. Also includes functionality for various other Spotify-related actions, such as saving the currently playing track.
+A tool that can create a playlist of recommendations based on the user's top artists or tracks, or genres extracted from top artists with various parameters - a sort of Discover Weekly on demand. Also includes functionality for various other Spotify-related actions, such as saving the currently playing track.
 
 ## Table of Contents
 - [Installation](#installation)
@@ -226,6 +226,7 @@ To add the currently playing track to a specific playlist, pass the `--add-to` f
 $ spotirec --add-to playlist_name
 $ spotirec --add-to spotify:playlist:0Vu97Y7WoJgBlFzAwbrZ8h
 ```
+
 To remove the currently playing track from a specific playlist, pass the `--remove-from` flag followed by a name for a saved playlist, or a playlist URI
 ```
 $ spotirec --remove-from playlist_name
@@ -244,6 +245,7 @@ $ spotirec --print blacklist
 $ spotirec --print presets
 $ spotirec --print playlists
 ```
+
 You can also print various features of a track with the `--track-features` flag followed by either a URI or 'current' if you want information about the currently playing track. Features include track attributes (as used in [tuning](#tuning)) and URIs.
 ```
 $ spotirec --track-features current
