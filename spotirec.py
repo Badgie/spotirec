@@ -144,9 +144,9 @@ def get_user_top_genres() -> dict:
     Extract genres from user's top 50 artists and map them to their amount of occurrences
     :return: dict of genres and their count of occurrences
     """
-    data = api.get_top_list('artists', 50, headers=headers)
+    data = api.get_top_list('artists', 50, headers)
     genres = {}
-    genre_seeds = api.get_genre_seeds(headers=headers)
+    genre_seeds = api.get_genre_seeds(headers)
     # Loop through each genre of each artist
     for x in data['items']:
         for genre in x['genres']:
@@ -269,7 +269,7 @@ def parse_seed_info(seeds):
             if check_if_valid_genre(x):
                 rec.add_seed_info(data_string=x)
             elif re.match(URI_RE, x):
-                rec.add_seed_info(data_dict=api.request_data(x, f'{x.split(":")[1]}s', headers=headers))
+                rec.add_seed_info(data_dict=api.request_data(x, f'{x.split(":")[1]}s', headers))
             else:
                 print(f'Input \"{x}\" does not match a genre or a valid URI syntax, skipping...')
         else:
@@ -282,7 +282,7 @@ def add_to_blacklist(entries: list):
     :param entries: list of input uris
     """
     for x in entries:
-        uri_data = api.request_data(x, f'{x.split(":")[1]}s', headers=headers)
+        uri_data = api.request_data(x, f'{x.split(":")[1]}s', headers)
         conf.add_to_blacklist(uri_data, x)
 
 
@@ -345,7 +345,7 @@ def add_image_to_playlist(tracks: list):
     img_buffer = BytesIO()
     generate_img(tracks).save(img_buffer, format='JPEG')
     img_str = base64.b64encode(img_buffer.getvalue())
-    api.upload_image(playlist_id=rec.playlist_id, data=img_str, img_headers=img_headers)
+    api.upload_image(rec.playlist_id, img_str, img_headers)
 
 
 def save_preset(name: str):
@@ -605,7 +605,7 @@ def recommend():
     if args.save_preset:
         save_preset(args.save_preset[0])
     # Filter blacklisted artists and tracks from recommendations
-    tracks = filter_recommendations(api.get_recommendations(rec.rec_params, headers=headers))
+    tracks = filter_recommendations(api.get_recommendations(rec.rec_params, headers))
     # If no tracks are left, notify an error and exit
     if len(tracks) == 0:
         print('Error: received zero tracks with your options - adjust and try again')
@@ -614,12 +614,12 @@ def recommend():
     while True:
         if len(tracks) < rec.limit_original:
             rec.update_limit(rec.limit_original - len(tracks))
-            tracks += filter_recommendations(api.get_recommendations(rec.rec_params, headers=headers))
+            tracks += filter_recommendations(api.get_recommendations(rec.rec_params, headers))
         else:
             break
     # Create playlist and add tracks
-    rec.playlist_id = api.create_playlist(rec.playlist_name, rec.playlist_description(), headers=headers)
-    api.add_to_playlist(tracks, rec.playlist_id, headers=headers)
+    rec.playlist_id = api.create_playlist(rec.playlist_name, rec.playlist_description(), headers)
+    api.add_to_playlist(tracks, rec.playlist_id, headers)
     # Generate and upload dank-ass image
     add_image_to_playlist(tracks)
     # Print seed selection
@@ -648,11 +648,11 @@ def parse():
 
     if args.s:
         print('Liking current track')
-        api.like_track(headers=headers)
+        api.like_track(headers)
         exit(1)
     elif args.sr:
         print('Unliking current track')
-        api.unlike_track(headers=headers)
+        api.unlike_track(headers)
         exit(1)
     if args.save_playlist:
         save_playlist()
@@ -672,7 +672,7 @@ def parse():
     if args.add_to:
         add_current_track(args.add_to[0])
         exit(1)
-    if args.remove_from:
+    elif args.remove_from:
         remove_current_track(args.remove_from[0])
         exit(1)
 
@@ -707,23 +707,23 @@ def parse():
         print(f'Basing recommendations off your top {args.a} artist(s)')
         rec.based_on = 'top artists'
         rec.seed_type = 'artists'
-        parse_seed_info([x for x in api.get_top_list('artists', args.a, headers=headers)['items']])
+        parse_seed_info([x for x in api.get_top_list('artists', args.a, headers)['items']])
     elif args.t:
         print(f'Basing recommendations off your top {args.t} track(s)')
         rec.based_on = 'top tracks'
         rec.seed_type = 'tracks'
-        parse_seed_info([x for x in api.get_top_list('tracks', args.t, headers=headers)['items']])
+        parse_seed_info([x for x in api.get_top_list('tracks', args.t, headers)['items']])
     elif args.gcs:
         rec.based_on = 'custom seed genres'
-        print_choices(data=api.get_genre_seeds(headers=headers)['genres'])
+        print_choices(data=api.get_genre_seeds(headers)['genres'])
     elif args.ac:
         rec.based_on = 'custom artists'
         rec.seed_type = 'artists'
-        print_artists_or_tracks(api.get_top_list('artists', 50, headers=headers))
+        print_artists_or_tracks(api.get_top_list('artists', 50, headers))
     elif args.tc:
         rec.based_on = 'custom tracks'
         rec.seed_type = 'tracks'
-        print_artists_or_tracks(api.get_top_list('tracks', 50, headers=headers))
+        print_artists_or_tracks(api.get_top_list('tracks', 50, headers))
     elif args.gc:
         rec.based_on = 'custom top genres'
         print_choices(data=get_user_top_genres(), sort=True)
