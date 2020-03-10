@@ -36,7 +36,7 @@ yay -S spotirec-git
 ```
 
 #### Manual
-On any other distribution you need to install Spotirec manually. Spotirec has two dependencies
+On any other distribution you need to install Spotirec manually. Spotirec has three dependencies
 ```
 bottle>=0.12.17
 requests>=2.22.0
@@ -53,6 +53,7 @@ mkdir -p /usr/lib/spotirec
 mkdir -p /usr/bin
 mkdir -p $HOME/.config/spotirec
 
+install tuning-opts -t $HOME/.config/spotirec
 install spotirec.py oauth2.py conf.py recommendation.py api.py -t /usr/lib/spotirec
 
 ln -s /usr/lib/spotirec/spotirec.py /usr/bin/spotirec
@@ -248,6 +249,7 @@ $ spotirec --print devices
 $ spotirec --print blacklist
 $ spotirec --print presets
 $ spotirec --print playlists
+$ spotirec --print tuning
 ```
 
 You can also print various features of a track with the `--track-features` flag followed by either a URI or 'current' if you want information about the currently playing track. Features include track attributes (as used in [tuning](#tuning)) and URIs.
