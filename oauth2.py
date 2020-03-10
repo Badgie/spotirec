@@ -4,8 +4,8 @@ import time
 import requests
 import base64
 import api
+import conf
 from urllib import parse
-from pathlib import Path
 
 
 class SpotifyOAuth:
@@ -20,21 +20,19 @@ class SpotifyOAuth:
         self.scopes = 'user-top-read playlist-modify-public playlist-modify-private user-read-private ' \
                       'user-read-email ugc-image-upload user-read-playback-state user-modify-playback-state ' \
                       'user-library-modify'
-        self.cache = f'{Path.home()}/.config/spotirec/spotirecoauth'
 
     def get_credentials(self) -> json:
         """
         Get credentials from cache file. Refresh token if it's about to expire.
-        :return: token contents as a json object
+        :return: token contents as a config object
         """
         try:
-            with open(self.cache, 'r') as file:
-                creds = json.loads(file.read())
-                if self.is_token_expired(creds['expires_at']):
-                    print('OAuth token is expired, refreshing...')
-                    creds = self.refresh_token(creds['refresh_token'])
+            creds = conf.get_oauth()
+            if self.is_token_expired(int(creds['expires_at'])):
+                print('OAuth token is expired, refreshing...')
+                creds = self.refresh_token(creds['refresh_token'])
         except (IOError, json.decoder.JSONDecodeError):
-            print('Error: cache does not exist or is empty')
+            print('Error: OAuth config does not exist or is empty')
             return None
         return creds
 
@@ -112,12 +110,14 @@ class SpotifyOAuth:
 
     def save_token(self, token: json, refresh_token=None):
         """
-        Add 'expires at' field and reapplies refresh token to token, and save to cache
-        :param token: credentials as a json object
+        Add 'expires at' field and reapplies refresh token to token, and save to config
+        :param token: credentials as a config object
         :param refresh_token: user refresh token
         """
         token['expires_at'] = round(time.time()) + int(token['expires_in'])
         if refresh_token:
             token['refresh_token'] = refresh_token
-        with open(self.cache, 'w') as file:
-            file.write(json.dumps(token))
+        c = conf.open_config()
+        for x in token.items():
+            c['spotirecoauth'][x[0]] = str(x[1])
+        conf.save_config(c)

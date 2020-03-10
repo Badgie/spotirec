@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import json
 import requests
+import conf
 
 url_base = 'https://api.spotify.com/v1'
 
@@ -47,9 +48,10 @@ def get_user_id(headers: dict) -> str:
     return json.loads(response.content.decode('utf-8'))['id']
 
 
-def create_playlist(playlist_name: str, playlist_description: str, headers: dict, oauth=None) -> str:
+def create_playlist(playlist_name: str, playlist_description: str, headers: dict, cache_id=False) -> str:
     """
     Creates playlist on user's account.
+    :param cache_id: whether playlist id should be saved as default or not
     :param playlist_name: name of the playlist
     :param playlist_description: description of the playlist
     :param headers: request headers
@@ -60,12 +62,10 @@ def create_playlist(playlist_name: str, playlist_description: str, headers: dict
     print('Creating playlist')
     response = requests.post(f'{url_base}/users/{get_user_id(headers)}/playlists', json=data, headers=headers)
     error_handle('playlist creation', 201, 'POST', response=response)
-    playlist_id = json.loads(response.content.decode('utf-8'))['id']
-    if oauth:
-        creds = oauth.get_credentials()
-        creds['playlist_id'] = playlist_id
-        oauth.save_token(creds)
-    return playlist_id
+    playlist = json.loads(response.content.decode('utf-8'))
+    if cache_id:
+        conf.save_playlist({'name': playlist['name'], 'uri': playlist['uri']}, 'spotirec-default')
+    return playlist['id']
 
 
 def upload_image(playlist_id: str, data: str, img_headers: dict):
@@ -218,3 +218,39 @@ def replace_playlist_tracks(playlist_id: str, tracks: list, headers: dict):
     data = {'uris': tracks}
     response = requests.put(f'{url_base}/playlists/{playlist_id}/tracks', headers=headers, json=data)
     error_handle('remove tracks from playlist', 201, 'PUT', response=response)
+
+
+def get_playlist(headers: dict, playlist_id: str):
+    """
+    Retrieve playlist from API
+    :param headers: request headers
+    :param playlist_id: ID of the playlist
+    :return: playlist object
+    """
+    response = requests.get(f'{url_base}/playlists/{playlist_id}', headers=headers)
+    error_handle('retrieve playlist', 200, 'GET', response=response)
+    return json.loads(response.content.decode('utf-8'))
+
+
+def remove_from_playlist(tracks: list, playlist_id: str, headers: dict):
+    """
+    Remove track(s) from a playlist
+    :param tracks: the tracks to remove
+    :param playlist_id: identifier of the playlist to remove tracks from
+    :param headers: request headers
+    """
+    data = {'tracks': [{'uri': x} for x in tracks]}
+    response = requests.delete(f'{url_base}/playlists/{playlist_id}/tracks', headers=headers, json=data)
+    error_handle('delete track from playlist', 200, 'DELETE', response=response)
+
+
+def get_audio_features(track_id: str, headers: dict) -> json:
+    """
+    Get audio features of a track
+    :param track_id: id of the track
+    :param headers: request headers
+    :return: audio features object
+    """
+    response = requests.get(f'{url_base}/audio-features/{track_id}', headers=headers)
+    error_handle('retrieve audio features', 200, 'GET', response=response)
+    return json.loads(response.content.decode('utf-8'))
