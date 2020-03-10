@@ -220,9 +220,9 @@ def print_choices(data=None, prompt=True, sort=False) -> str:
                              'include [default: top 5]:\n') or '0 1 2 3 4'
         # If seed type is genres, simply parse the seed, else return the input for further processing
         if 'genres' in rec.seed_type:
-            parse_seed_info([data[int(x)] for x in input_string.split(' ')])
+            parse_seed_info([data[int(x)] for x in input_string.strip(' ').split(' ')])
         else:
-            return input_string
+            return input_string.strip(' ')
 
 
 def print_artists_or_tracks(data: json, prompt=True):
@@ -825,7 +825,7 @@ def parse():
         if not user_input:
             print('Please enter 1-5 seeds')
             exit(1)
-        parse_seed_info(user_input)
+        parse_seed_info(user_input.strip(' '))
     else:
         print(f'Basing recommendations off your top {args.n} genres')
         add_top_genres_seed(args.n)
