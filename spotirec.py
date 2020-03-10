@@ -217,8 +217,11 @@ def print_choices(data=None, prompt=True, sort=False) -> str:
             continue
     print(line.strip('\n'))
     if prompt:
-        input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to '
-                             'include [default: top 5]:\n') or '0 1 2 3 4'
+        try:
+            input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to '
+                                 'include [default: top 5]:\n') or '0 1 2 3 4'
+        except KeyboardInterrupt:
+            exit(0)
         # If seed type is genres, simply parse the seed, else return the input for further processing
         if 'genres' in rec.seed_type:
             parse_seed_info([data[int(x)] for x in input_string.strip(' ').split(' ')])
@@ -470,7 +473,10 @@ def save_device():
     """
 
     def prompt_device_index() -> int:
-        ind = input('Select a device by index[0]: ') or 0
+        try:
+            ind = input('Select a device by index[0]: ') or 0
+        except KeyboardInterrupt:
+            exit(0)
         try:
             assert devices[int(ind)] is not None
             return int(ind)
@@ -480,8 +486,11 @@ def save_device():
             return prompt_device_index()
 
     def prompt_name() -> str:
-        inp = input('Enter an identifier for your device: ')
         try:
+            try:
+                inp = input('Enter an identifier for your device: ')
+            except KeyboardInterrupt:
+                exit(0)
             assert inp
             assert ' ' not in inp
             return inp
@@ -539,7 +548,10 @@ def save_playlist():
     """
 
     def input_id() -> str:
-        iden = input('Please input an identifier for your playlist: ')
+        try:
+            iden = input('Please input an identifier for your playlist: ')
+        except KeyboardInterrupt:
+            exit(0)
         try:
             assert iden
             assert ' ' not in iden
@@ -550,7 +562,10 @@ def save_playlist():
             return input_id()
 
     def input_uri() -> str:
-        uri = input('Please input the URI for your playlist: ')
+        try:
+            uri = input('Please input the URI for your playlist: ')
+        except KeyboardInterrupt:
+            exit(0)
         try:
             assert uri
             assert re.match(PLAYLIST_URI_RE, uri)
@@ -854,8 +869,12 @@ def parse():
         rec.based_on = 'custom mix'
         rec.seed_type = 'custom'
         print_choices(data=get_user_top_genres(), prompt=False, sort=True)
-        user_input = input('Enter a combination of 1-5 whitespace separated genre names, track uris, and artist uris. '
-                           '\nGenres with several words should be connected with dashes, e.g.; vapor-death-pop.\n')
+        try:
+            user_input = input(
+                'Enter a combination of 1-5 whitespace separated genre names, track uris, and artist uris. '
+                '\nGenres with several words should be connected with dashes, e.g.; vapor-death-pop.\n')
+        except KeyboardInterrupt:
+            exit(0)
         if not user_input:
             print('Please enter 1-5 seeds')
             exit(1)
