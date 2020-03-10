@@ -437,7 +437,10 @@ def save_device():
     """
 
     def prompt_device_index() -> int:
-        ind = input('Select a device by index[0]: ') or 0
+        try:
+            ind = input('Select a device by index[0]: ') or 0
+        except KeyboardInterrupt:
+            exit(0)
         try:
             assert devices[int(ind)] is not None
             return int(ind)
@@ -509,7 +512,10 @@ def save_playlist():
     """
 
     def input_id() -> str:
-        iden = input('Please input an identifier for your playlist: ')
+        try:
+            iden = input('Please input an identifier for your playlist: ')
+        except KeyboardInterrupt:
+            exit(0)
         try:
             assert iden
             assert ' ' not in iden
@@ -520,7 +526,10 @@ def save_playlist():
             return input_id()
 
     def input_uri() -> str:
-        uri = input('Please input the URI for your playlist: ')
+        try:
+            uri = input('Please input the URI for your playlist: ')
+        except KeyboardInterrupt:
+            exit(0)
         try:
             assert uri
             assert re.match(PLAYLIST_URI_RE, uri)
