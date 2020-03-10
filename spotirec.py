@@ -18,6 +18,9 @@ from PIL import Image
 from bottle import route, run, request
 from pathlib import Path
 
+
+VERSION = '1.2'
+
 PORT = 8080
 CONFIG_PATH = f'{Path.home()}/.config/spotirec'
 
@@ -44,7 +47,7 @@ TRACK_URI_RE = r'spotify:track:[a-zA-Z0-9]+'
 sp_oauth = oauth2.SpotifyOAuth()
 
 # Argument parser
-parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
+parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, prog='spotirec',
                                  epilog="""
 passing no recommendation scheme argument defaults to basing recommendations off your top 5 valid seed genres
 spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for details read LICENSE""")
@@ -107,7 +110,8 @@ print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
                          choices=['artists', 'tracks', 'genres', 'genre-seeds', 'devices', 'blacklist', 'presets',
                                   'playlists'],
                          help='print a list of genre seeds, or your top artists, tracks, or genres, where'
-                              'TYPE=[artists|tracks|genres|genre-seeds|devices|blacklist|presets|playlists]')
+                              'TYPE=[artists|tracks|genres|genre-seeds|devices|blacklist]')
+print_group.add_argument('--version', action='version', version=f'%(prog)s v{version}')
 print_group.add_argument('--track-features', metavar='[URI | current]', nargs=1, type=str,
                          help='print track features of URI or currently playing track')
 
