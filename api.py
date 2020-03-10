@@ -254,3 +254,19 @@ def get_audio_features(track_id: str, headers: dict) -> json:
     response = requests.get(f'{url_base}/audio-features/{track_id}', headers=headers)
     error_handle('retrieve audio features', 200, 'GET', response=response)
     return json.loads(response.content.decode('utf-8'))
+
+
+def check_if_playlist_exists(playlist_id: str, headers: dict) -> bool:
+    """
+    Checks whether a playlist exists
+    :param playlist_id: id of playlist
+    :param headers: request headers
+    :return: bool determining if playlist exists
+    """
+    response = requests.get(f'{url_base}/playlists/{playlist_id}', headers=headers)
+    # If playlist is public, return true (if playlist has been deleted, this value is false)
+    if json.loads(response.content.decode('utf-8'))['public']:
+        return True
+    else:
+        print('Playlist has either been deleted, or made private, creating new...')
+        return False

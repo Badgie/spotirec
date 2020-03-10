@@ -112,7 +112,7 @@ print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
                                   'playlists', 'tuning'],
                          help='print a list of genre seeds, or your top artists, tracks, or genres, where '
                               'TYPE=[artists|tracks|genres|genre-seeds|devices|blacklist]')
-print_group.add_argument('--version', action='version', version=f'%(prog)s v{version}')
+print_group.add_argument('--version', action='version', version=f'%(prog)s v{VERSION}')
 print_group.add_argument('--track-features', metavar='[URI | current]', nargs=1, type=str,
                          help='print track features of URI or currently playing track')
 
@@ -289,7 +289,6 @@ def check_tune_validity(tune: str):
             print(f'Warning: value {value} for attribute {key} is outside the recommended range (min: '
                   f'{TUNE_ATTR[value_type][key]["rec_min"]}, max: {TUNE_ATTR[value_type][key]["rec_max"]}), '
                   f'recommendations may be scarce')
-        exit(0)
     except ValueError:
         print(f'Tune value {value} does not match attribute {key} data type requirements')
         exit(1)
@@ -730,6 +729,9 @@ def recommend():
     if len(tracks) == 0:
         print('Error: received zero tracks with your options - adjust and try again')
         exit(1)
+    if len(tracks) <= rec.limit_original / 2:
+        print(f'Warning: only received {len(tracks)} different recommendations, you may receive duplicates of '
+              f'these (this might take a few seconds)')
     # Filter recommendations until length of track list matches limit preference
     while True:
         if len(tracks) < rec.limit_original:
@@ -748,9 +750,10 @@ def recommend():
     else:
         try:
             rec.playlist_id = conf.get_playlists()['spotirec-default']['uri'].split(':')[2]
+            assert api.check_if_playlist_exists(rec.playlist_id, headers) is True
             api.replace_playlist_tracks(rec.playlist_id, tracks, headers=headers)
             api.update_playlist_details(rec.playlist_name, rec.playlist_description(), rec.playlist_id, headers=headers)
-        except KeyError:
+        except (KeyError, AssertionError):
             create_new_playlist()
     # Generate and upload dank-ass image
     add_image_to_playlist(tracks)
