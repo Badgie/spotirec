@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import json
 import requests
+import conf
 
 url_base = 'https://api.spotify.com/v1'
 
@@ -47,9 +48,10 @@ def get_user_id(headers: dict) -> str:
     return json.loads(response.content.decode('utf-8'))['id']
 
 
-def create_playlist(playlist_name: str, playlist_description: str, headers: dict) -> str:
+def create_playlist(playlist_name: str, playlist_description: str, headers: dict, cache_id=False) -> str:
     """
     Creates playlist on user's account.
+    :param cache_id: whether playlist id should be saved as default or not
     :param playlist_name: name of the playlist
     :param playlist_description: description of the playlist
     :param headers: request headers
@@ -60,7 +62,10 @@ def create_playlist(playlist_name: str, playlist_description: str, headers: dict
     print('Creating playlist')
     response = requests.post(f'{url_base}/users/{get_user_id(headers)}/playlists', json=data, headers=headers)
     error_handle('playlist creation', 201, 'POST', response=response)
-    return json.loads(response.content.decode('utf-8'))['id']
+    playlist = json.loads(response.content.decode('utf-8'))
+    if cache_id:
+        conf.save_playlist({'name': playlist['name'], 'uri': playlist['uri']}, 'spotirec-default')
+    return playlist['id']
 
 
 def upload_image(playlist_id: str, data: str, img_headers: dict):
@@ -186,6 +191,33 @@ def unlike_track(headers: dict):
     track = {'ids': get_current_track(headers).split(':')[2]}
     response = requests.delete(f'{url_base}/me/tracks', headers=headers, params=track)
     error_handle('remove liked track', 200, 'DELETE', response=response)
+
+
+def update_playlist_details(name: str, description: str, playlist_id: str, headers: dict):
+    """
+    Update the details of a playlist
+    :param playlist_id: id of the playlist
+    :param name: new name of the playlist
+    :param description: new description of the playlist
+    :param headers: request headers
+    :return:
+    """
+    data = {'name': name, 'description': description}
+    response = requests.put(f'{url_base}/playlists/{playlist_id}', headers=headers, json=data)
+    error_handle('update playlist details', 200, 'PUT', response=response)
+
+
+def replace_playlist_tracks(playlist_id: str, tracks: list, headers: dict):
+    """
+    Remove the tracks from a playlist
+    :param tracks: list of track uris
+    :param playlist_id: id of the playlist
+    :param headers: request headers
+    :return:
+    """
+    data = {'uris': tracks}
+    response = requests.put(f'{url_base}/playlists/{playlist_id}/tracks', headers=headers, json=data)
+    error_handle('remove tracks from playlist', 201, 'PUT', response=response)
 
 
 def get_playlist(headers: dict, playlist_id: str):

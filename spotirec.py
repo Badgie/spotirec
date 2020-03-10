@@ -68,6 +68,7 @@ mutex_group.add_argument('-tc', action='store_true', help='base recommendations 
 mutex_group.add_argument('-gc', action='store_true', help='base recommendations on custom top valid seed genres')
 mutex_group.add_argument('-gcs', action='store_true', help='base recommendations on custom seed genres')
 mutex_group.add_argument('-c', action='store_true', help='base recommendations on a custom seed')
+rec_scheme_group.add_argument('--preserve', action='store_true', help='preserve previous playlist and create new')
 
 # Saving arguments
 save_group = parser.add_argument_group(title='Saving arguments')
@@ -702,9 +703,21 @@ def recommend():
             tracks += filter_recommendations(api.get_recommendations(rec.rec_params, headers))
         else:
             break
+
+    def create_new_playlist():
+        rec.playlist_id = api.create_playlist(rec.playlist_name, rec.playlist_description(), headers, cache_id=True)
+        api.add_to_playlist(tracks, rec.playlist_id, headers=headers)
+
     # Create playlist and add tracks
-    rec.playlist_id = api.create_playlist(rec.playlist_name, rec.playlist_description(), headers)
-    api.add_to_playlist(tracks, rec.playlist_id, headers)
+    if args.preserve:
+        create_new_playlist()
+    else:
+        try:
+            rec.playlist_id = conf.get_playlists()['spotirec-default']['uri'].split(':')[2]
+            api.replace_playlist_tracks(rec.playlist_id, tracks, headers=headers)
+            api.update_playlist_details(rec.playlist_name, rec.playlist_description(), rec.playlist_id, headers=headers)
+        except KeyError:
+            create_new_playlist()
     # Generate and upload dank-ass image
     add_image_to_playlist(tracks)
     # Print seed selection
