@@ -85,8 +85,6 @@ save_group.add_argument('--save-playlist', action='store_true', help='save a pla
 save_group.add_argument('--remove-playlists', metavar='ID', nargs='+', type=str, help='remove playlist(s)')
 save_group.add_argument('--save-device', action='store_true', help='save a playback device')
 save_group.add_argument('--remove-devices', metavar='ID', nargs='+', type=str, help='remove playback device(s)')
-save_group.add_argument('--load-preset', metavar='ID', nargs=1, type=str, help='load and use preset')
-save_group.add_argument('--save-preset', metavar='ID', nargs=1, type=str, help='save options as preset')
 save_group.add_argument('--remove-presets', metavar='ID', nargs='+', type=str, help='remove preset(s)')
 
 # Recommendation modifications
@@ -96,6 +94,8 @@ rec_options_group.add_argument('-l', metavar='LIMIT', nargs=1, type=int, choices
                                help='amount of tracks to add (default: 20, max: 100)')
 rec_options_group.add_argument('--tune', metavar='ATTR', nargs='+', type=str, help='specify tunable attribute(s)')
 rec_options_group.add_argument('--play', metavar='DEVICE', nargs=1, help='select playback device to start playing on')
+rec_options_group.add_argument('--load-preset', metavar='ID', nargs=1, type=str, help='load and use preset')
+rec_options_group.add_argument('--save-preset', metavar='ID', nargs=1, type=str, help='save options as preset')
 
 # Blacklisting
 blacklist_group = parser.add_argument_group(title='Blacklisting')
@@ -105,6 +105,11 @@ blacklist_group.add_argument('-br', metavar='URI', nargs='+', type=str,
 blacklist_group.add_argument('-bc', metavar='artist | track', nargs=1, choices=['artist', 'track'],
                              help='blacklist currently playing artist(s) or track')
 
+# Playback
+playback_group = parser.add_argument_group(title='Playback')
+playback_group.add_argument('--transfer-playback', metavar='ID', nargs=1, type=str,
+                            help='transfer playback to input device ID')
+
 # Printing
 print_group = parser.add_argument_group(title='Printing')
 print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
@@ -112,7 +117,7 @@ print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
                                   'playlists', 'tuning'],
                          help='print a list of genre seeds, or your top artists, tracks, or genres, where '
                               'TYPE=[artists|tracks|genres|genre-seeds|devices|blacklist]')
-print_group.add_argument('--version', action='version', version=f'%(prog)s v{version}')
+print_group.add_argument('--version', action='version', version=f'%(prog)s v{VERSION}')
 print_group.add_argument('--track-features', metavar='[URI | current]', nargs=1, type=str,
                          help='print track features of URI or currently playing track')
 
@@ -505,6 +510,8 @@ def save_device():
     print('\033[1m' + f'Name{" " * 19}Type' + '\033[0m')
     for x in devices:
         print(f'{devices.index(x)}. {x["name"]}{" " * (20 - len(x["name"]))}{x["type"]}')
+    print('Please note that a player needs to be active to be shown in the above list, i.e. if you want to save your '
+          'phone as a device, the app needs to be launched on your phone')
     # Prompt device selection and identifier, and save to config
     device = devices[prompt_device_index()]
     device_dict = {'id': device['id'], 'name': device['name'], 'type': device['type']}
@@ -674,6 +681,16 @@ def millis_to_stamp(x: int):
     return f'{f"{hours}h " if hours != 0 else ""}{f"{mins}m " if mins != 0 else ""}{sec}s'
 
 
+def transfer_playback(device_id):
+    try:
+        device = conf.get_devices()[device_id]['id']
+    except KeyError:
+        print(f'Error: device {device_id} does not exist in config')
+        exit(1)
+    print(f'Transfering playback to device {device_id}')
+    api.transfer_playback(device, headers)
+
+
 def filter_recommendations(data: json) -> list:
     """
     Filter blacklisted artists and tracks from recommendations.
@@ -776,6 +793,10 @@ def parse():
             add_to_blacklist([api.get_current_track(headers)])
         elif args.bc[0] == 'artist':
             add_to_blacklist(api.get_current_artists(headers))
+        exit(1)
+
+    if args.transfer_playback:
+        transfer_playback(args.transfer_playback[0])
         exit(1)
 
     if args.s:
