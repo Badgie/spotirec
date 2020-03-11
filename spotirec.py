@@ -116,7 +116,7 @@ print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
                          choices=['artists', 'tracks', 'genres', 'genre-seeds', 'devices', 'blacklist', 'presets',
                                   'playlists', 'tuning'],
                          help='print a list of genre seeds, or your top artists, tracks, or genres, where '
-                              'TYPE=[artists|tracks|genres|genre-seeds|devices|blacklist]')
+                              'TYPE=[artists|tracks|genres|genre-seeds|devices|blacklist|presets|playlists|tuning]')
 print_group.add_argument('--version', action='version', version=f'%(prog)s v{VERSION}')
 print_group.add_argument('--track-features', metavar='[URI | current]', nargs=1, type=str,
                          help='print track features of URI or currently playing track')

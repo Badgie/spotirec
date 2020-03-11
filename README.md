@@ -151,14 +151,14 @@ $ spotirec --tune prefix_attribute=value prefix_attribute=value
 | mode | int | 0-1 | N/A | Modality of the track. 1 is major, 0 is minor. |
 | time_signature | int | N/A | N/A | Estimated overall [time signature](https://en.wikipedia.org/wiki/Time_signature) of the track. |
 | popularity | int | 0-100 | 0-100 | Popularity of the track. High is popular, low is barely known. |
-| acousticness | float | 0.0-1.0 | Any | Confidence measure for whether or not the track is acoustic. High value is acoustic. |
+| acousticness | float | 0.0-1.0 | 0.0-1.0 | Confidence measure for whether or not the track is acoustic. High value is acoustic. |
 | danceability | float | 0.0-1.0 | 0.1-0.9 | How well fit a track is for dancing. Measurement includes among others tempo, rhythm stability, and beat strength. High value is suitable for dancing. |
-| energy | float | 0.0-1.0 | Any | Perceptual measure of intensity and activity. High energy is fast, loud, and noisy, and low is slow and mellow. |
+| energy | float | 0.0-1.0 | 0.0-1.0 | Perceptual measure of intensity and activity. High energy is fast, loud, and noisy, and low is slow and mellow. |
 | instrumentalness | float | 0.0-1.0 | 0.0-1.0 | Whether or not a track contains vocals. Low contains vocals, high is purely instrumental. |
 | liveness | float | 0.0-1.0 | 0.0-0.4 | Predicts whether or not a track is live. High value is live. |
 | loudness | float | -60-0 | -20-0 | Overall loudness of the track, measured in decibels. |
 | speechiness | float | 0.0-1.0 | 0.0-0.3 | Presence of spoken words. Low is a song, high is likely to be a talk show or podcast. |
-| valence | float | 0.0-1.0 | Any | Positivity of the track. High value is positive, low value is negative. |
+| valence | float | 0.0-1.0 | 0.0-1.0 | Positivity of the track. High value is positive, low value is negative. |
 | tempo | float | 0.0-220.0 | 60.0-210.0 | Overall estimated beats per minute of the track. |
 
 Recommendations may be scarce outside the recommended range.
@@ -189,7 +189,7 @@ $ spotirec --play device_name
 You can save devices using the `--save-device` flag, whereafter you will be prompted to select a device from your currently connected devices, and to input a name that will serve as an identifier
 ```
 $ spotirec --save-device
-**Name**                   **Type**
+Name                   Type
 0. Phone               Smartphone
 1. Laptop              Computer
 Select a device by index [0]: 1
