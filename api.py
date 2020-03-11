@@ -254,3 +254,15 @@ def get_audio_features(track_id: str, headers: dict) -> json:
     response = requests.get(f'{url_base}/audio-features/{track_id}', headers=headers)
     error_handle('retrieve audio features', 200, 'GET', response=response)
     return json.loads(response.content.decode('utf-8'))
+
+
+def transfer_playback(device_id: str, headers: dict, start_playback=True):
+    """
+    Transfer playback to device
+    :param device_id: id to transfer playback to
+    :param headers: request headers
+    :param start_playback: if music should start playing or not
+    """
+    data = {'device_ids': [device_id], 'play': start_playback}
+    response = requests.put(f'{url_base}/me/player', headers=headers, json=data)
+    error_handle('transfer playback', 204, 'PUT', response=response)
