@@ -258,5 +258,11 @@ $ spotirec --track-features current
 $ spotirec --track-features spotify:track:4uLU6hMCjMI75M1A2tKUQC
 ```
 
+### Playback
+You can change playback to a different device by passing the `--transfer-playback` device followed by an identifier for a saved device
+```
+$ spotirec --transfer-playback phone
+```
+
 ## Troubleshooting
 If you encounter issues adding tracks to your playlist, try running the script from a terminal. This should output a status code of the request, as well as some information about the code. Should you need additional help regarding status codes, consult the table in the `Response Status Codes` section [here](https://developer.spotify.com/documentation/web-api/)

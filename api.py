@@ -270,3 +270,15 @@ def check_if_playlist_exists(playlist_id: str, headers: dict) -> bool:
     else:
         print('Playlist has either been deleted, or made private, creating new...')
         return False
+
+
+def transfer_playback(device_id: str, headers: dict, start_playback=True):
+    """
+    Transfer playback to device
+    :param device_id: id to transfer playback to
+    :param headers: request headers
+    :param start_playback: if music should start playing or not
+    """
+    data = {'device_ids': [device_id], 'play': start_playback}
+    response = requests.put(f'{url_base}/me/player', headers=headers, json=data)
+    error_handle('transfer playback', 204, 'PUT', response=response)
