@@ -51,6 +51,9 @@ def convert_or_create_config():
                     c.set(x, y[0], str(y[1]))
         except (FileNotFoundError, json.JSONDecodeError):
             # If file isn't found or is empty, pass and leave section empty
+            if x == 'blacklist':
+                c.set(x, 'tracks', str({}))
+                c.set(x, 'artists', str({}))
             pass
     print('Done')
     print('If you have the old style config files you may safely delete these, or save them as backup')
