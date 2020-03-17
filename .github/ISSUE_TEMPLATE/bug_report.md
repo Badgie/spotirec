@@ -20,7 +20,7 @@ A snippet of relevant config section(s)
 Snippet of output
 
 **Version**
-Spotirec version
+Spotirec version. List the installed version by executing `spotirec --version`.
 
 **Additional context**
 Add any other context about the problem here.
