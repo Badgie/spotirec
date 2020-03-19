@@ -16,6 +16,13 @@ if not os.path.isfile(LOG_FILE):
 
 class Log:
     LEVEL = INFO
+    SUPPRESS_WARNINGS = False
+
+    def set_level(self, level: int):
+        self.LEVEL = level
+
+    def suppress_warnings(self, suppress: bool):
+        self.SUPPRESS_WARNINGS = suppress
 
     def log_file(self, level_name, msg):
         with open(LOG_FILE, 'a') as file:
@@ -27,7 +34,7 @@ class Log:
         self.log_file('ERROR', msg)
 
     def warning(self, msg):
-        if self.LEVEL >= WARNING:
+        if self.LEVEL >= WARNING and not self.SUPPRESS_WARNINGS:
             print('\033[93m' + 'WARNING: ' + '\033[0m' + msg)
         self.log_file('WARNING', msg)
 

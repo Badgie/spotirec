@@ -52,6 +52,14 @@ parser.add_argument('n', nargs='?', type=int, const=5, default=5,
                     help='amount of seeds to use on no-arg recommendations as an integer - note that this must appear '
                          'as the first argument if used and can only be used with no-arg')
 
+# Verbosity
+verbosity_group = parser.add_argument_group(title='Verbosity switches')
+mutex_verbosity = verbosity_group.add_mutually_exclusive_group()
+mutex_verbosity.add_argument('--verbose', action='store_true', help='verbose printing')
+mutex_verbosity.add_argument('--quiet', action='store_true', help='quiet printing')
+mutex_verbosity.add_argument('--debug', action='store_true', help='print for debugging purposes')
+verbosity_group.add_argument('--suppress-warnings', action='store_true', help='suppress warning messages')
+
 # Recommendation schemes
 rec_scheme_group = parser.add_argument_group(title='Recommendation schemes')
 # Create mutually exclusive group for recommendation types to ensure only one is given
@@ -924,23 +932,34 @@ def parse():
             rec.rec_params[x.split('=')[0]] = x.split('=')[1]
 
 
+args = parser.parse_args()
+
 # Logging handler
 logger = log.Log()
-# TODO: parse verbosity here
+if args.verbose:
+    logger.set_level(log.VERBOSE)
+elif args.quiet:
+    logger.set_level(log.WARNING)
+elif args.debug:
+    logger.set_level(log.DEBUG)
 
-# API handler
-api = sp_api.API()
-api.set_logger(logger)
-
-# OAuth handler
-sp_oauth = oauth2.SpotifyOAuth()
-sp_oauth.set_logger(logger)
+if args.suppress_warnings:
+    logger.suppress_warnings(True)
 
 # Config handler
 conf = sp_conf.Config()
 conf.set_logger(logger)
 
-args = parser.parse_args()
+# API handler
+api = sp_api.API()
+api.set_logger(logger)
+api.set_conf(conf)
+
+# OAuth handler
+sp_oauth = oauth2.SpotifyOAuth()
+sp_oauth.set_logger(logger)
+sp_oauth.set_conf(conf)
+sp_oauth.set_api(api)
 
 headers = {'Content-Type': 'application/json',
            'Authorization': f'Bearer {get_token()}'}

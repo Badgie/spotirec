@@ -3,8 +3,8 @@ import json
 import time
 import requests
 import base64
-import api
-import conf
+import api as sp_api
+import conf as sp_conf
 import log
 from urllib import parse
 
@@ -14,6 +14,8 @@ class SpotifyOAuth:
     OAUTH_TOKEN_URL = 'https://accounts.spotify.com/api/token'
     PORT = 8080
     LOGGER = None
+    CONF = None
+    API = None
 
     def __init__(self):
         self.client_id = '466a89a53359403b82df7d714030ec5f'
@@ -29,7 +31,7 @@ class SpotifyOAuth:
         :return: token contents as a config object
         """
         try:
-            creds = conf.get_oauth()
+            creds = self.CONF.get_oauth()
             if self.is_token_expired(int(creds['expires_at'])):
                 self.LOGGER.info('OAuth token is expired, refreshing...')
                 creds = self.refresh_token(creds['refresh_token'])
@@ -55,7 +57,7 @@ class SpotifyOAuth:
         body = {'grant_type': 'refresh_token',
                 'refresh_token': refresh_token}
         response = requests.post(self.OAUTH_TOKEN_URL, data=body, headers=self.encode_header())
-        api.error_handle('token refresh', 200, 'POST', self.LOGGER, response=response)
+        self.API.error_handle('token refresh', 200, 'POST', response=response)
         token = json.loads(response.content.decode('utf-8'))
         try:
             assert token['refresh_token'] is not None
@@ -83,7 +85,7 @@ class SpotifyOAuth:
                 'code': code,
                 'redirect_uri': self.redirect}
         response = requests.post(self.OAUTH_TOKEN_URL, data=body, headers=self.encode_header())
-        api.error_handle('token retrieve', 200, 'POST', self.LOGGER, response=response)
+        self.API.error_handle('token retrieve', 200, 'POST', response=response)
         token = json.loads(response.content.decode('utf-8'))
         self.save_token(token)
         return token
@@ -119,10 +121,16 @@ class SpotifyOAuth:
         token['expires_at'] = round(time.time()) + int(token['expires_in'])
         if refresh_token:
             token['refresh_token'] = refresh_token
-        c = conf.open_config()
+        c = self.CONF.open_config()
         for x in token.items():
             c['spotirecoauth'][x[0]] = str(x[1])
-        conf.save_config(c)
+        self.CONF.save_config(c)
 
     def set_logger(self, logger: log.Log()):
         self.LOGGER = logger
+
+    def set_conf(self, conf: sp_conf.Config):
+        self.CONF = conf
+
+    def set_api(self, api: sp_api.API):
+        self.API = api

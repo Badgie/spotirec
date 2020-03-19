@@ -1,16 +1,20 @@
 #!/usr/bin/env python
 import json
 import requests
-import conf
+import conf as sp_conf
 import log
 
 
 class API:
     URL_BASE = 'https://api.spotify.com/v1'
     LOGGER = None
+    CONF = None
 
     def set_logger(self, logger: log.Log):
         self.LOGGER = logger
+
+    def set_conf(self, conf: sp_conf.Config):
+        self.CONF = conf
 
     def error_handle(self, request_domain: str, expected_code: int, request_type: str, response=None):
         """
@@ -69,7 +73,7 @@ class API:
         self.error_handle('playlist creation', 201, 'POST', response=response)
         playlist = json.loads(response.content.decode('utf-8'))
         if cache_id:
-            conf.save_playlist({'name': playlist['name'], 'uri': playlist['uri']}, 'spotirec-default')
+            self.CONF.save_playlist({'name': playlist['name'], 'uri': playlist['uri']}, 'spotirec-default')
         return playlist['id']
 
     def upload_image(self, playlist_id: str, data: str, img_headers: dict):
