@@ -26,7 +26,7 @@ class Log:
 
     def log_file(self, level_name, msg):
         with open(LOG_FILE, 'a') as file:
-            file.write(f'[{time.ctime(time.time())}][{level_name}]: {msg}')
+            file.write(f'[{time.ctime(time.time())}][{level_name}]: {msg}\n')
 
     def error(self, msg):
         if self.LEVEL >= ERROR:
