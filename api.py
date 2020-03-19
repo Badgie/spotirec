@@ -28,6 +28,9 @@ class API:
             self.LOGGER.error(
                 f'{request_type} request for {request_domain} failed with status code {response.status_code} '
                 f'(expected {expected_code}). Reason: {response.reason}')
+            self.LOGGER.debug(f'request: {response.request}')
+            self.LOGGER.debug(f'headers: {response.headers}')
+            self.LOGGER.debug(f'url: {response.url}')
             if response.status_code == 401:
                 self.LOGGER.info('this may be because this is a new function, and additional authorization is '
                                  'required - try reauthorizing and try again.')
