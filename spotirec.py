@@ -59,6 +59,8 @@ mutex_verbosity.add_argument('-v', '--verbose', action='store_true', help='verbo
 mutex_verbosity.add_argument('-q', '--quiet', action='store_true', help='quiet printing')
 mutex_verbosity.add_argument('--debug', action='store_true', help='print for debugging purposes')
 verbosity_group.add_argument('--suppress-warnings', action='store_true', help='suppress warning messages')
+verbosity_group.add_argument('--log', action='store_true', help='log all output, including those above logging level, '
+                                                                'to file')
 
 # Recommendation schemes
 rec_scheme_group = parser.add_argument_group(title='Recommendation schemes')
@@ -286,15 +288,18 @@ def check_tune_validity(tune: str):
     prefix = tune.split('_', 1)[0]
     key = tune.split('=')[0].split('_', 1)[1]
     value = tune.split('=')[1]
+    logger.debug(f'prefix: {prefix}, attribute: {key}, value: {value}')
     # Check prefix validity
     if prefix not in TUNE_PREFIX:
         logger.error(f'tune prefix \"{tune.split("_", 1)[0]}\" is malformed')
         logger.verbose(TUNE_PREFIX)
+        logger.log_file(crash=True)
         exit(1)
     # Check attribute validity
     if key not in list(TUNE_ATTR['int'].keys()) + list(TUNE_ATTR['float'].keys()):
         logger.error(f'tune attribute \"{tune.split("=")[0].split("_", 1)[1]}\" is malformed')
         logger.verbose(list(TUNE_ATTR['int'].keys()) + list(TUNE_ATTR['float'].keys()))
+        logger.log_file(crash=True)
         exit(1)
     # Try parsing value to number
     try:
@@ -305,6 +310,7 @@ def check_tune_validity(tune: str):
         if not TUNE_ATTR[value_type][key]['max'] >= value >= TUNE_ATTR[value_type][key]['min']:
             logger.error(f'value {value} for attribute {key} is outside the accepted range (min: '
                          f'{TUNE_ATTR[value_type][key]["min"]}, max: {TUNE_ATTR[value_type][key]["max"]})')
+            logger.log_file(crash=True)
             exit(1)
         # Warn if value is outside recommended range
         if not TUNE_ATTR[value_type][key]['rec_max'] >= value >= TUNE_ATTR[value_type][key]['rec_min']:
@@ -314,6 +320,7 @@ def check_tune_validity(tune: str):
         logger.debug(f'tune attribute {key} with prefix {prefix} and value {value} is valid')
     except ValueError:
         logger.error(f'tune value {value} does not match attribute {key} data type requirements')
+        logger.log_file(crash=True)
         exit(1)
 
 
@@ -325,6 +332,7 @@ def parse_seed_info(seeds):
     logger.verbose('processing seeds')
     if len(shlex.split(seeds) if type(seeds) is str else seeds) > 5:
         logger.error('please enter at most 5 seeds')
+        logger.log_file(crash=True)
         exit(1)
     # Parse each seed in input and add to seed string depending on type
     for x in shlex.split(seeds) if type(seeds) is str else seeds:
@@ -456,6 +464,7 @@ def load_preset(name: str) -> recommendation.Recommendation:
         contents = presets.get(name)
     except KeyError:
         logger.error(f'could not find preset \"{name}\", check spelling and try again')
+        logger.log_file(crash=True)
         exit(1)
     preset = recommendation.Recommendation()
     preset.limit = contents['limit']
@@ -505,6 +514,7 @@ def get_device(device_name: str) -> dict:
         return devices.get(device_name)
     except KeyError:
         logger.error(f'device {device_name} does not exist in config')
+        logger.log_file(crash=True)
         exit(1)
 
 
@@ -655,6 +665,7 @@ def add_current_track(playlist: str):
             playlist_id = playlists[playlist]['uri'].split(':')[2]
         except KeyError:
             logger.error(f'playlist {playlist} does not exist in config')
+            logger.log_file(crash=True)
             exit(1)
     logger.info(f'adding currently playing track to playlist')
     api.add_to_playlist([api.get_current_track(headers)], playlist_id, headers)
@@ -674,6 +685,7 @@ def remove_current_track(playlist: str):
             playlist_id = playlists[playlist]['uri'].split(':')[2]
         except KeyError:
             logger.error(f'playlist {playlist} does not exist in config')
+            logger.log_file(crash=True)
             exit(1)
     logger.info(f'removing currently playing track to playlist')
     api.remove_from_playlist([api.get_current_track(headers)], playlist_id, headers)
@@ -686,6 +698,7 @@ def print_track_features(uri: str):
     """
     if not re.match(TRACK_URI_RE, uri):
         logger.error(f'{uri} is not a valid track URI')
+        logger.log_file(crash=True)
         exit(1)
     audio_features = api.get_audio_features(uri.split(':')[2], headers)
     track_info = api.request_data(uri, 'tracks', headers)
@@ -735,6 +748,7 @@ def transfer_playback(device_id):
         device = conf.get_devices()[device_id]['id']
     except KeyError:
         logger.error(f'device {device_id} does not exist in config')
+        logger.log_file(crash=True)
         exit(1)
     logger.info(f'transferring playback to device {device_id}')
     logger.debug(f'device: {device}')
@@ -772,9 +786,11 @@ def print_tuning_options():
             tuning_opts = file.readlines()
     except FileNotFoundError:
         logger.error('could not find tuning options file.')
+        logger.log_file(crash=True)
         exit(1)
     if len(tuning_opts) == 0:
         logger.error('tuning options file is empty.')
+        logger.log_file(crash=True)
         exit(1)
     for x in tuning_opts:
         if tuning_opts.index(x) == 0:
@@ -802,6 +818,7 @@ def recommend():
     # If no tracks are left, notify an error and exit
     if len(tracks) == 0:
         logger.error('received zero tracks with your options - adjust and try again')
+        logger.log_file(crash=True)
         exit(1)
     if len(tracks) <= rec.limit_original / 2:
         logger.warning(f'only received {len(tracks)} different recommendations, you may receive duplicates of '
@@ -961,6 +978,7 @@ def parse():
             exit(0)
         if not user_input:
             logger.error('please enter 1-5 seeds')
+            logger.log_file(crash=True)
             exit(1)
         parse_seed_info(user_input.strip(' '))
     else:
@@ -1023,3 +1041,5 @@ logger.debug(f'args: {args}')
 
 if __name__ == '__main__':
     recommend()
+    if args.log:
+        logger.log_file()

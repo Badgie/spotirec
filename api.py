@@ -31,6 +31,7 @@ class API:
             if response.status_code == 401:
                 self.LOGGER.info('this may be because this is a new function, and additional authorization is '
                                  'required - try reauthorizing and try again.')
+            self.LOGGER.log_file(crash=True)
             exit(1)
 
     def get_top_list(self, list_type: str, limit: int, headers: dict) -> json:
