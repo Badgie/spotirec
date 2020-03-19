@@ -29,10 +29,12 @@ class Recommendation:
         date and time of creation, recommendation method, and seed.
         :return: description string
         """
+        self.LOGGER.verbose('generating playlist description')
         desc = f'Created by Spotirec - {self.created_at} - based on {self.based_on} - seed: '
         seeds = ' | '.join(
             f'{str(x["name"])}{" - " + ", ".join(str(y) for y in x["artists"]) if x["type"] == "track" else ""}'
             for x in self.seed_info.values())
+        self.LOGGER.debug(f'description: {desc}{seeds}')
         return f'{desc}{seeds}'
 
     def update_limit(self, limit: int, init=False):
@@ -41,10 +43,12 @@ class Recommendation:
         :param limit: user-defined playlist limit
         :param init: should only be true when updated by -l arg
         """
+        self.LOGGER.verbose('updating limit')
         self.limit = limit
         self.rec_params['limit'] = str(self.limit)
         if init:
             self.limit_original = limit
+        self.LOGGER.debug(f'limit: {limit}, original: {self.limit_original}')
 
     def print_selection(self):
         """
@@ -75,11 +79,13 @@ class Recommendation:
                 self.seed_info[len(self.seed_info)-1]['artists'] = [x['name'] for x in data_dict['artists']]
             except (KeyError, AssertionError):
                 pass
+            self.LOGGER.debug(f'data: {self.seed_info[len(self.seed_info)-1]}')
 
     def create_seed(self):
         """
         Construct seed string to use in request and add to object field.
         """
+        self.LOGGER.verbose('generating seed')
         if 'genres' in self.seed_type:
             self.seed = ','.join(str(x['name']) for x in self.seed_info.values())
         elif 'custom' in self.seed_type:
@@ -89,10 +95,13 @@ class Recommendation:
                                                        if x['type'] == 'artist')
             self.rec_params['seed_genres'] = ','.join(str(x['name']) for x in self.seed_info.values()
                                                       if x['type'] == 'genre')
+            self.LOGGER.debug(f'tracks: {self.rec_params["seed_tracks"]}, artists: {self.rec_params["seed_artists"]}, '
+                              f'genres: {self.rec_params["seed_genres"]}')
             return
         else:
             self.seed = ','.join(str(x['id']) for x in self.seed_info.values())
         self.rec_params[f'seed_{self.seed_type}'] = self.seed
+        self.LOGGER.debug(f'seeds: {self.seed}')
 
-    def set_logger(self, logger: log.Log()):
+    def set_logger(self, logger: log.Log):
         self.LOGGER = logger

@@ -21,6 +21,7 @@ class Config:
         """
         try:
             # Read config and assert size
+            self.LOGGER.verbose('getting config')
             c = configparser.ConfigParser()
             c.read_file(open(f'{self.CONFIG_DIR}/spotirec.conf'))
             assert len(c.keys()) > 0
@@ -36,6 +37,7 @@ class Config:
         Write config to file
         :param c: config object
         """
+        self.LOGGER.verbose('writing config')
         c.write(open(f'{self.CONFIG_DIR}/spotirec.conf', 'w'))
 
     def convert_or_create_config(self):
@@ -69,8 +71,10 @@ class Config:
         """
         c = self.open_config()
         try:
+            self.LOGGER.verbose('getting oauth')
             return c['spotirecoauth']
         except KeyError:
+            self.LOGGER.verbose('oauth not found, creating empty')
             c.add_section('spotirecoauth')
             self.save_config(c)
             return c['spotirecoauth']
@@ -82,12 +86,14 @@ class Config:
         """
         c = self.open_config()
         try:
+            self.LOGGER.verbose('getting blacklist')
             blacklist = {}
             for x in c['blacklist'].items():
                 # Parse each blacklist entry as dict
                 blacklist[x[0]] = ast.literal_eval(x[1])
             return blacklist
         except KeyError:
+            self.LOGGER.verbose('blacklist not found, creating empty')
             c.add_section('blacklist')
             self.save_config(c)
             return c['blacklist']
@@ -143,11 +149,13 @@ class Config:
         """
         c = self.open_config()
         try:
+            self.LOGGER.verbose('getting presets')
             presets = {}
             for x in c['presets'].items():
                 presets[x[0]] = ast.literal_eval(x[1])
             return presets
         except KeyError:
+            self.LOGGER.verbose('presets not found, creating empty')
             c.add_section('presets')
             self.save_config(c)
             return c['presets']
@@ -188,12 +196,14 @@ class Config:
         """
         c = self.open_config()
         try:
+            self.LOGGER.verbose('getting devices')
             devices = {}
             for x in c['devices'].items():
                 # Parse each preset entry as dict
                 devices[x[0]] = ast.literal_eval(x[1])
             return devices
         except KeyError:
+            self.LOGGER.verbose('devices not found, creating empty')
             c.add_section('devices')
             self.save_config(c)
             return c['devices']
@@ -235,12 +245,14 @@ class Config:
         """
         c = self.open_config()
         try:
+            self.LOGGER.verbose('getting playlists')
             playlists = {}
             for x in c['playlists'].items():
                 # Parse each playlist entry as dict
                 playlists[x[0]] = ast.literal_eval(x[1])
             return playlists
         except KeyError:
+            self.LOGGER.verbose('playlists not found, creating empty')
             c.add_section('playlists')
             self.save_config(c)
             return c['playlists']

@@ -31,9 +31,11 @@ class SpotifyOAuth:
         :return: token contents as a config object
         """
         try:
+            self.LOGGER.verbose('getting oauth credentials')
             creds = self.CONF.get_oauth()
             if self.is_token_expired(int(creds['expires_at'])):
                 self.LOGGER.info('OAuth token is expired, refreshing...')
+                self.LOGGER.debug(f'current time: {time.time()}, expires at: {creds["expires_at"]}')
                 creds = self.refresh_token(creds['refresh_token'])
         except KeyError:
             self.LOGGER.error('OAuth config does not exist or is empty')
@@ -54,6 +56,7 @@ class SpotifyOAuth:
         :param refresh_token: refresh token from credentials
         :return: refreshed credentials as a json object
         """
+        self.LOGGER.verbose('refreshing token')
         body = {'grant_type': 'refresh_token',
                 'refresh_token': refresh_token}
         response = requests.post(self.OAUTH_TOKEN_URL, data=body, headers=self.encode_header())
@@ -63,7 +66,7 @@ class SpotifyOAuth:
             assert token['refresh_token'] is not None
             self.save_token(token)
         except (KeyError, AssertionError):
-            self.LOGGER.info('did not receive new refresh token, saving old')
+            self.LOGGER.verbose('did not receive new refresh token, saving old')
             self.save_token(token, refresh_token=refresh_token)
         return token
 
@@ -72,7 +75,9 @@ class SpotifyOAuth:
         Encode header token as required by OAuth specification.
         :return: dict containing header with base64 encoded client credentials
         """
+        self.LOGGER.verbose('encoding header for oauth')
         encoded_header = base64.b64encode(f"{self.client_id}:{self.client_secret}".encode("ascii")).decode("ascii")
+        self.LOGGER.debug(f'header: {encoded_header}')
         return {'Authorization': f'Basic {encoded_header}'}
 
     def retrieve_access_token(self, code: str) -> json:
@@ -87,6 +92,7 @@ class SpotifyOAuth:
         response = requests.post(self.OAUTH_TOKEN_URL, data=body, headers=self.encode_header())
         self.API.error_handle('token retrieve', 200, 'POST', response=response)
         token = json.loads(response.content.decode('utf-8'))
+        self.LOGGER.debug(f'token: {token}')
         self.save_token(token)
         return token
 
@@ -95,10 +101,12 @@ class SpotifyOAuth:
         Create authorization URL with parameters.
         :return: authorization url with parameters appended
         """
+        self.LOGGER.verbose('creating authorisation url')
         params = {'client_id': self.client_id,
                   'response_type': 'code',
                   'redirect_uri': self.redirect,
                   'scope': self.scopes}
+        self.LOGGER.debug(f'url: {self.OAUTH_AUTH_URL}?{parse.urlencode(params)}')
         return f'{self.OAUTH_AUTH_URL}?{parse.urlencode(params)}'
 
     def parse_response_code(self, url: str) -> str:
@@ -118,6 +126,7 @@ class SpotifyOAuth:
         :param token: credentials as a config object
         :param refresh_token: user refresh token
         """
+        self.LOGGER.verbose('saving token')
         token['expires_at'] = round(time.time()) + int(token['expires_in'])
         if refresh_token:
             token['refresh_token'] = refresh_token
@@ -126,7 +135,7 @@ class SpotifyOAuth:
             c['spotirecoauth'][x[0]] = str(x[1])
         self.CONF.save_config(c)
 
-    def set_logger(self, logger: log.Log()):
+    def set_logger(self, logger: log.Log):
         self.LOGGER = logger
 
     def set_conf(self, conf: sp_conf.Config):

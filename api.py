@@ -94,6 +94,7 @@ class API:
         :param headers: request headers
         """
         data = {'uris': tracks}
+        self.LOGGER.debug(f'tracks: {tracks}')
         response = requests.post(f'{self.URL_BASE}/playlists/{playlist_id}/tracks', headers=headers, json=data)
         self.error_handle('adding tracks', 201, 'POST', response=response)
 
@@ -234,6 +235,7 @@ class API:
         :param headers: request headers
         """
         data = {'tracks': [{'uri': x} for x in tracks]}
+        self.LOGGER.debug(f'tracks: {data["tracks"]}')
         response = requests.delete(f'{self.URL_BASE}/playlists/{playlist_id}/tracks', headers=headers, json=data)
         self.error_handle('delete track from playlist', 200, 'DELETE', response=response)
 
