@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 import time
+import log
 
 
 class Recommendation:
     """
     Recommendation object
     """
+    LOGGER = None
+
     def __init__(self, t=time.localtime()):
         self.limit = 20
         self.limit_original = self.limit
@@ -47,12 +50,12 @@ class Recommendation:
         """
         Print seed selection into terminal.
         """
-        print('Selection:')
+        self.LOGGER.info('Selection:')
         for x in self.seed_info.values():
             try:
-                print(f'\t{x["type"].capitalize()}: {x["name"]} - {", ".join(str(y) for y in x["artists"])}')
+                self.LOGGER.info(f'\t{x["type"].capitalize()}: {x["name"]} - {", ".join(str(y) for y in x["artists"])}')
             except KeyError:
-                print(f'\t{x["type"].capitalize()}: {x["name"]}')
+                self.LOGGER.info(f'\t{x["type"].capitalize()}: {x["name"]}')
 
     def add_seed_info(self, data_dict=None, data_string=None):
         """
@@ -90,3 +93,6 @@ class Recommendation:
         else:
             self.seed = ','.join(str(x['id']) for x in self.seed_info.values())
         self.rec_params[f'seed_{self.seed_type}'] = self.seed
+
+    def set_logger(self, logger: log.Log()):
+        self.LOGGER = logger

@@ -15,33 +15,33 @@ if not os.path.isfile(LOG_FILE):
 
 
 class Log:
-    level = INFO
+    LEVEL = INFO
 
-    def log_file(self, level, msg):
+    def log_file(self, level_name, msg):
         with open(LOG_FILE, 'a') as file:
-            file.write(f'[{time.ctime(time.time())}][{level}]: {msg}')
+            file.write(f'[{time.ctime(time.time())}][{level_name}]: {msg}')
 
     def error(self, msg):
-        if self.level >= ERROR:
+        if self.LEVEL >= ERROR:
             print('\033[91m' + 'ERROR: ' + '\033[0m' + msg)
         self.log_file('ERROR', msg)
 
     def warning(self, msg):
-        if self.level >= WARNING:
+        if self.LEVEL >= WARNING:
             print('\033[93m' + 'WARNING: ' + '\033[0m' + msg)
         self.log_file('WARNING', msg)
 
     def info(self, msg):
-        if self.level >= INFO:
+        if self.LEVEL >= INFO:
             print('\033[96m' + 'INFO: ' + '\033[0m' + msg)
         self.log_file('INFO', msg)
 
     def verbose(self, msg):
-        if self.level >= VERBOSE:
+        if self.LEVEL >= VERBOSE:
             print('\033[96m' + 'INFO: ' + '\033[0m' + msg)
         self.log_file('INFO', msg)
 
     def debug(self, msg):
-        if self.level >= DEBUG:
+        if self.LEVEL >= DEBUG:
             print('\033[94m' + 'DEBUG: ' + '\033[0m' + msg)
         self.log_file('DEBUG', msg)

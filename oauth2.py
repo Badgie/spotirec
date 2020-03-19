@@ -5,6 +5,7 @@ import requests
 import base64
 import api
 import conf
+import log
 from urllib import parse
 
 
@@ -12,6 +13,7 @@ class SpotifyOAuth:
     OAUTH_AUTH_URL = 'https://accounts.spotify.com/authorize'
     OAUTH_TOKEN_URL = 'https://accounts.spotify.com/api/token'
     PORT = 8080
+    LOGGER = None
 
     def __init__(self):
         self.client_id = '466a89a53359403b82df7d714030ec5f'
@@ -29,10 +31,10 @@ class SpotifyOAuth:
         try:
             creds = conf.get_oauth()
             if self.is_token_expired(int(creds['expires_at'])):
-                print('OAuth token is expired, refreshing...')
+                self.LOGGER.info('OAuth token is expired, refreshing...')
                 creds = self.refresh_token(creds['refresh_token'])
-        except (IOError, json.decoder.JSONDecodeError):
-            print('Error: OAuth config does not exist or is empty')
+        except KeyError:
+            self.LOGGER.error('OAuth config does not exist or is empty')
             return None
         return creds
 
@@ -53,13 +55,13 @@ class SpotifyOAuth:
         body = {'grant_type': 'refresh_token',
                 'refresh_token': refresh_token}
         response = requests.post(self.OAUTH_TOKEN_URL, data=body, headers=self.encode_header())
-        api.error_handle('token refresh', 200, 'POST', response=response)
+        api.error_handle('token refresh', 200, 'POST', self.LOGGER, response=response)
         token = json.loads(response.content.decode('utf-8'))
         try:
             assert token['refresh_token'] is not None
             self.save_token(token)
         except (KeyError, AssertionError):
-            print('Did not receive new refresh token, saving old')
+            self.LOGGER.info('did not receive new refresh token, saving old')
             self.save_token(token, refresh_token=refresh_token)
         return token
 
@@ -81,7 +83,7 @@ class SpotifyOAuth:
                 'code': code,
                 'redirect_uri': self.redirect}
         response = requests.post(self.OAUTH_TOKEN_URL, data=body, headers=self.encode_header())
-        api.error_handle('token retrieve', 200, 'POST', response=response)
+        api.error_handle('token retrieve', 200, 'POST', self.LOGGER, response=response)
         token = json.loads(response.content.decode('utf-8'))
         self.save_token(token)
         return token
@@ -121,3 +123,6 @@ class SpotifyOAuth:
         for x in token.items():
             c['spotirecoauth'][x[0]] = str(x[1])
         conf.save_config(c)
+
+    def set_logger(self, logger: log.Log()):
+        self.LOGGER = logger
