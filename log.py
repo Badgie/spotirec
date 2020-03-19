@@ -33,12 +33,12 @@ class Log:
 
     def info(self, msg):
         if self.level >= INFO:
-            print('\033[97m' + 'INFO: ' + '\033[0m' + msg)
+            print('\033[96m' + 'INFO: ' + '\033[0m' + msg)
         self.log_file('INFO', msg)
 
     def verbose(self, msg):
         if self.level >= VERBOSE:
-            print('\033[97m' + 'INFO: ' + '\033[0m' + msg)
+            print('\033[96m' + 'INFO: ' + '\033[0m' + msg)
         self.log_file('INFO', msg)
 
     def debug(self, msg):
