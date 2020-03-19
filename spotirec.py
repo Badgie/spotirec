@@ -55,8 +55,8 @@ parser.add_argument('n', nargs='?', type=int, const=5, default=5,
 # Verbosity
 verbosity_group = parser.add_argument_group(title='Verbosity switches')
 mutex_verbosity = verbosity_group.add_mutually_exclusive_group()
-mutex_verbosity.add_argument('--verbose', action='store_true', help='verbose printing')
-mutex_verbosity.add_argument('--quiet', action='store_true', help='quiet printing')
+mutex_verbosity.add_argument('-v', '--verbose', action='store_true', help='verbose printing')
+mutex_verbosity.add_argument('-q', '--quiet', action='store_true', help='quiet printing')
 mutex_verbosity.add_argument('--debug', action='store_true', help='print for debugging purposes')
 verbosity_group.add_argument('--suppress-warnings', action='store_true', help='suppress warning messages')
 
