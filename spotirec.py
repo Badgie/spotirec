@@ -155,9 +155,11 @@ def index() -> str:
     code = sp_oauth.parse_response_code(request.url)
     if code:
         logger.verbose('code found, retrieving oauth token')
+        logger.debug(f'code: {code}')
         access_token = sp_oauth.retrieve_access_token(code)['access_token']
     if access_token:
         logger.verbose('successfully retrieved oauth token')
+        logger.debug(f'token: {access_token}')
         return "<span>Successfully retrieved OAuth token. You may close this tab and start using Spotirec.</span>"
     else:
         logger.verbose('code not found, requesting permissions')
@@ -201,6 +203,7 @@ def get_user_top_genres() -> dict:
                 except KeyError:
                     genres[genre] = 1
     logger.debug(f'extracted {len(genres)} genre seeds from artists')
+    logger.debug(f'genre seeds: {genres}')
     return genres
 
 
@@ -276,6 +279,7 @@ def check_if_valid_genre(genre: str) -> bool:
     if any(g == genre for g in get_user_top_genres()) or any(
             g == genre for g in api.get_genre_seeds(headers)['genres']):
         return True
+    logger.debug(f'genre {genre} is invalid')
     return False
 
 
