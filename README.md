@@ -24,6 +24,8 @@ A tool that can create a playlist of recommendations based on the user's top art
   - [Saving Playlists](#saving-playlists)
   - [Saving Tracks](#saving-tracks)
   - [Printing](#printing)
+  - [Playback](#playback)
+  - [Logging](#logging)
 - [Troubleshooting](#troubleshooting)
 
 ## Installation
@@ -264,5 +266,37 @@ You can change playback to a different device by passing the `--transfer-playbac
 $ spotirec --transfer-playback phone
 ```
 
+### Logging
+If you want more or less logging in terminal, you can specify this with the following flags
+```
+# log only errors and warnings
+$ spotirec -q
+$ spotirec --quiet
+
+# log errors, warnings, and few relevant info messages
+# pass nothing
+$ spotirec
+
+# log errors, warnings, and extensive info messages
+$ spotirec -v
+$ spotirec --verbose
+
+# log errors, warnings, extensive info messages, and relevant data for debugging
+$ spotirec --debug
+
+# any of the above, but suppress warnings
+$ spotirec --suppress-warnings
+$ spotirec -q --suppress-warnings
+$ spotirec -v --suppress-warnings
+$ spotirec --debug --suppress-warnings
+```
+Passing `--log` will, no matter which of the above flags you have passed, log on `--debug` level to a file in your config directory. This is also done on errors, no matter the presence of `--log`.
+```
+$ spotirec --log
+INFO: saved log to /path/to/.config/spotirec/logs/spotirec_19-3-2020.log
+```
+
 ## Troubleshooting
-If you encounter issues adding tracks to your playlist, try running the script from a terminal. This should output a status code of the request, as well as some information about the code. Should you need additional help regarding status codes, consult the table in the `Response Status Codes` section [here](https://developer.spotify.com/documentation/web-api/)
+If you encounter issues with Spotirec, you can try either passing the `--log` flag - this will log all outputs on all logging levels to a file in your config directory -, or the `--debug` flag - this will yield the same information, however, to your terminal instead. On errors, the former should be done automatically.
+
+If the error is related to a request, you should get a status code - consult the table in the `Response Status Codes` section [here](https://developer.spotify.com/documentation/web-api/)
