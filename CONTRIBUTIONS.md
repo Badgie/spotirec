@@ -8,7 +8,7 @@ If you encounter a bug, or want a new feature in Spotirec, then please create an
 If you wish to directly contribute to Spotirec with a pull request, then please follow the below guide for set up (if need be) and then create a pull request.
 
 ### Prerequisites
-Please ensure that the changes you wish to contribute are present in an issue. If they are not, then please first create an issue and wait for it to be approved.
+Please ensure that the changes you wish to contribute are present in an issue. If they are not, then please first create an issue and wait for it to be approved. If what you are fixing or creating is very minor, this might not be necessary.
 
 ### Setup
 First, fork the repo to your own account. Then create a new branch, e.g. `cool-feature` or `annoying-bug`, from the `dev` branch.
@@ -41,3 +41,4 @@ A few things to keep in mind when developing on Spotirec.
     - Ensure that you use the correct logging levels, and to include meaningful verbose and debug prints.
 - Include a meaningful docstring for each function, and meaningful inline comments for complex lines or line segments.
 - If you include or change any functionality, be sure to update the README accordingly.
+- Remember to reference the issue
