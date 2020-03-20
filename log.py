@@ -7,6 +7,7 @@ WARNING = 10
 INFO = 20
 VERBOSE = 30
 DEBUG = 40
+LOG_LEVELS = {0: 'ERROR', 10: 'WARNING', 20: 'INFO', 30: 'VERBOSE', 40: 'DEBUG'}
 LOG_PATH = f'{Path.home()}/.config/spotirec/logs'
 
 if not os.path.isdir(LOG_PATH):

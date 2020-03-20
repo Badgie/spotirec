@@ -1014,7 +1014,7 @@ if args.suppress_warnings:
     logger.suppress_warnings(True)
 
 logger.verbose('initialising')
-logger.debug(f'log level: {logger.LEVEL}')
+logger.debug(f'log level: {logger.LEVEL} ({log.LOG_LEVELS[logger.LEVEL]})')
 logger.debug(f'suppress warnings: {logger.SUPPRESS_WARNINGS}')
 
 # Config handler
