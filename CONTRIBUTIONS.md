@@ -41,4 +41,4 @@ A few things to keep in mind when developing on Spotirec.
     - Ensure that you use the correct logging levels, and to include meaningful verbose and debug prints.
 - Include a meaningful docstring for each function, and meaningful inline comments for complex lines or line segments.
 - If you include or change any functionality, be sure to update the README accordingly.
-- Remember to reference the issue
+- Remember to reference the issue you are fixing, if any.
