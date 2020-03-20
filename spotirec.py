@@ -432,7 +432,6 @@ def add_image_to_playlist(tracks: list):
     img_buffer = BytesIO()
     generate_img(tracks).save(img_buffer, format='JPEG')
     img_str = base64.b64encode(img_buffer.getvalue())
-    logger.debug(f'base64: {img_str}')
     logger.verbose('uploading image')
     api.upload_image(rec.playlist_id, img_str, img_headers)
 
