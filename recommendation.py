@@ -23,6 +23,12 @@ class Recommendation:
         self.auto_play = False
         self.playback_device = {}
 
+    def __str__(self):
+        return str({'limit': self.limit, 'original limit': self.limit_original, 'created at': self.created_at,
+                    'based on': self.based_on, 'seed': self.seed, 'seed type': self.seed_type,
+                    'seed info': self.seed_info, 'rec params': self.rec_params, 'name': self.playlist_name,
+                    'id': self.playlist_id, 'auto play': self.auto_play, 'device': self.playback_device})
+
     def playlist_description(self) -> str:
         """
         Create playlist description string to be insterted into playlist. Description contains
