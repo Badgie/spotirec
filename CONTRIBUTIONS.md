@@ -42,3 +42,4 @@ A few things to keep in mind when developing on Spotirec.
 - Include a meaningful docstring for each function, and meaningful inline comments for complex lines or line segments.
 - If you include or change any functionality, be sure to update the README accordingly.
 - Remember to reference the issue you are fixing, if any.
+- Ensure that your changes did not break anything.
