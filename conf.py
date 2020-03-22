@@ -188,11 +188,11 @@ class Config:
         :return:
         """
         c = self.open_config()
-        try:
-            c.remove_option('presets', iden)
+        success = c.remove_option('presets', iden)
+        if success:
             self.LOGGER.info(f'deleted preset {iden} from config')
             self.save_config(c)
-        except KeyError:
+        else:
             self.LOGGER.error(f'preset {iden} does not exist in config')
 
     def get_devices(self) -> dict:
@@ -237,11 +237,11 @@ class Config:
         :return:
         """
         c = self.open_config()
-        try:
-            c.remove_option('devices', iden)
+        success = c.remove_option('devices', iden)
+        if success:
             self.LOGGER.info(f'deleted device {iden} from config')
             self.save_config(c)
-        except KeyError:
+        else:
             self.LOGGER.error(f'device {iden} does not exist in config')
 
     def get_playlists(self) -> dict:
@@ -286,9 +286,9 @@ class Config:
         :return:
         """
         c = self.open_config()
-        try:
-            c.remove_option('playlists', iden)
+        success = c.remove_option('playlists', iden)
+        if success:
             self.LOGGER.info(f'deleted playlist {iden} from config')
             self.save_config(c)
-        except KeyError:
+        else:
             self.LOGGER.error(f'playlist {iden} does not exist in config')
