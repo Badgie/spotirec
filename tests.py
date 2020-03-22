@@ -1,5 +1,6 @@
 import unittest
 import os
+import sys
 import conf
 import api
 import log
@@ -234,3 +235,121 @@ class ConfTests(unittest.TestCase):
 
         # coverage lol
         self.conf.remove_playlist('this-does-not-exist')
+
+
+class TestLog(unittest.TestCase):
+    def setUp(self):
+        self.logger = log.Log()
+        self.logger.LOG_PATH = 'fixtures/logs'
+
+        self.logger.set_level(50)
+
+        sys.stdout = open('fixtures/log-test', 'w')
+
+    def tearDown(self):
+        os.remove('fixtures/log-test')
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+
+    @ordered
+    def test_set_level(self):
+        self.logger.set_level(log.INFO)
+        self.assertEqual(self.logger.LEVEL, 30)
+
+    @ordered
+    def test_suppress_warnings(self):
+        self.logger.suppress_warnings(True)
+        self.assertTrue(self.logger.SUPPRESS_WARNINGS)
+
+    @ordered
+    def test_log_file_log(self):
+        self.logger.info('test_log')
+        self.logger.log_file()
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open('fixtures/log-test', 'r') as f:
+            file = f.read().split('/')[2].strip('\n')
+            with open(f'{self.logger.LOG_PATH}/{file}') as f1:
+                stdout = f1.read()
+                self.assertIn('test_log', stdout)
+        os.remove(f'{self.logger.LOG_PATH}/{file}')
+        os.rmdir(self.logger.LOG_PATH)
+
+    @ordered
+    def test_log_file_crash(self):
+        self.logger.info('test_log')
+        self.logger.log_file(crash=True)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open('fixtures/log-test', 'r') as f:
+            file = f.read().split('/')[2].strip('\n')
+            with open(f'{self.logger.LOG_PATH}/{file}') as f1:
+                stdout = f1.read()
+                self.assertIn('test_log', stdout)
+        os.remove(f'{self.logger.LOG_PATH}/{file}')
+        os.rmdir(self.logger.LOG_PATH)
+
+    @ordered
+    def test_error(self):
+        s = 'test_error'
+        self.logger.error(s)
+        self.assertIn(s, self.logger.LOG)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open('fixtures/log-test', 'r') as f:
+            stdout = f.read()
+            self.assertIn('ERROR', stdout)
+            self.assertIn('test_error', stdout)
+
+    @ordered
+    def test_warning(self):
+        s = 'test_warning'
+        self.logger.warning(s)
+        self.assertIn(s, self.logger.LOG)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open('fixtures/log-test', 'r') as f:
+            stdout = f.read()
+            self.assertIn('WARNING', stdout)
+            self.assertIn('test_warning', stdout)
+
+    @ordered
+    def test_info(self):
+        s = 'test_info'
+        self.logger.info(s)
+        self.assertIn(s, self.logger.LOG)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open('fixtures/log-test', 'r') as f:
+            stdout = f.read()
+            self.assertIn('INFO', stdout)
+            self.assertIn('test_info', stdout)
+
+    @ordered
+    def test_verbose(self):
+        s = 'test_verbose'
+        self.logger.verbose(s)
+        self.assertIn(s, self.logger.LOG)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open('fixtures/log-test', 'r') as f:
+            stdout = f.read()
+            self.assertIn('INFO', stdout)
+            self.assertIn('test_verbose', stdout)
+
+    @ordered
+    def test_debug(self):
+        s = 'test_debug'
+        self.logger.debug(s)
+        self.assertIn(s, self.logger.LOG)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open('fixtures/log-test', 'r') as f:
+            stdout = f.read()
+            self.assertIn('DEBUG', stdout)
+            self.assertIn('test_debug', stdout)
+
+    @ordered
+    def test_append_log(self):
+        self.logger.append_log('TEST', 'test_message')
+        self.assertIn('test_message', self.logger.LOG)
