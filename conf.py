@@ -8,6 +8,7 @@ from pathlib import Path
 
 class Config:
     CONFIG_DIR = f'{Path.home()}/.config/spotirec'
+    CONFIG_FILE = 'spotirec.conf'
     URI_RE = r'spotify:(artist|track):[a-zA-Z0-9]'
     LOGGER = None
 
@@ -23,7 +24,7 @@ class Config:
             # Read config and assert size
             self.LOGGER.verbose('getting config')
             c = configparser.ConfigParser()
-            with open(f'{self.CONFIG_DIR}/spotirec.conf', 'r') as f:
+            with open(f'{self.CONFIG_DIR}/{self.CONFIG_FILE}', 'r') as f:
                 c.read_file(f)
             assert len(c.keys()) > 0
             return c
@@ -39,7 +40,8 @@ class Config:
         :param c: config object
         """
         self.LOGGER.verbose('writing config')
-        c.write(open(f'{self.CONFIG_DIR}/spotirec.conf', 'w'))
+        with open(f'{self.CONFIG_DIR}/{self.CONFIG_FILE}', 'w') as f:
+            c.write(f)
 
     def convert_or_create_config(self):
         """
