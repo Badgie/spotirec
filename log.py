@@ -9,15 +9,12 @@ INFO = 30
 VERBOSE = 40
 DEBUG = 50
 LOG_LEVELS = {0: 'NOTSET', 10: 'ERROR', 20: 'WARNING', 30: 'INFO', 40: 'VERBOSE', 50: 'DEBUG'}
-LOG_PATH = f'{Path.home()}/.config/spotirec/logs'
-
-if not os.path.isdir(LOG_PATH):
-    os.makedirs(LOG_PATH)
 
 
 class Log:
     LEVEL = INFO
     SUPPRESS_WARNINGS = False
+    LOG_PATH = f'{Path.home()}/.config/spotirec/logs'
     LOG = ''
 
     def set_level(self, level: int):
@@ -27,11 +24,13 @@ class Log:
         self.SUPPRESS_WARNINGS = suppress
 
     def log_file(self, crash=False):
+        if not os.path.isdir(self.LOG_PATH):
+            os.makedirs(self.LOG_PATH)
         t = time.localtime()
         file_name = f'spotirec_{t.tm_mday}-{t.tm_mon}-{t.tm_year}.{"crash." if crash else ""}log'
-        with open(f'{LOG_PATH}/{file_name}', 'w') as file:
+        with open(f'{self.LOG_PATH}/{file_name}', 'w') as file:
             file.write(self.LOG)
-        self.info(f'saved{" crash" if crash else ""} log to {LOG_PATH}/{file_name}')
+        self.info(f'saved{" crash" if crash else ""} log to {self.LOG_PATH}/{file_name}')
 
     def error(self, msg):
         if self.LEVEL >= ERROR:
