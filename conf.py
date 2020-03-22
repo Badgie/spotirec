@@ -134,7 +134,7 @@ class Config:
         """
         # Ensure input is valid
         if not re.match(self.URI_RE, uri):
-            print(f'Error: uri {uri} is not a valid uri')
+            self.LOGGER.error(f'uri {uri} is not a valid uri')
             return
         c = self.open_config()
         uri_type = uri.split(':')[1]
