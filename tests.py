@@ -1,10 +1,12 @@
 import unittest
 import os
 import sys
+import time
 import conf
 import api
 import log
 import oauth2
+import recommendation
 
 
 def order_handler():
@@ -353,3 +355,116 @@ class TestLog(unittest.TestCase):
     def test_append_log(self):
         self.logger.append_log('TEST', 'test_message')
         self.assertIn('test_message', self.logger.LOG)
+
+
+class TestRecommendation(unittest.TestCase):
+    def setUp(self):
+        self.t = time.localtime(0)  # 1-1-1970 1:0:0
+        self.timestamp = time.ctime(time.time())
+        self.rec = recommendation.Recommendation(t=self.t)
+
+        self.logger = log.Log()
+        self.logger.set_level(0)
+        self.rec.set_logger(self.logger)
+
+        self.test_seed = {0: {'name': 'metal', 'type': 'genre'},
+                          1: {'name': 'test', 'id': 'testid', 'type': 'track', 'artists': ['frankie']},
+                          2: {'name': 'frankie', 'id': 'testid', 'type': 'artist'}}
+        self.test_track = {'name': 'test', 'id': 'testid', 'type': 'track', 'artists': [{'name': 'frankie'}]}
+        self.test_artist = {'name': 'frankie', 'id': 'testid', 'type': 'artist'}
+
+        # unset limit on string comparison
+        self.maxDiff = None
+
+    @ordered
+    def test_init(self):
+        self.assertEqual(self.rec.limit, 20)
+        self.assertEqual(self.rec.limit_original, 20)
+        self.assertEqual(self.rec.created_at, self.timestamp)
+        self.assertEqual(self.rec.based_on, 'top genres')
+        self.assertEqual(self.rec.seed, '')
+        self.assertEqual(self.rec.seed_type, 'genres')
+        self.assertEqual(self.rec.seed_info, {})
+        self.assertEqual(self.rec.rec_params, {'limit': '20'})
+        self.assertEqual(self.rec.playlist_name, 'Spotirec-1-1-1970')
+        self.assertEqual(self.rec.playlist_id, '')
+        self.assertEqual(self.rec.auto_play, False)
+        self.assertEqual(self.rec.playback_device, {})
+
+    @ordered
+    def test_str(self):
+        s = "{'limit': 20, 'original limit': 20, 'created at': '" + self.timestamp + \
+            "', 'based on': 'top genres', 'seed': '', 'seed type': 'genres', 'seed info': {}, 'rec params': " \
+            "{'limit': '20'}, 'name': 'Spotirec-1-1-1970', 'id': '', 'auto play': False, 'device': {}}"
+        self.assertEqual(str(self.rec), s)
+
+    @ordered
+    def test_playlist_description(self):
+        description = 'Created by Spotirec - ' + self.timestamp + ' - based on top genres - seed: '
+        self.assertEqual(self.rec.playlist_description(), description)
+
+    @ordered
+    def test_update_limit(self):
+        # both limit and original limit should be updated
+        self.rec.update_limit(50, init=True)
+        self.assertEqual(self.rec.limit, 50)
+        self.assertEqual(self.rec.limit_original, 50)
+
+        # only limit should be updated
+        self.rec.update_limit(70)
+        self.assertEqual(self.rec.limit, 70)
+
+    @ordered
+    def test_add_seed_info(self):
+        self.rec.add_seed_info(data_string='metal')
+        self.rec.add_seed_info(data_dict=self.test_track)
+        self.rec.add_seed_info(data_dict=self.test_artist)
+        self.assertEqual(self.rec.seed_info, self.test_seed)
+
+    @ordered
+    def test_print_selection(self):
+        self.rec.add_seed_info(data_string='metal')
+        self.rec.add_seed_info(data_dict=self.test_track)
+        self.rec.add_seed_info(data_dict=self.test_artist)
+        self.assertEqual(self.rec.seed_info, self.test_seed)
+        self.rec.LOGGER.set_level(50)
+        sys.stdout = open('fixtures/select', 'w')
+        self.rec.print_selection()
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open('fixtures/select', 'r') as f:
+            stdout = f.readlines()
+            self.assertIn('Selection:', stdout[0])
+            self.assertIn('Genre: metal', stdout[1])
+            self.assertIn('Track: test - frankie', stdout[2])
+            self.assertIn('Artist: frankie', stdout[3])
+        os.remove('fixtures/select')
+
+    @ordered
+    def test_create_seed_genres(self):
+        self.rec.add_seed_info(data_string='metal')
+        self.rec.add_seed_info(data_string='metalcore')
+        self.rec.add_seed_info(data_string='vapor-death-pop')
+        self.rec.seed_type = 'genres'
+        self.rec.create_seed()
+        self.assertEqual(self.rec.seed, 'metal,metalcore,vapor-death-pop')
+
+    @ordered
+    def test_create_seed_artists_tracks(self):
+        self.rec.add_seed_info(data_dict=self.test_track)
+        self.rec.add_seed_info(data_dict=self.test_track)
+        self.rec.add_seed_info(data_dict=self.test_track)
+        self.rec.seed_type = 'tracks'
+        self.rec.create_seed()
+        self.assertEqual(self.rec.seed, 'testid,testid,testid')
+
+    @ordered
+    def test_create_seed_custom(self):
+        self.rec.add_seed_info(data_string='metal')
+        self.rec.add_seed_info(data_dict=self.test_track)
+        self.rec.add_seed_info(data_dict=self.test_artist)
+        self.rec.seed_type = 'custom'
+        self.rec.create_seed()
+        self.assertEqual(self.rec.rec_params['seed_tracks'], 'testid')
+        self.assertEqual(self.rec.rec_params['seed_artists'], 'testid')
+        self.assertEqual(self.rec.rec_params['seed_genres'], 'metal')
