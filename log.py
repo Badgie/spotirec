@@ -2,12 +2,13 @@ from pathlib import Path
 import os
 import time
 
-ERROR = 0
-WARNING = 10
-INFO = 20
-VERBOSE = 30
-DEBUG = 40
-LOG_LEVELS = {0: 'ERROR', 10: 'WARNING', 20: 'INFO', 30: 'VERBOSE', 40: 'DEBUG'}
+NOTSET = 0
+ERROR = 10
+WARNING = 20
+INFO = 30
+VERBOSE = 40
+DEBUG = 50
+LOG_LEVELS = {0: 'NOTSET', 10: 'ERROR', 20: 'WARNING', 30: 'INFO', 40: 'VERBOSE', 50: 'DEBUG'}
 LOG_PATH = f'{Path.home()}/.config/spotirec/logs'
 
 if not os.path.isdir(LOG_PATH):
