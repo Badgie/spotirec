@@ -23,7 +23,8 @@ class Config:
             # Read config and assert size
             self.LOGGER.verbose('getting config')
             c = configparser.ConfigParser()
-            c.read_file(open(f'{self.CONFIG_DIR}/spotirec.conf'))
+            with open(f'{self.CONFIG_DIR}/spotirec.conf', 'r') as f:
+                c.read_file(f)
             assert len(c.keys()) > 0
             return c
         except (FileNotFoundError, AssertionError):
