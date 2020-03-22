@@ -98,8 +98,11 @@ class Config:
         except KeyError:
             self.LOGGER.verbose('blacklist not found, creating empty')
             c.add_section('blacklist')
+            c.set('blacklist', 'tracks', str({}))
+            c.set('blacklist', 'artists', str({}))
             self.save_config(c)
-            return c['blacklist']
+            return {'tracks': ast.literal_eval(c.get('blacklist', 'tracks')),
+                    'artists': ast.literal_eval(c.get('blacklist', 'artists'))}
 
     def add_to_blacklist(self, uri_data: json, uri: str):
         """
