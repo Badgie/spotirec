@@ -8,6 +8,7 @@ import log
 import oauth2
 import recommendation
 import spotirec
+import mockapi
 
 
 def order_handler():
@@ -555,14 +556,6 @@ class TestOauth2(unittest.TestCase):
 
 
 class TestAPI(unittest.TestCase):
-    class Response:
-        def __init__(self, status_code: int, reason: str, request: str, headers: str, url: str):
-            self.status_code = status_code
-            self.reason = reason
-            self.request = request
-            self.headers = headers
-            self.url = url
-
     def setUp(self):
         self.api = api.API()
         self.api.set_logger(log.Log())
@@ -578,7 +571,7 @@ class TestAPI(unittest.TestCase):
 
     @ordered
     def test_error_handle_success(self):
-        response = self.Response(200, 'success', 'success', 'success', 'https://success.test')
+        response = mockapi.Response(200, 'success', 'success', 'success', 'https://success.test')
         self.api.error_handle('test', 200, 'TEST', response=response)
         sys.stdout.close()
         sys.stdout = sys.__stdout__
@@ -588,7 +581,7 @@ class TestAPI(unittest.TestCase):
 
     @ordered
     def test_error_handle_error(self):
-        response = self.Response(400, 'error', 'error', 'error', 'https://error.test')
+        response = mockapi.Response(400, 'error', 'error', 'error', 'https://error.test')
         expected = 'TEST request for test failed with status code 400 (expected 200). Reason: error'
         self.assertRaises(SystemExit, self.api.error_handle, request_domain='test', expected_code=200,
                           request_type='TEST', response=response)
@@ -602,7 +595,7 @@ class TestAPI(unittest.TestCase):
 
     @ordered
     def test_error_handle_401(self):
-        response = self.Response(401, 'error', 'error', 'error', 'https://error.test')
+        response = mockapi.Response(401, 'error', 'error', 'error', 'https://error.test')
         expected = 'this may be because this is a new function, and additional authorization is required - try ' \
                    'reauthorizing and try again.'
         self.assertRaises(SystemExit, self.api.error_handle, request_domain='test', expected_code=200,
