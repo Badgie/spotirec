@@ -31,13 +31,13 @@ class MockAPI:
 
     TOP_TRACKS = '{"items": [{"name": "track0", "uri": "spotify:track:testid0", "type": "track", "id": "testid0", ' \
                  '"artists": ["frankie0", "frankie1"]},' \
-                 '{"name": "track0", "uri": "spotify:track:testid1", "type": "track", "id": "testid1", ' \
+                 '{"name": "track1", "uri": "spotify:track:testid1", "type": "track", "id": "testid1", ' \
                  '"artists": ["frankie1"]},' \
-                 '{"name": "track0", "uri": "spotify:track:testid2", "type": "track", "id": "testid2", ' \
+                 '{"name": "track2", "uri": "spotify:track:testid2", "type": "track", "id": "testid2", ' \
                  '"artists": ["frankie2", "frankie1"]},' \
-                 '{"name": "track0", "uri": "spotify:track:testid3", "type": "track", "id": "testid3", ' \
+                 '{"name": "track3", "uri": "spotify:track:testid3", "type": "track", "id": "testid3", ' \
                  '"artists": ["frankie3", "frankie1"]},' \
-                 '{"name": "track0", "uri": "spotify:track:testid4", "type": "track", "id": "testid4", ' \
+                 '{"name": "track4", "uri": "spotify:track:testid4", "type": "track", "id": "testid4", ' \
                  '"artists": ["frankie4", "frankie3"]}]}'
     TRACK = '{"name": "track0", "uri": "spotify:track:testid0", "type": "track", "id": "testid0", "artists": ' \
             '["frankie0", "frankie1"]}'
@@ -219,4 +219,4 @@ class Response:
         self.request = request
         self.headers = headers
         self.url = url
-        self.content = content
+        self.content = content if content is None else bytes(content.encode('utf-8'))
