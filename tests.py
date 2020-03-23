@@ -90,7 +90,7 @@ class ConfTests(unittest.TestCase):
         self.assertEqual(oauth['token_type'], 'Bearer')
         self.assertEqual(oauth['expires_in'], '3600')
         self.assertEqual(oauth['scope'], 'user-modify-playback-state ugc-image-upload user-library-modify')
-        self.assertEqual(oauth['expires_at'], '1584875483')
+        self.assertEqual(oauth['expires_at'], '15848754832')
         self.assertEqual(oauth['refresh_token'], '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
         self.conf.CONFIG_FILE = 'empty.conf'
         oauth = self.conf.get_oauth()
@@ -468,3 +468,86 @@ class TestRecommendation(unittest.TestCase):
         self.assertEqual(self.rec.rec_params['seed_tracks'], 'testid')
         self.assertEqual(self.rec.rec_params['seed_artists'], 'testid')
         self.assertEqual(self.rec.rec_params['seed_genres'], 'metal')
+
+
+class TestOauth2(unittest.TestCase):
+    def setUp(self):
+        self.logger = log.Log()
+        self.conf = conf.Config()
+        self.oauth = oauth2.SpotifyOAuth()
+
+        self.logger.set_level(0)
+
+        self.conf.CONFIG_DIR = 'fixtures/'
+        self.conf.CONFIG_FILE = 'test.conf'
+        self.conf.set_logger(self.logger)
+
+        self.oauth.set_logger(self.logger)
+        self.oauth.set_conf(self.conf)
+
+    @ordered
+    def test_get_credentials(self):
+        oauth = self.oauth.get_credentials()
+        self.assertNotEqual(oauth, {})
+        self.assertEqual(oauth['access_token'], 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
+        self.assertEqual(oauth['token_type'], 'Bearer')
+        self.assertEqual(oauth['expires_in'], '3600')
+        self.assertEqual(oauth['scope'], 'user-modify-playback-state ugc-image-upload user-library-modify')
+        self.assertEqual(oauth['expires_at'], '15848754832')
+        self.assertEqual(oauth['refresh_token'], '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
+
+    @ordered
+    def test_is_token_expired(self):
+        # config is set to expire in year ~2500
+        oauth = self.oauth.get_credentials()
+        self.assertFalse(self.oauth.is_token_expired(int(oauth['expires_at'])))
+        self.assertTrue(self.oauth.is_token_expired(0))
+
+    @ordered
+    def test_encode_header(self):
+        expected = {'Authorization': 'Basic dGhpc2lzYXJlYWxjbGllbnRpZDp0aGlzaXNhcmVhbGNsaWVudHNlY3JldA=='}
+        self.oauth.client_id = 'thisisarealclientid'
+        self.oauth.client_secret = 'thisisarealclientsecret'
+        header = self.oauth.encode_header()
+        self.assertEqual(header, expected)
+
+    @ordered
+    def test_get_authorize_url(self):
+        expected = 'https://accounts.spotify.com/authorize?client_id=thisisarealclientid&response_type=code&redirect' \
+                   '_uri=https%3A%2F%2Fthis-is-a-real-redirect.uri&scope=user-modify-playback-state+ugc-image-upload' \
+                   '+user-library-modify'
+        self.oauth.client_id = 'thisisarealclientid'
+        self.oauth.redirect = 'https://this-is-a-real-redirect.uri'
+        self.oauth.scopes = 'user-modify-playback-state ugc-image-upload user-library-modify'
+        url = self.oauth.get_authorize_url()
+        self.assertEqual(url, expected)
+
+    @ordered
+    def test_parse_response_code(self):
+        expected = '03fjn439n9348fh928fn392fnkjd'
+        # should give index error
+        code = self.oauth.parse_response_code('')
+        self.assertNotEqual(code, expected)
+        # ensure it works with one arg
+        url = 'https://this-is-a-real.url?code=03fjn439n9348fh928fn392fnkjd'
+        code = self.oauth.parse_response_code(url)
+        self.assertEqual(code, expected)
+        # ensure it works with several args
+        url += '&test=test&yeet=yote'
+        code = self.oauth.parse_response_code(url)
+        self.assertEqual(code, expected)
+
+    @ordered
+    def test_save_token(self):
+        self.oauth.CONF.CONFIG_FILE = 'save-test'
+        token = {'access_token': 'test', 'token_type': 'test', 'expires_in': '3600', 'scope': 'test-test'}
+        expires_at = str(round(time.time()) + 3600)
+        self.oauth.save_token(token, refresh_token='test')
+        oauth = self.oauth.CONF.get_oauth()
+        self.assertEqual(oauth['access_token'], 'test')
+        self.assertEqual(oauth['token_type'], 'test')
+        self.assertEqual(oauth['expires_in'], '3600')
+        self.assertEqual(oauth['scope'], 'test-test')
+        self.assertEqual(oauth['expires_at'], expires_at)
+        self.assertEqual(oauth['refresh_token'], 'test')
+        os.remove('fixtures/save-test')
