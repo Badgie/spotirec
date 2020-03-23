@@ -614,3 +614,411 @@ class TestAPI(unittest.TestCase):
             self.assertIn(expected, stdout)
             crash_file = stdout.split('/')[1].strip('\n')
             os.remove(f'fixtures/{crash_file}')
+
+
+class TestSpotirec(unittest.TestCase):
+    def setUp(self):
+        spotirec.logger = log.Log()
+        spotirec.logger.set_level(0)
+        spotirec.logger.LOG_PATH = 'fixtures'
+        spotirec.conf = conf.Config()
+        spotirec.conf.set_logger(spotirec.logger)
+        spotirec.conf.CONFIG_DIR = 'fixtures'
+        spotirec.conf.CONFIG_FILE = 'test.conf'
+        spotirec.sp_oauth = oauth2.SpotifyOAuth()
+        spotirec.sp_oauth.set_logger(spotirec.logger)
+        spotirec.sp_oauth.set_conf(spotirec.conf)
+        spotirec.rec = recommendation.Recommendation()
+        spotirec.rec.set_logger(spotirec.logger)
+        self.test_log = 'fixtures/test-log'
+        sys.stdout = open(self.test_log, 'w')
+
+        self.test_track0 = {'name': 'test0', 'id': 'testid0', 'type': 'track', 'artists': [{'name': 'frankie0'}]}
+        self.test_track1 = {'name': 'test1', 'id': 'testid1', 'type': 'track', 'artists': [{'name': 'frankie1'}]}
+        self.test_track2 = {'name': 'test2', 'id': 'testid2', 'type': 'track', 'artists': [{'name': 'frankie2'}]}
+
+        self.test_artist0 = {'name': 'frankie0', 'id': 'testid0', 'type': 'artist'}
+        self.test_artist1 = {'name': 'frankie1', 'id': 'testid1', 'type': 'artist'}
+        self.test_artist2 = {'name': 'frankie2', 'id': 'testid2', 'type': 'artist'}
+
+        self.test_device0 = {'id': 'testid', 'name': 'test', 'type': 'tester'}
+
+        self.test_playlist0 = {'name': 'test', 'uri': 'spotify:playlist:testid'}
+
+    def tearDown(self):
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        if os.path.isfile(self.test_log):
+            os.remove(self.test_log)
+        spotirec.input = input
+
+    @ordered
+    def test_get_token(self):
+        self.assertEqual(spotirec.get_token(), 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
+
+    @ordered
+    def test_print_choices(self):
+        expected = f'0: metal{" " * 35}1: metalcore{" " * 31}2: vapor-death-pop\n3: pop\n'
+        spotirec.print_choices(data=['metal', 'metalcore', 'vapor-death-pop', 'pop'], prompt=False)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertEqual(expected, stdout)
+
+    @ordered
+    def test_print_artists_or_tracks(self):
+        data = {'items': [{'name': 'test0', 'id': 'test0'}, {'name': 'test1', 'id': 'test1'},
+                          {'name': 'test2', 'id': 'test2'}, {'name': 'test3', 'id': 'test3'}]}
+        expected = f'0: test0{" " * 35}1: test1{" " * 35}2: test2\n3: test3\n'
+        spotirec.print_artists_or_tracks(data, prompt=False)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertEqual(expected, stdout)
+
+    @ordered
+    def test_check_tune_validity_success(self):
+        expected = 'tune attribute tempo with prefix min and value 160.0 is valid'
+        spotirec.logger.set_level(log.DEBUG)
+        spotirec.check_tune_validity('min_tempo=160')
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
+
+    @ordered
+    def test_check_tune_validity_fail_prefix(self):
+        expected = 'tune prefix \"mox\" is malformed'
+        spotirec.logger.set_level(log.INFO)
+        self.assertRaises(SystemExit, spotirec.check_tune_validity, tune='mox_tempo=160')
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
+            crash_file = stdout.split('/')[1].strip('\n')
+            os.remove(f'fixtures/{crash_file}')
+
+    @ordered
+    def test_check_tune_validity_fail_attribute(self):
+        expected = 'tune attribute \"tampo\" is malformed'
+        spotirec.logger.set_level(log.INFO)
+        self.assertRaises(SystemExit, spotirec.check_tune_validity, tune='max_tampo=160')
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
+            crash_file = stdout.split('/')[1].strip('\n')
+            os.remove(f'fixtures/{crash_file}')
+
+    @ordered
+    def test_check_tune_validity_fail_value_type(self):
+        expected = 'tune value test does not match attribute tempo data type requirements'
+        spotirec.logger.set_level(log.INFO)
+        self.assertRaises(SystemExit, spotirec.check_tune_validity, tune='max_tempo=test')
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
+            crash_file = stdout.split('/')[1].strip('\n')
+            os.remove(f'fixtures/{crash_file}')
+
+    @ordered
+    def test_check_tune_validity_fail_value_range(self):
+        expected = 'value 300.0 for attribute tempo is outside the accepted range (min: 0.0, max: 220.0)'
+        spotirec.logger.set_level(log.INFO)
+        self.assertRaises(SystemExit, spotirec.check_tune_validity, tune='max_tempo=300')
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
+            crash_file = stdout.split('/')[1].strip('\n')
+            os.remove(f'fixtures/{crash_file}')
+
+    @ordered
+    def test_check_tune_validity_warn_value_range(self):
+        expected = 'value 215.0 for attribute tempo is outside the recommended range (min: 60.0, max: 210.0), ' \
+                   'recommendations may be scarce'
+        spotirec.logger.set_level(log.WARNING)
+        spotirec.check_tune_validity('max_tempo=215')
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
+
+    @ordered
+    def test_parse_seed_info_error_str(self):
+        expected = 'please enter at most 5 seeds'
+        spotirec.logger.set_level(log.INFO)
+        self.assertRaises(SystemExit, spotirec.parse_seed_info, seeds='0 1 2 3 4 5')
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
+            crash_file = stdout.split('/')[1].strip('\n')
+            os.remove(f'fixtures/{crash_file}')
+
+    @ordered
+    def test_parse_seed_info_error_list(self):
+        expected = 'please enter at most 5 seeds'
+        spotirec.logger.set_level(log.INFO)
+        self.assertRaises(SystemExit, spotirec.parse_seed_info, seeds=[0, 1, 2, 3, 4, 5])
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
+            crash_file = stdout.split('/')[1].strip('\n')
+            os.remove(f'fixtures/{crash_file}')
+
+    @ordered
+    def test_parse_seed_info_genres_str(self):
+        expected = {0: {'name': 'metal', 'type': 'genre'}, 1: {'name': 'vapor-death-pop', 'type': 'genre'}}
+        spotirec.rec.seed_type = 'genres'
+        spotirec.parse_seed_info('metal vapor-death-pop')
+        self.assertDictEqual(expected, spotirec.rec.seed_info)
+
+    @ordered
+    def test_parse_seed_info_genres_list(self):
+        expected = {0: {'name': 'metal', 'type': 'genre'}, 1: {'name': 'vapor-death-pop', 'type': 'genre'}}
+        spotirec.rec.seed_type = 'genres'
+        spotirec.parse_seed_info(['metal', 'vapor-death-pop'])
+        self.assertDictEqual(expected, spotirec.rec.seed_info)
+
+    @ordered
+    def test_parse_seed_info_genres_tracks_list(self):
+        expected = {0: {'name': 'test0', 'id': 'testid0', 'type': 'track', 'artists': ['frankie0']},
+                    1: {'name': 'test1', 'id': 'testid1', 'type': 'track', 'artists': ['frankie1']},
+                    2: {'name': 'test2', 'id': 'testid2', 'type': 'track', 'artists': ['frankie2']}}
+        spotirec.rec.seed_type = 'tracks'
+        spotirec.parse_seed_info([self.test_track0, self.test_track1, self.test_track2])
+        self.assertDictEqual(expected, spotirec.rec.seed_info)
+
+    @ordered
+    def test_parse_seed_info_genres_artists_list(self):
+        expected = {0: {'name': 'frankie0', 'id': 'testid0', 'type': 'artist'},
+                    1: {'name': 'frankie1', 'id': 'testid1', 'type': 'artist'},
+                    2: {'name': 'frankie2', 'id': 'testid2', 'type': 'artist'}}
+        spotirec.rec.seed_type = 'artists'
+        spotirec.parse_seed_info([self.test_artist0, self.test_artist1, self.test_artist2])
+        self.assertDictEqual(expected, spotirec.rec.seed_info)
+
+    @ordered
+    def test_remove_from_blacklist(self):
+        spotirec.conf.add_to_blacklist(self.test_track0, 'spotify:track:testid0')
+        spotirec.conf.add_to_blacklist(self.test_artist0, 'spotify:artist:testid0')
+        blacklist = spotirec.conf.get_blacklist()
+        self.assertIn('spotify:track:testid0', blacklist['tracks'].keys())
+        self.assertIn('spotify:artist:testid0', blacklist['artists'].keys())
+        spotirec.remove_from_blacklist(['spotify:track:testid0', 'spotify:artist:testid0'])
+        blacklist = spotirec.conf.get_blacklist()
+        self.assertNotIn('spotify:track:testid0', blacklist['tracks'].keys())
+        self.assertNotIn('spotify:artist:testid0', blacklist['artists'].keys())
+
+    @ordered
+    def test_print_blacklist(self):
+        spotirec.conf.add_to_blacklist(self.test_track0, 'spotify:track:testid0')
+        spotirec.conf.add_to_blacklist(self.test_artist0, 'spotify:artist:testid0')
+        spotirec.print_blacklist()
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn('Tracks', stdout)
+            self.assertIn('Artists', stdout)
+            self.assertIn('test0 by frankie0 - spotify:track:testid0', stdout)
+            self.assertIn('frankie0 - spotify:artist:testid0', stdout)
+
+    @ordered
+    def test_generate_img(self):
+        img = spotirec.generate_img(['test:test:test', 'test:test:test', 'test:test:test'])
+        # hash: 2eccd587915e21ab37d6352bb55cfc8754545daa6ba1c3be0b759d66fbb36acb
+        # color: [46, 204, 213]
+        self.assertTrue(any(x[1] == (46, 204, 213) for x in img.getcolors()))
+        self.assertTrue(any(x[1] == (200, 200, 200) for x in img.getcolors()))
+        self.assertEqual(img.size, (320, 320))
+
+    @ordered
+    def test_save_preset(self):
+        presets = spotirec.conf.get_presets()
+        self.assertNotIn('test', presets.keys())
+        spotirec.save_preset('test')
+        presets = spotirec.conf.get_presets()
+        self.assertIn('test', presets.keys())
+
+    @ordered
+    def test_remove_presets(self):
+        presets = spotirec.conf.get_presets()
+        self.assertIn('test', presets.keys())
+        spotirec.remove_presets(['test'])
+        presets = spotirec.conf.get_presets()
+        self.assertNotIn('test', presets.keys())
+
+    @ordered
+    def test_print_presets(self):
+        expected0 = f'Name{" " * 16}Type{" " * 21}Params{" " * 44}Seeds'
+        expected1 = f'test{" " * 16}top genres{" " * 15}limit=20{" " * 42}'
+        spotirec.save_preset('test')
+        spotirec.print_presets()
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected0, stdout)
+            self.assertIn(expected1, stdout)
+        spotirec.remove_presets(['test'])
+
+    @ordered
+    def test_get_device_error(self):
+        spotirec.logger.set_level(log.INFO)
+        self.assertRaises(SystemExit, spotirec.get_device, device_name='test')
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            crash_file = stdout.split('/')[1].strip('\n')
+            os.remove(f'fixtures/{crash_file}')
+
+    @ordered
+    def test_get_device_success(self):
+        spotirec.conf.save_device(self.test_device0, 'test')
+        device = spotirec.get_device('test')
+        self.assertDictEqual(device, self.test_device0)
+        spotirec.conf.remove_device('test')
+
+    @ordered
+    def test_remove_devices(self):
+        spotirec.conf.save_device(self.test_device0, 'test')
+        devices = spotirec.conf.get_devices()
+        self.assertIn('test', devices.keys())
+        spotirec.remove_devices(['test'])
+        devices = spotirec.conf.get_devices()
+        self.assertNotIn('test', devices.keys())
+
+    @ordered
+    def print_saved_devices(self):
+        expected0 = f'ID{" " * 18}Name{" " * 16}Type'
+        expected1 = f'testid{" " * 14}test{" " * 16}tester'
+        spotirec.conf.save_device(self.test_device0, 'test')
+        spotirec.print_saved_devices()
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected0, stdout)
+            self.assertIn(expected1, stdout)
+
+    @ordered
+    def test_print_playlists(self):
+        expected0 = f'ID{" " * 18}Name{" " * 26}URI'
+        expected1 = f'test{" " * 16}test{" " * 26}spotify:playlist:testid'
+        spotirec.conf.save_playlist(self.test_playlist0, 'test')
+        spotirec.print_playlists()
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected0, stdout)
+            self.assertIn(expected1, stdout)
+
+    @ordered
+    def test_remove_playlists(self):
+        spotirec.conf.save_playlist(self.test_playlist0, 'test')
+        playlists = spotirec.conf.get_playlists()
+        self.assertIn('test', playlists.keys())
+        spotirec.remove_playlists(['test'])
+        playlists = spotirec.conf.get_playlists()
+        self.assertNotIn('test', playlists.keys())
+
+    @ordered
+    def test_add_current_track_error(self):
+        playlists = spotirec.conf.get_playlists()
+        self.assertNotIn('test', playlists.keys())
+        self.assertRaises(SystemExit, spotirec.add_current_track, playlist='test')
+
+    @ordered
+    def test_remove_current_track_error(self):
+        playlists = spotirec.conf.get_playlists()
+        self.assertNotIn('test', playlists.keys())
+        self.assertRaises(SystemExit, spotirec.remove_current_track, playlist='test')
+
+    @ordered
+    def test_millis_to_stamp(self):
+        self.assertEqual(spotirec.millis_to_stamp(60 * 1000), '1m 0s')
+        self.assertEqual(spotirec.millis_to_stamp(300 * 1000), '5m 0s')
+        self.assertEqual(spotirec.millis_to_stamp(225 * 1000), '3m 45s')
+        self.assertEqual(spotirec.millis_to_stamp(3690 * 1000), '1h 1m 30s')
+
+    @ordered
+    def test_filter_recommendations(self):
+        test_data = {'tracks': [{'uri': 'spotify:track:testid0', 'artists': [{'uri': 'spotify:artist:testid0'}]},
+                                {'uri': 'spotify:track:testid1', 'artists': [{'uri': 'spotify:artist:testid1'}]},
+                                {'uri': 'spotify:track:testid2', 'artists': [{'uri': 'spotify:artist:testid2'}]},
+                                {'uri': 'spotify:track:testid3', 'artists': [{'uri': 'spotify:artist:testid3'}]},
+                                {'uri': 'spotify:track:testid4', 'artists': [{'uri': 'spotify:artist:testid1'}]},
+                                {'uri': 'spotify:track:testid5', 'artists': [{'uri': 'spotify:artist:testid5'}]}]}
+        spotirec.conf.add_to_blacklist(self.test_track2, 'spotify:track:testid2')
+        spotirec.conf.add_to_blacklist(self.test_artist1, 'spotify:artist:testid1')
+        valid = spotirec.filter_recommendations(test_data)
+        # tracks 1, 2, and 4 should be removed
+        self.assertNotIn('spotify:track:testid1', valid)
+        self.assertNotIn('spotify:track:testid2', valid)
+        self.assertNotIn('spotify:track:testid4', valid)
+        # 0, 3, and 5 should remain
+        self.assertIn('spotify:track:testid0', valid)
+        self.assertIn('spotify:track:testid3', valid)
+        self.assertIn('spotify:track:testid5', valid)
+        # length should be 3
+        self.assertEqual(len(valid), 3)
+        spotirec.conf.remove_from_blacklist('spotify:track:testid2')
+        spotirec.conf.remove_from_blacklist('spotify:artist:testid1')
+
+    @ordered
+    def test_print_tuning_options_no_file(self):
+        expected = 'could not find tuning options file'
+        spotirec.TUNING_FILE = 'this-does-not-exist'
+        spotirec.logger.set_level(log.INFO)
+        self.assertRaises(SystemExit, spotirec.print_tuning_options)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
+            crash_file = stdout.split('/')[1].strip('\n')
+            os.remove(f'fixtures/{crash_file}')
+
+    @ordered
+    def test_print_tuning_options_empty(self):
+        expected = 'tuning options file is empty'
+        spotirec.TUNING_FILE = 'fixtures/tuning-opts-empty'
+        spotirec.logger.set_level(log.INFO)
+        self.assertRaises(SystemExit, spotirec.print_tuning_options)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
+            crash_file = stdout.split('/')[1].strip('\n')
+            os.remove(f'fixtures/{crash_file}')
+
+    @ordered
+    def test_print_tuning_options_success(self):
+        expected0 = 'Attribute           Data type   Range   Recommended range   Function'
+        expected1 = 'note that recommendations may be scarce outside the recommended ranges. If the recommended ' \
+                    'range is not available, they may only be scarce at extreme values.'
+        spotirec.TUNING_FILE = 'tuning-opts'
+        spotirec.print_tuning_options()
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected0, stdout)
+            self.assertIn(expected1, stdout)
