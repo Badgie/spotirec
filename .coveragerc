@@ -4,11 +4,4 @@ omit =
     fixtures/*
     __pycache__/*
     htmlcov/*
-
-include =
-    api.py
-    conf.py
-    log.py
-    oauth2.py
-    recommendation.py
-    spotirec.py
+    tests.py
