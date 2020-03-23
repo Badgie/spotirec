@@ -23,6 +23,7 @@ VERSION = '1.2'
 
 PORT = 8080
 CONFIG_PATH = f'{Path.home()}/.config/spotirec'
+TUNING_FILE = f'{Path.home()}/.config/spotirec/tuning-opts'
 
 TUNE_PREFIX = ['max', 'min', 'target']
 TUNE_ATTR = {'int': {'duration_ms': {'min': 0, 'max': sys.maxsize * 2 + 1, 'rec_min': 0, 'rec_max': 3600000},
@@ -515,7 +516,7 @@ def get_device(device_name: str) -> dict:
     """
     devices = conf.get_devices()
     try:
-        return devices.get(device_name)
+        return devices[device_name]
     except KeyError:
         logger.error(f'device {device_name} does not exist in config')
         logger.log_file(crash=True)
@@ -786,14 +787,14 @@ def print_tuning_options():
     Prints available tuning options
     """
     try:
-        with open(f'{Path.home()}/.config/spotirec/tuning-opts', 'r') as file:
+        with open(TUNING_FILE, 'r') as file:
             tuning_opts = file.readlines()
     except FileNotFoundError:
-        logger.error('could not find tuning options file.')
+        logger.error('could not find tuning options file')
         logger.log_file(crash=True)
         exit(1)
     if len(tuning_opts) == 0:
-        logger.error('tuning options file is empty.')
+        logger.error('tuning options file is empty')
         logger.log_file(crash=True)
         exit(1)
     for x in tuning_opts:
