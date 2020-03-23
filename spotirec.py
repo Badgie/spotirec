@@ -510,8 +510,7 @@ def print_presets():
 
 def get_device(device_name: str) -> dict:
     """
-    Set playback device. Prompt from available devices if none exist.
-    Print saved devices if it does not exist.
+    Get device from config
     :param device_name: name of playback device
     """
     devices = conf.get_devices()
