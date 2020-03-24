@@ -19,7 +19,10 @@ class MockAPI:
         - a singular track is always "testtrack"
         - a singular artist is always "testartist"
     """
-    ACCEPTED_TOKEN = "f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f"
+    ACCEPTED_TOKEN = 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f'
+    ACCEPTED_BASE64 = 'Y2xpZW50X2lkOmNsaWVudF9zZWNyZXQ='
+    NO_SEND_REFRESH = '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f'
+    SEND_REFRESH = 'no_refresh'
     USER = '{"id": "testuser", "external_urls": {"spotify": "/user/testuser"}, "type": "user"}'
     TOP_ARTISTS = '{"items": [{"name": "frankie0", "uri": "spotify:artist:testid0", "type": "artist", "genres": ["poo",' \
                   ' "poop"]},' \
@@ -65,32 +68,55 @@ class MockAPI:
              '{"name": "track0", "uri": "spotify:track:testid0", "type": "track", "id": "testid0", "artists": ' \
              '[{"name": "frankie0", "uri": "spotify:artist:testid0", "type": "artist", "genres": ["poo", "poop"]}, ' \
              '{"name": "frankie1", "uri": "spotify:artist:testid1", "type": "artist", "genres": ["poo", "poop"]}]}}'
+    TOKEN = '{"access_token": "f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f", ' \
+            '"token_type": "Bearer", "expires_in": 3600, ' \
+            '"scope": "user-modify-playback-state ugc-image-upload user-library-modify", ' \
+            '"refresh_token": "737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f"}'
+    TOKEN_NO_REFRESH = '{"access_token": "f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f", ' \
+                       '"token_type": "Bearer", "expires_in": 3600, ' \
+                       '"scope": "user-modify-playback-state ugc-image-upload user-library-modify"}'
 
     def get(self, url, **kwargs):
         error = self.test_validity(url, kwargs, 'GET')
+        headers = kwargs.pop('headers')
+        data = kwargs.pop('data', None)
+        json = kwargs.pop('json', None)
+        params = kwargs.pop('params', None)
         if error is None:
-            return URL_MAP[url]['func'](self, 'GET', kwargs['headers'])
+            return URL_MAP[url]['func'](self, 'GET', headers, data, json, params)
         else:
             return error
 
     def put(self, url, **kwargs):
         error = self.test_validity(url, kwargs, 'PUT')
+        headers = kwargs.pop('headers')
+        data = kwargs.pop('data', None)
+        json = kwargs.pop('json', None)
+        params = kwargs.pop('params', None)
         if error is None:
-            return URL_MAP[url]['func'](self, 'PUT', kwargs['headers'])
+            return URL_MAP[url]['func'](self, 'PUT', headers, data, json, params)
         else:
             return error
 
     def post(self, url, **kwargs):
         error = self.test_validity(url, kwargs, 'POST')
+        headers = kwargs.pop('headers')
+        data = kwargs.pop('data', None)
+        json = kwargs.pop('json', None)
+        params = kwargs.pop('params', None)
         if error is None:
-            return URL_MAP[url]['func'](self, 'POST', kwargs['headers'])
+            return URL_MAP[url]['func'](self, 'POST', headers, data, json, params)
         else:
             return error
 
     def delete(self, url, **kwargs):
         error = self.test_validity(url, kwargs, 'DELETE')
+        headers = kwargs.pop('headers')
+        data = kwargs.pop('data', None)
+        json = kwargs.pop('json', None)
+        params = kwargs.pop('params', None)
         if error is None:
-            return URL_MAP[url]['func'](self, 'DELETE', kwargs['headers'])
+            return URL_MAP[url]['func'](self, 'DELETE', headers, data, json, params)
         else:
             return error
 
@@ -99,7 +125,8 @@ class MockAPI:
             return Response(401, 'Unauthorized (missing headers)', request_type, {}, url)
 
         if kwargs['headers']['Authorization'] != f'Bearer {self.ACCEPTED_TOKEN}':
-            return Response(401, 'Unauthorized (invalid token)', request_type, kwargs['headers'], url)
+            if kwargs['headers']['Authorization'] != f'Basic {self.ACCEPTED_BASE64}':
+                return Response(401, 'Unauthorized (invalid token)', request_type, kwargs['headers'], url)
 
         try:
             if not any(m == request_type for m in URL_MAP[url]['methods']):
@@ -111,42 +138,42 @@ class MockAPI:
             return Response(404, 'Not Found', 'GET', kwargs['headers'], url)
 
     @route('/me', ['GET'])
-    def user(self, method, headers):
+    def user(self, method, headers, data, json, params):
         if method == 'GET':
             return Response(200, 'OK', method, headers, '/me', content=self.USER)
         else:
             return Response(403, 'Forbidden', method, headers, '/me')
 
     @route('/me/top/artists', ['GET'])
-    def top_artists(self, method, headers):
+    def top_artists(self, method, headers, data, json, params):
         if method == 'GET':
             return Response(200, 'OK', method, headers, '/me/top/artists', content=self.TOP_ARTISTS)
         else:
             return Response(403, 'Forbidden', method, headers, '/me/top/artists')
 
     @route('/me/top/tracks', ['GET'])
-    def top_tracks(self, method, headers):
+    def top_tracks(self, method, headers, data, json, params):
         if method == 'GET':
             return Response(200, 'OK', method, headers, '/me/top/tracks', content=self.TOP_TRACKS)
         else:
             return Response(403, 'Forbidden', method, headers, '/me/top/tracks')
 
     @route('/users/testuser/playlists', ['POST'])
-    def user_playlists(self, method, headers):
+    def user_playlists(self, method, headers, data, json, params):
         if method == 'POST':
             return Response(201, 'Created', method, headers, '/users/testuser/playlists', content=self.PLAYLIST_TRUE)
         else:
             return Response(403, 'Forbidden', method, headers, '/users/testuser/playlists')
 
     @route('/playlists/testplaylist/images', ['PUT'])
-    def playlist_image(self, method, headers):
+    def playlist_image(self, method, headers, data, json, params):
         if method == 'PUT':
             return Response(202, 'Accepted', method, headers, '/playlists/testplaylist/images')
         else:
             return Response(403, 'Forbidden', method, headers, '/playlists/testplaylist/images')
 
     @route('/playlists/testplaylist', ['PUT', 'GET'])
-    def playlist(self, method, headers):
+    def playlist(self, method, headers, data, json, params):
         if method == 'PUT':
             return Response(200, 'OK', method, headers, '/playlists/testplaylist')
         elif method == 'GET':
@@ -155,14 +182,14 @@ class MockAPI:
             return Response(403, 'Forbidden', method, headers, '/playlists/testplaylist')
 
     @route('/playlists/testplaylistprivate', ['PUT', 'GET'])
-    def playlist(self, method, headers):
+    def playlist(self, method, headers, data, json, params):
         if method == 'GET':
             return Response(200, 'OK', method, headers, '/playlists/testplaylistprivate', content=self.PLAYLIST_FALSE)
         else:
             return Response(403, 'Forbidden', method, headers, '/playlists/testplaylistprivate')
 
     @route('/playlists/testplaylist/tracks', ['POST', 'PUT', 'DELETE'])
-    def playlist_tracks(self, method, headers):
+    def playlist_tracks(self, method, headers, data, json, params):
         if method == 'DELETE':
             return Response(200, 'OK', method, headers, '/playlists/testplaylist/tracks')
         elif method == 'POST':
@@ -173,49 +200,49 @@ class MockAPI:
             return Response(403, 'Forbidden', method, headers, '/playlists/testplaylist/tracks')
 
     @route('/recommendations', ['GET'])
-    def recommendations(self, method, headers):
+    def recommendations(self, method, headers, data, json, params):
         if method == 'GET':
             return Response(200, 'OK', method, headers, '/recommendations', content=self.TOP_TRACKS)
         else:
             return Response(403, 'Forbidden', method, headers, '/recommendations')
 
     @route('/artists/testartist', ['GET'])
-    def request_artist(self, method, headers):
+    def request_artist(self, method, headers, data, json, params):
         if method == 'GET':
             return Response(200, 'OK', method, headers, '/artists/testartist', content=self.ARTIST)
         else:
             return Response(403, 'Forbidden', method, headers, '/artists/testartist')
 
     @route('/tracks/testtrack', ['GET'])
-    def request_track(self, method, headers):
+    def request_track(self, method, headers, data, json, params):
         if method == 'GET':
             return Response(200, 'OK', method, headers, '/tracks/testtrack', content=self.TRACK)
         else:
             return Response(403, 'Forbidden', method, headers, '/artists/testtrack')
 
     @route('/recommendations/available-genre-seeds', ['GET'])
-    def genre_seeds(self, method, headers):
+    def genre_seeds(self, method, headers, data, json, params):
         if method == 'GET':
             return Response(200, 'OK', method, headers, '/recommendations/available-genre-seeds', content=self.GENRES)
         else:
             return Response(403, 'Forbidden', method, headers, '/recommendations/available-genre-seeds')
 
     @route('/me/player/devices', ['GET'])
-    def devices(self, method, headers):
+    def devices(self, method, headers, data, json, params):
         if method == 'GET':
             return Response(200, 'OK', method, headers, '/me/player/devices', content=self.DEVICES)
         else:
             return Response(403, 'Forbidden', method, headers, '/me/player/devices')
 
     @route('/me/player/play', ['PUT'])
-    def play(self, method, headers):
+    def play(self, method, headers, data, json, params):
         if method == 'PUT':
             return Response(204, 'No Content', method, headers, '/me/player/play')
         else:
             return Response(403, 'Forbidden', method, headers, '/me/player/play')
 
     @route('/me/tracks', ['PUT', 'DELETE'])
-    def saved_tracks(self, method, headers):
+    def saved_tracks(self, method, headers, data, json, params):
         if method == 'PUT':
             return Response(200, 'OK', method, headers, '/me/tracks')
         elif method == 'DELETE':
@@ -224,7 +251,7 @@ class MockAPI:
             return Response(403, 'Forbidden', method, headers, '/me/tracks')
 
     @route('/me/player', ['GET', 'PUT'])
-    def player_status(self, method, headers):
+    def player_status(self, method, headers, data, json, params):
         if method == 'GET':
             return Response(200, 'OK', method, headers, '/me/player', content=self.PLAYER)
         elif method == 'PUT':
@@ -233,11 +260,26 @@ class MockAPI:
             return Response(403, 'Forbidden', method, headers, '/me/player')
 
     @route('/audio-features/testtrack', ['GET'])
-    def audio_features(self, method, headers):
+    def audio_features(self, method, headers, data, json, params):
         if method == 'GET':
             return Response(200, 'OK', method, headers, '/audio-features/testtrack', content=self.AUDIO_FEATURES)
         else:
             return Response(403, 'Forbidden', method, headers, '/audio-features/testtrack')
+
+    @route('/api/token', ['POST'])
+    def token(self, method, headers, data, json, params):
+        if data:
+            if method == 'POST':
+                refresh = data.pop('refresh_token', None)
+                code = data.pop('code', None)
+                if refresh:
+                    if refresh == self.NO_SEND_REFRESH:
+                        return Response(200, 'OK', method, headers, '/api/token', content=self.TOKEN_NO_REFRESH)
+                    elif refresh == self.SEND_REFRESH:
+                        return Response(200, 'OK', method, headers, '/api/token', content=self.TOKEN)
+                elif code:
+                    return Response(200, 'OK', method, headers, '/api/token', content=self.TOKEN)
+        return Response(403, 'Forbidden', method, headers, '/api/token')
 
 
 class Response:
