@@ -557,12 +557,23 @@ class TestOauth2(unittest.TestCase):
 
 class TestAPI(unittest.TestCase):
     def setUp(self):
+        api.requests = mockapi.MockAPI()
         self.api = api.API()
+        self.api.URL_BASE = ''
         self.api.set_logger(log.Log())
         self.api.LOGGER.set_level(log.INFO)
         self.api.LOGGER.LOG_PATH = 'fixtures'
         self.test_log = 'fixtures/test-api'
         sys.stdout = open(self.test_log, 'w')
+        self.config = conf.Config()
+        self.config.set_logger(self.api.LOGGER)
+        self.config.CONFIG_DIR = 'fixtures'
+        self.config.CONFIG_FILE = 'test.conf'
+        self.api.set_conf(self.config)
+        self.headers = {'Content-Type': 'application/json',
+                        'Authorization': f'Bearer {self.config.get_oauth()["access_token"]}'}
+        self.img_headers = {'Content-Type': 'image/jpeg',
+                            'Authorization': f'Bearer {self.config.get_oauth()["access_token"]}'}
 
     def tearDown(self):
         sys.stdout.close()
@@ -570,8 +581,14 @@ class TestAPI(unittest.TestCase):
         os.remove(self.test_log)
 
     @ordered
+    def test_set_conf(self):
+        expected = conf.Config()
+        self.api.set_conf(expected)
+        self.assertEqual(expected, self.api.CONF)
+
+    @ordered
     def test_error_handle_success(self):
-        response = mockapi.Response(200, 'success', 'success', 'success', 'https://success.test')
+        response = mockapi.Response(200, 'success', 'success', {'success': 'yes lol'}, 'https://success.test')
         self.api.error_handle('test', 200, 'TEST', response=response)
         sys.stdout.close()
         sys.stdout = sys.__stdout__
@@ -581,7 +598,7 @@ class TestAPI(unittest.TestCase):
 
     @ordered
     def test_error_handle_error(self):
-        response = mockapi.Response(400, 'error', 'error', 'error', 'https://error.test')
+        response = mockapi.Response(400, 'error', 'error', {'success': 'no lol'}, 'https://error.test')
         expected = 'TEST request for test failed with status code 400 (expected 200). Reason: error'
         self.assertRaises(SystemExit, self.api.error_handle, request_domain='test', expected_code=200,
                           request_type='TEST', response=response)
@@ -595,7 +612,7 @@ class TestAPI(unittest.TestCase):
 
     @ordered
     def test_error_handle_401(self):
-        response = mockapi.Response(401, 'error', 'error', 'error', 'https://error.test')
+        response = mockapi.Response(401, 'error', 'error', {'success': 'no lol'}, 'https://error.test')
         expected = 'this may be because this is a new function, and additional authorization is required - try ' \
                    'reauthorizing and try again.'
         self.assertRaises(SystemExit, self.api.error_handle, request_domain='test', expected_code=200,
@@ -607,6 +624,145 @@ class TestAPI(unittest.TestCase):
             self.assertIn(expected, stdout)
             crash_file = stdout.split('/')[1].strip('\n')
             os.remove(f'fixtures/{crash_file}')
+
+    @ordered
+    def test_get_top_list_artists(self):
+        artists = self.api.get_top_list('artists', 20, self.headers)
+        self.assertIn('items', artists.keys())
+        self.assertTrue(any(x['name'] == 'frankie3' for x in artists['items']))
+        self.assertTrue(any(x['uri'] == 'spotify:artist:testid1' for x in artists['items']))
+
+    @ordered
+    def test_get_top_list_tracks(self):
+        tracks = self.api.get_top_list('tracks', 20, self.headers)
+        self.assertIn('items', tracks.keys())
+        self.assertTrue(any(x['name'] == 'track4' for x in tracks['items']))
+        self.assertTrue(any(x['uri'] == 'spotify:track:testid2' for x in tracks['items']))
+
+    @ordered
+    def test_get_user_id(self):
+        iden = self.api.get_user_id(self.headers)
+        self.assertEqual(iden, 'testuser')
+
+    @ordered
+    def test_create_playlist_no_cache(self):
+        iden = self.api.create_playlist('test', 'test-description', self.headers)
+        self.assertEqual(iden, 'testplaylist')
+
+    @ordered
+    def test_create_playlist_cached(self):
+        iden = self.api.create_playlist('test', 'test-description', self.headers, cache_id=True)
+        self.assertEqual(iden, 'testplaylist')
+        playlists = self.config.get_playlists()
+        self.assertIn('spotirec-default', playlists.keys())
+        self.assertEqual(playlists['spotirec-default']['uri'], 'spotify:playlist:testid')
+        self.config.remove_playlist('spotirec-default')
+
+    @ordered
+    def test_upload_image(self):
+        # should not raise sysexit
+        self.api.upload_image('testplaylist', 'base64string==', self.img_headers)
+
+    @ordered
+    def test_add_to_playlist(self):
+        # should not raise sysexit
+        self.api.add_to_playlist(['spotify:track:trackid0', 'spotify:track:trackid1', 'spotify:track:trackid2'],
+                                 'testplaylist', self.headers)
+
+    @ordered
+    def test_get_recommendations(self):
+        recs = self.api.get_recommendations({}, self.headers)
+        self.assertIn('items', recs.keys())
+        self.assertTrue(any(x['name'] == 'track4' for x in recs['items']))
+        self.assertTrue(any(x['uri'] == 'spotify:track:testid2' for x in recs['items']))
+
+    @ordered
+    def test_request_data_artist(self):
+        artist = self.api.request_data('spotify:artist:testartist', 'artists', self.headers)
+        self.assertEqual('frankie0', artist['name'])
+        self.assertEqual('spotify:artist:testid0', artist['uri'])
+        self.assertListEqual(['poo', 'poop'], artist['genres'])
+
+    @ordered
+    def test_request_data_track(self):
+        track = self.api.request_data('spotify:track:testtrack', 'tracks', self.headers)
+        self.assertEqual('track0', track['name'])
+        self.assertEqual('spotify:track:testid0', track['uri'])
+        self.assertEqual('testid0', track['id'])
+
+    @ordered
+    def test_get_genre_seeds(self):
+        seeds = self.api.get_genre_seeds(self.headers)
+        self.assertIn('genres', seeds.keys())
+        self.assertIn('vapor-death-pop', seeds['genres'])
+        self.assertIn('poo', seeds['genres'])
+
+    @ordered
+    def test_get_available_devices(self):
+        devices = self.api.get_available_devices(self.headers)
+        self.assertIn('devices', devices.keys())
+        self.assertIn({'id': 'testid0', 'name': 'test0', 'type': 'fridge'}, devices['devices'])
+
+    @ordered
+    def test_play(self):
+        # should not raise sysexit
+        self.api.play('testid0', 'spotify:playlist:testplaylist', self.headers)
+
+    @ordered
+    def test_get_current_track(self):
+        uri = self.api.get_current_track(self.headers)
+        self.assertEqual('spotify:track:testid0', uri)
+
+    @ordered
+    def test_get_current_artists(self):
+        artists = self.api.get_current_artists(self.headers)
+        self.assertListEqual(['spotify:artist:testid0', 'spotify:artist:testid1'], artists)
+
+    @ordered
+    def test_like_track(self):
+        # should not raise sysexit
+        self.api.like_track(self.headers)
+
+    @ordered
+    def test_unlike_track(self):
+        # should not raise sysexit
+        self.api.unlike_track(self.headers)
+
+    @ordered
+    def test_update_playlist_details(self):
+        # should not raise sysexit
+        self.api.update_playlist_details('new-name', 'new-description', 'testplaylist', self.headers)
+
+    @ordered
+    def test_replace_playlist_tracks(self):
+        # should not raise sysexit
+        self.api.replace_playlist_tracks('testplaylist', ['spotify:track:testid0', 'spotify:track:testid1'],
+                                         self.headers)
+
+    @ordered
+    def test_get_playlist(self):
+        playlist = self.api.get_playlist(self.headers, 'testplaylist')
+        self.assertEqual('testplaylist', playlist['id'])
+        self.assertEqual('testplaylist', playlist['name'])
+        self.assertEqual('spotify:playlist:testid', playlist['uri'])
+
+    @ordered
+    def test_remove_from_playlist(self):
+        # should not raise sysexit
+        self.api.remove_from_playlist(['spotify:track:testid0', 'spotify:track:testid1'], 'testplaylist', self.headers)
+
+    @ordered
+    def test_check_if_playlist_exists_true(self):
+        self.assertTrue(self.api.check_if_playlist_exists('testplaylist', self.headers))
+
+    @ordered
+    def test_check_if_playlist_exists_false(self):
+        self.assertFalse(self.api.check_if_playlist_exists('testplaylistprivate', self.headers))
+
+    @ordered
+    def test_transfer_playback(self):
+        # should not raise sysexit
+        self.api.transfer_playback('test0', self.headers)
 
 
 class TestSpotirec(unittest.TestCase):
