@@ -61,6 +61,25 @@ class MockAPI:
             '["poo", "poop"]}, {"name": "frankie1", "uri": "spotify:artist:testid1", "type": "artist", ' \
             '"genres": ["poo", "poop"]}], "album": {"uri": "spotify:album:testid0", "release_date": "never lol", ' \
             '"name": "cool album"}, "popularity": -3}'
+    REC_TRACKS = '{"tracks": [{"name": "track0", "uri": "spotify:track:testid0", "type": "track", "id": "testid0", ' \
+                 '"artists": [{"name": "frankie0", "uri": "spotify:artist:testid0", "type": "artist", "genres": ' \
+                 '["poo", "poop"]}, {"name": "frankie1", "uri": "spotify:artist:testid1", "type": "artist", ' \
+                 '"genres": ["poo", "poop"]}]},' \
+                 '{"name": "track1", "uri": "spotify:track:testid1", "type": "track", "id": "testid1", ' \
+                 '"artists": [{"name": "frankie1", "uri": "spotify:artist:testid1", "type": "artist", "genres": ' \
+                 '["poo", "poop"]}]},' \
+                 '{"name": "track2", "uri": "spotify:track:testid2", "type": "track", "id": "testid2", ' \
+                 '"artists": [{"name": "frankie2", "uri": "spotify:artist:testid2", "type": "artist", "genres": ' \
+                 '["poo", "poop"]}, {"name": "frankie1", "uri": "spotify:artist:testid1", "type": "artist", ' \
+                 '"genres": ["poo", "poop"]}]},' \
+                 '{"name": "track3", "uri": "spotify:track:testid3", "type": "track", "id": "testid3", ' \
+                 '"artists": [{"name": "frankie3", "uri": "spotify:artist:testid3", "type": "artist", "genres": ' \
+                 '["poo", "poop"]}, {"name": "frankie1", "uri": "spotify:artist:testid1", "type": "artist", ' \
+                 '"genres": ["poo", "poop"]}]},' \
+                 '{"name": "track4", "uri": "spotify:track:testid4", "type": "track", "id": "testid4", ' \
+                 '"artists": [{"name": "frankie4", "uri": "spotify:artist:testid4", "type": "artist", "genres": ' \
+                 '["poo", "poop"]}, {"name": "frankie3", "uri": "spotify:artist:testid3", "type": "artist", ' \
+                 '"genres": ["poo", "poop"]}]}]}'
     PLAYLIST_TRUE = '{"id": "testplaylist", "name": "testplaylist", "type": "playlist", "uri": ' \
                     '"spotify:playlist:testid", "tracks": [], "public": true}'
     PLAYLIST_FALSE = '{"id": "testplaylist", "name": "testplaylist", "type": "playlist", "uri": ' \
@@ -210,7 +229,7 @@ class MockAPI:
     @route('/recommendations', ['GET'])
     def recommendations(self, method, headers, data, json, params):
         if method == 'GET':
-            return MockResponse(200, 'OK', method, headers, '/recommendations', content=self.TOP_TRACKS)
+            return MockResponse(200, 'OK', method, headers, '/recommendations', content=self.REC_TRACKS)
         else:
             return MockResponse(403, 'Forbidden', method, headers, '/recommendations')
 
@@ -303,3 +322,41 @@ class MockResponse:
 class MockRequest:
     def __init__(self, url: str):
         self.url = url
+
+
+class MockArgs:
+    def __init__(self, **kwargs):
+        self.a = kwargs.pop('a', None)
+        self.ac = kwargs.pop('ac', None)
+        self.add_to = kwargs.pop('add_to', None)
+        self.b = kwargs.pop('b', None)
+        self.bc = kwargs.pop('bc', None)
+        self.br = kwargs.pop('br', None)
+        self.c = kwargs.pop('c', False)
+        self.debug = kwargs.pop('debug', False)
+        self.gc = kwargs.pop('gc', False)
+        self.gcs = kwargs.pop('gcs', False)
+        self.l = kwargs.pop('l', None)
+        self.load_preset = kwargs.pop('load_preset', None)
+        self.log = kwargs.pop('log', False)
+        self.n = kwargs.pop('n', 5)
+        self.play = kwargs.pop('play', None)
+        self.preserve = kwargs.pop('preserve', False)
+        self.print = kwargs.pop('print', None)
+        self.quiet = kwargs.pop('quiet', False)
+        self.remove_devices = kwargs.pop('remove_devices', None)
+        self.remove_from = kwargs.pop('remove_from', None)
+        self.remove_playlists = kwargs.pop('remove_playlists', None)
+        self.remove_presets = kwargs.pop('remove_presets', None)
+        self.s = kwargs.pop('s', False)
+        self.save_device = kwargs.pop('save_device', False)
+        self.save_playlist = kwargs.pop('save_playlist', False)
+        self.save_preset = kwargs.pop('save_preset', None)
+        self.sr = kwargs.pop('sr', False)
+        self.suppress_warnings = kwargs.pop('suppress_warnings', False)
+        self.t = kwargs.pop('t', None)
+        self.tc = kwargs.pop('tc', False)
+        self.track_features = kwargs.pop('track_features', None)
+        self.transfer_playback = kwargs.pop('transfer_playback', None)
+        self.tune = kwargs.pop('tune', None)
+        self.verbose = kwargs.pop('verbose', False)
