@@ -25,12 +25,17 @@ class MockAPI:
     SEND_REFRESH = 'no_refresh'
     USER = '{"id": "testuser", "external_urls": {"spotify": "/user/testuser"}, "type": "user"}'
     TOP_ARTISTS = '{"items": [{"name": "frankie0", "uri": "spotify:artist:testid0", "type": "artist", "genres": ["poo",' \
-                  ' "poop"]},' \
-                  '{"name": "frankie1", "uri": "spotify:artist:testid1", "type": "artist", "genres": ["poo", "poop"]},' \
-                  '{"name": "frankie2", "uri": "spotify:artist:testid2", "type": "artist", "genres": ["poo", "poop"]},' \
-                  '{"name": "frankie3", "uri": "spotify:artist:testid3", "type": "artist", "genres": ["poo", "poop"]},' \
-                  '{"name": "frankie4", "uri": "spotify:artist:testid4", "type": "artist", "genres": ["poo", "poop"]}]}'
-    ARTIST = '{"name": "frankie0", "uri": "spotify:artist:testid0", "type": "artist", "genres": ["poo", "poop"]}'
+                  ' "poop"], "id": "testid0"},' \
+                  '{"name": "frankie1", "uri": "spotify:artist:testid1", "type": "artist", "genres": ["poo", "poop"]' \
+                  ', "id": "testid1"},' \
+                  '{"name": "frankie2", "uri": "spotify:artist:testid2", "type": "artist", "genres": ["poo", "poop"]' \
+                  ', "id": "testid2"},' \
+                  '{"name": "frankie3", "uri": "spotify:artist:testid3", "type": "artist", "genres": ["poo", "poop"]' \
+                  ', "id": "testid3"},' \
+                  '{"name": "frankie4", "uri": "spotify:artist:testid4", "type": "artist", "genres": ["poo", "poop"]' \
+                  ', "id": "testid4"}]}'
+    ARTIST = '{"name": "frankie0", "uri": "spotify:artist:testid0", "type": "artist", "genres": ["poo", "poop"], ' \
+             '"id": "testid0"}'
 
     TOP_TRACKS = '{"items": [{"name": "track0", "uri": "spotify:track:testid0", "type": "track", "id": "testid0", ' \
                  '"artists": [{"name": "frankie0", "uri": "spotify:artist:testid0", "type": "artist", "genres": ' \
@@ -52,7 +57,10 @@ class MockAPI:
                  '["poo", "poop"]}, {"name": "frankie3", "uri": "spotify:artist:testid3", "type": "artist", ' \
                  '"genres": ["poo", "poop"]}]}]}'
     TRACK = '{"name": "track0", "uri": "spotify:track:testid0", "type": "track", "id": "testid0", "artists": ' \
-            '["frankie0", "frankie1"]}'
+            '[{"name": "frankie0", "uri": "spotify:artist:testid0", "type": "artist", "genres": ' \
+            '["poo", "poop"]}, {"name": "frankie1", "uri": "spotify:artist:testid1", "type": "artist", ' \
+            '"genres": ["poo", "poop"]}], "album": {"uri": "spotify:album:testid0", "release_date": "never lol", ' \
+            '"name": "cool album"}, "popularity": -3}'
     PLAYLIST_TRUE = '{"id": "testplaylist", "name": "testplaylist", "type": "playlist", "uri": ' \
                     '"spotify:playlist:testid", "tracks": [], "public": true}'
     PLAYLIST_FALSE = '{"id": "testplaylist", "name": "testplaylist", "type": "playlist", "uri": ' \
