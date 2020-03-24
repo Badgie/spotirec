@@ -8,7 +8,7 @@ import log
 import oauth2
 import recommendation
 import spotirec
-import mockapi
+import mock
 
 
 def order_handler():
@@ -474,7 +474,7 @@ class TestRecommendation(unittest.TestCase):
 
 class TestOauth2(unittest.TestCase):
     def setUp(self):
-        oauth2.requests = mockapi.MockAPI()
+        oauth2.requests = mock.MockAPI()
         self.logger = log.Log()
         self.conf = conf.Config()
         self.oauth = oauth2.SpotifyOAuth()
@@ -668,7 +668,7 @@ class TestOauth2(unittest.TestCase):
 
 class TestAPI(unittest.TestCase):
     def setUp(self):
-        api.requests = mockapi.MockAPI()
+        api.requests = mock.MockAPI()
         self.api = api.API()
         self.api.URL_BASE = ''
         self.api.set_logger(log.Log())
@@ -699,7 +699,7 @@ class TestAPI(unittest.TestCase):
 
     @ordered
     def test_error_handle_success(self):
-        response = mockapi.Response(200, 'success', 'success', {'success': 'yes lol'}, 'https://success.test')
+        response = mock.MockResponse(200, 'success', 'success', {'success': 'yes lol'}, 'https://success.test')
         self.api.error_handle('test', 200, 'TEST', response=response)
         sys.stdout.close()
         sys.stdout = sys.__stdout__
@@ -709,7 +709,7 @@ class TestAPI(unittest.TestCase):
 
     @ordered
     def test_error_handle_error(self):
-        response = mockapi.Response(400, 'error', 'error', {'success': 'no lol'}, 'https://error.test')
+        response = mock.MockResponse(400, 'error', 'error', {'success': 'no lol'}, 'https://error.test')
         expected = 'TEST request for test failed with status code 400 (expected 200). Reason: error'
         self.assertRaises(SystemExit, self.api.error_handle, request_domain='test', expected_code=200,
                           request_type='TEST', response=response)
@@ -723,7 +723,7 @@ class TestAPI(unittest.TestCase):
 
     @ordered
     def test_error_handle_401(self):
-        response = mockapi.Response(401, 'error', 'error', {'success': 'no lol'}, 'https://error.test')
+        response = mock.MockResponse(401, 'error', 'error', {'success': 'no lol'}, 'https://error.test')
         expected = 'this may be because this is a new function, and additional authorization is required - try ' \
                    'reauthorizing and try again.'
         self.assertRaises(SystemExit, self.api.error_handle, request_domain='test', expected_code=200,
@@ -907,6 +907,11 @@ class TestSpotirec(unittest.TestCase):
         spotirec.sp_oauth = oauth2.SpotifyOAuth()
         spotirec.sp_oauth.set_logger(spotirec.logger)
         spotirec.sp_oauth.set_conf(spotirec.conf)
+        spotirec.api = api.API()
+        spotirec.api.URL_BASE = ''
+        spotirec.api.requests = mock.MockAPI()
+        spotirec.api.set_logger(spotirec.logger)
+        spotirec.api.set_conf(spotirec.conf)
         spotirec.rec = recommendation.Recommendation()
         spotirec.rec.set_logger(spotirec.logger)
         self.test_log = 'fixtures/test-log'
@@ -930,6 +935,10 @@ class TestSpotirec(unittest.TestCase):
         if os.path.isfile(self.test_log):
             os.remove(self.test_log)
         spotirec.input = input
+
+    @ordered
+    def test_index(self):
+        return
 
     @ordered
     def test_get_token(self):

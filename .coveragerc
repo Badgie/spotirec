@@ -5,3 +5,4 @@ omit =
     __pycache__/*
     htmlcov/*
     tests.py
+    mock.py
