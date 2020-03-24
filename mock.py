@@ -290,3 +290,8 @@ class MockResponse:
         self.headers = headers
         self.url = url
         self.content = content if content is None else bytes(content.encode('utf-8'))
+
+
+class MockRequest:
+    def __init__(self, url: str):
+        self.url = url

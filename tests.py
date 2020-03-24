@@ -539,6 +539,8 @@ class TestOauth2(unittest.TestCase):
         self.conf.CONFIG_FILE = 'empty.conf'
         token = self.oauth.get_credentials()
         self.assertIsNone(token)
+        with open(f'fixtures/empty.conf', 'w') as f:
+            f.write('')
 
     @ordered
     def test_refresh_token(self):
