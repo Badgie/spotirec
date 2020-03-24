@@ -752,6 +752,25 @@ class TestAPI(unittest.TestCase):
         self.api.remove_from_playlist(['spotify:track:testid0', 'spotify:track:testid1'], 'testplaylist', self.headers)
 
     @ordered
+    def test_get_audio_features(self):
+        features = self.api.get_audio_features('testtrack', self.headers)
+        self.assertEqual(23984723, features['duration_ms'])
+        self.assertEqual(10, features['key'])
+        self.assertEqual(0, features['mode'])
+        self.assertEqual(10, features['time_signature'])
+        self.assertEqual(0.99, features['acousticness'])
+        self.assertEqual(0.01, features['danceability'])
+        self.assertEqual(0.7, features['energy'])
+        self.assertEqual(0.001, features['instrumentalness'])
+        self.assertEqual(0.8, features['liveness'])
+        self.assertEqual(-50.0, features['loudness'])
+        self.assertEqual(0.1, features['speechiness'])
+        self.assertEqual(0.001, features['valence'])
+        self.assertEqual(70.0, features['tempo'])
+        self.assertEqual('testid0', features['id'])
+        self.assertEqual('spotify:track:testid0', features['uri'])
+
+    @ordered
     def test_check_if_playlist_exists_true(self):
         self.assertTrue(self.api.check_if_playlist_exists('testplaylist', self.headers))
 
