@@ -467,7 +467,7 @@ def load_preset(name: str) -> recommendation.Recommendation:
     presets = conf.get_presets()
     try:
         logger.verbose('getting preset')
-        contents = presets.get(name)
+        contents = presets[name]
     except KeyError:
         logger.error(f'could not find preset \"{name}\", check spelling and try again')
         logger.log_file(crash=True)
