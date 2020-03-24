@@ -71,7 +71,7 @@ class API:
         """
         data = {'name': playlist_name,
                 'description': playlist_description}
-        print('Creating playlist')
+        self.LOGGER.info('creating playlist')
         response = requests.post(f'{self.URL_BASE}/users/{self.get_user_id(headers)}/playlists', json=data,
                                  headers=headers)
         self.error_handle('playlist creation', 201, 'POST', response=response)
