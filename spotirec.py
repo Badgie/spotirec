@@ -829,12 +829,9 @@ def recommend():
         logger.warning(f'only received {len(tracks)} different recommendations, you may receive duplicates of '
                        f'these (this might take a few seconds)')
     # Filter recommendations until length of track list matches limit preference
-    while True:
-        if len(tracks) < rec.limit_original:
-            rec.update_limit(rec.limit_original - len(tracks))
-            tracks += filter_recommendations(api.get_recommendations(rec.rec_params, headers))
-        else:
-            break
+    while len(tracks) < rec.limit_original:
+        rec.update_limit(rec.limit_original - len(tracks))
+        tracks += filter_recommendations(api.get_recommendations(rec.rec_params, headers))
 
     def create_new_playlist():
         rec.playlist_id = api.create_playlist(rec.playlist_name, rec.playlist_description(), headers, cache_id=True)
@@ -1041,10 +1038,11 @@ if not any('unittest' in arg for arg in sys.argv):
     # Recommendation object
     if args.load_preset:
         rec = load_preset(args.load_preset[0])
+        rec.set_logger(logger)
     else:
         rec = recommendation.Recommendation()
+        rec.set_logger(logger)
         parse()
-    rec.set_logger(logger)
 
     logger.debug(f'args: {args}')
 
