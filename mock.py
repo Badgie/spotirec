@@ -329,7 +329,7 @@ class MockRequest:
 class MockArgs:
     def __init__(self, **kwargs):
         self.a = kwargs.pop('a', None)
-        self.ac = kwargs.pop('ac', None)
+        self.ac = kwargs.pop('ac', False)
         self.add_to = kwargs.pop('add_to', None)
         self.b = kwargs.pop('b', None)
         self.bc = kwargs.pop('bc', None)
@@ -362,3 +362,11 @@ class MockArgs:
         self.transfer_playback = kwargs.pop('transfer_playback', None)
         self.tune = kwargs.pop('tune', None)
         self.verbose = kwargs.pop('verbose', False)
+
+
+class MockWebbrowser:
+    def __init__(self):
+        self.url = None
+
+    def open(self, url: str):
+        self.url = url
