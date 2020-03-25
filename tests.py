@@ -2,6 +2,7 @@ import unittest
 import os
 import sys
 import time
+import signal
 import conf
 import api
 import log
@@ -785,9 +786,9 @@ class TestAPI(unittest.TestCase):
     @ordered
     def test_get_recommendations(self):
         recs = self.api.get_recommendations({}, self.headers)
-        self.assertIn('items', recs.keys())
-        self.assertTrue(any(x['name'] == 'track4' for x in recs['items']))
-        self.assertTrue(any(x['uri'] == 'spotify:track:testid2' for x in recs['items']))
+        self.assertIn('tracks', recs.keys())
+        self.assertTrue(any(x['name'] == 'track4' for x in recs['tracks']))
+        self.assertTrue(any(x['uri'] == 'spotify:track:testid2' for x in recs['tracks']))
 
     @ordered
     def test_request_data_artist(self):
@@ -800,8 +801,8 @@ class TestAPI(unittest.TestCase):
     def test_request_data_track(self):
         track = self.api.request_data('spotify:track:testtrack', 'tracks', self.headers)
         self.assertEqual('track0', track['name'])
-        self.assertEqual('spotify:track:testid0', track['uri'])
-        self.assertEqual('testid0', track['id'])
+        self.assertEqual('spotify:track:testtrack', track['uri'])
+        self.assertEqual('testtrack', track['id'])
 
     @ordered
     def test_get_genre_seeds(self):
@@ -824,12 +825,12 @@ class TestAPI(unittest.TestCase):
     @ordered
     def test_get_current_track(self):
         uri = self.api.get_current_track(self.headers)
-        self.assertEqual('spotify:track:testid0', uri)
+        self.assertEqual('spotify:track:testtrack', uri)
 
     @ordered
     def test_get_current_artists(self):
         artists = self.api.get_current_artists(self.headers)
-        self.assertListEqual(['spotify:artist:testid0', 'spotify:artist:testid1'], artists)
+        self.assertListEqual(['spotify:artist:testartist', 'spotify:artist:testartist'], artists)
 
     @ordered
     def test_like_track(self):
@@ -909,13 +910,22 @@ class TestSpotirec(unittest.TestCase):
         spotirec.sp_oauth = oauth2.SpotifyOAuth()
         spotirec.sp_oauth.set_logger(spotirec.logger)
         spotirec.sp_oauth.set_conf(spotirec.conf)
+        spotirec.sp_oauth.OAUTH_TOKEN_URL = '/api/token'
+        spotirec.sp_oauth.OAUTH_AUTH_URL = '/authorize'
+        spotirec.sp_oauth.client_secret = 'client_secret'
+        spotirec.sp_oauth.client_id = 'client_id'
+        spotirec.sp_oauth.redirect = 'https://real.url'
+        spotirec.sp_oauth.scopes = 'scope'
         spotirec.api = api.API()
         spotirec.api.URL_BASE = ''
         spotirec.api.requests = mock.MockAPI()
         spotirec.api.set_logger(spotirec.logger)
         spotirec.api.set_conf(spotirec.conf)
+        spotirec.sp_oauth.set_api(spotirec.api)
         spotirec.rec = recommendation.Recommendation()
         spotirec.rec.set_logger(spotirec.logger)
+        spotirec.headers = {'Content-Type': 'application/json',
+                            'Authorization': 'Bearer f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f'}
         self.test_log = 'fixtures/test-log'
         sys.stdout = open(self.test_log, 'w')
 
@@ -939,12 +949,50 @@ class TestSpotirec(unittest.TestCase):
         spotirec.input = input
 
     @ordered
-    def test_index(self):
-        return
+    def test_index_no_code(self):
+        spotirec.request = mock.MockRequest('https://real.url')
+        expected = "<a href='/authorize?client_id=client_id&response_type=code&redirect_uri=https%3A%2F%2Freal.url&" \
+                   "scope=scope'>Login to Spotify</a>"
+        res = spotirec.index()
+        self.assertEqual(res, expected)
+
+    @ordered
+    def test_index_code(self):
+        spotirec.conf.CONFIG_FILE = 'test-index.conf'
+        spotirec.request = mock.MockRequest('https://real.url?code=testcode')
+        expected = '<span>Successfully retrieved OAuth token. You may close this tab and start using Spotirec.</span>'
+        expected_expire = str(round(time.time()) + 3600)
+        res = spotirec.index()
+        self.assertEqual(res, expected)
+
+        oauth = spotirec.conf.get_oauth()
+        self.assertEqual(oauth['access_token'], 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
+        self.assertEqual(oauth['token_type'], 'Bearer')
+        self.assertEqual(oauth['expires_in'], '3600')
+        self.assertEqual(oauth['scope'], 'user-modify-playback-state ugc-image-upload user-library-modify')
+        self.assertEqual(oauth['expires_at'], expected_expire)
+        self.assertEqual(oauth['refresh_token'], '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
+        os.remove('fixtures/test-index.conf')
 
     @ordered
     def test_get_token(self):
         self.assertEqual(spotirec.get_token(), 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
+
+    @ordered
+    def test_get_user_top_genres(self):
+        genres = spotirec.get_user_top_genres()
+        # valid genre seed
+        self.assertIn('poo', genres.keys())
+        # invalid genre seed
+        self.assertNotIn('poop', genres.keys())
+        self.assertEqual(5, genres['poo'])
+
+    @ordered
+    def test_add_top_genres_seed(self):
+        spotirec.add_top_genres_seed(1)
+        # rec object should have one seed
+        self.assertNotEqual(spotirec.rec.seed_info, {})
+        self.assertDictEqual(list(spotirec.rec.seed_info.values())[0], {'name': 'poo', 'type': 'genre'})
 
     @ordered
     def test_print_choices(self):
@@ -957,6 +1005,43 @@ class TestSpotirec(unittest.TestCase):
             self.assertEqual(expected, stdout)
 
     @ordered
+    def test_print_choices_sorted(self):
+        expected = f'0: vapor-death-pop{" " * 25}1: metalcore{" " * 31}2: metal\n3: pop\n'
+        spotirec.print_choices(data={'metal': 3, 'metalcore': 7, 'vapor-death-pop': 23, 'pop': 1},
+                               prompt=False, sort=True)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertEqual(expected, stdout)
+
+    @ordered
+    def test_print_choices_prompt_genres(self):
+        def mock_input(prompt: str):
+            return '0 2'
+        spotirec.input = mock_input
+        spotirec.print_choices(data=['metal', 'metalcore', 'vapor-death-pop', 'pop'])
+        self.assertNotEqual(spotirec.rec.seed_info, {})
+        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'metal', 'type': 'genre'},
+                                                      1: {'name': 'vapor-death-pop', 'type': 'genre'}})
+
+    @ordered
+    def test_print_choices_prompt_other(self):
+        def mock_input(prompt: str):
+            return '1 2 3'
+        spotirec.rec.seed_type = 'tracks'
+        spotirec.input = mock_input
+        choice = spotirec.print_choices(data=['metal', 'metalcore', 'vapor-death-pop', 'pop'])
+        self.assertEqual(choice, mock_input(''))
+
+    @ordered
+    def test_print_choices_keyboard_interrupt(self):
+        def mock_input(prompt: str):
+            raise KeyboardInterrupt
+        spotirec.input = mock_input
+        self.assertRaises(SystemExit, spotirec.print_choices, data=[])
+
+    @ordered
     def test_print_artists_or_tracks(self):
         data = {'items': [{'name': 'test0', 'id': 'test0'}, {'name': 'test1', 'id': 'test1'},
                           {'name': 'test2', 'id': 'test2'}, {'name': 'test3', 'id': 'test3'}]}
@@ -967,6 +1052,25 @@ class TestSpotirec(unittest.TestCase):
         with open(self.test_log, 'r') as f:
             stdout = f.read()
             self.assertEqual(expected, stdout)
+
+    @ordered
+    def test_print_artists_or_tracks_prompt(self):
+        def mock_input(prompt: str):
+            return '0 2'
+        spotirec.input = mock_input
+        spotirec.rec.seed_type = 'artists'
+        spotirec.print_artists_or_tracks(spotirec.api.get_top_list('artists', 20, spotirec.headers))
+        self.assertNotEqual(spotirec.rec.seed_info, {})
+        self.assertEqual(spotirec.rec.seed_info, {0: {'id': 'testid0', 'name': 'frankie0', 'type': 'artist'},
+                                                  1: {'id': 'testid2', 'name': 'frankie2', 'type': 'artist'}})
+
+    @ordered
+    def test_check_if_valid_genre_true(self):
+        self.assertTrue(spotirec.check_if_valid_genre('vapor-death-pop'))
+
+    @ordered
+    def test_check_if_valid_genre_false(self):
+        self.assertFalse(spotirec.check_if_valid_genre('vapor-death-jazz'))
 
     @ordered
     def test_check_tune_validity_success(self):
@@ -1102,6 +1206,42 @@ class TestSpotirec(unittest.TestCase):
         self.assertDictEqual(expected, spotirec.rec.seed_info)
 
     @ordered
+    def test_parse_seed_info_custom_genres(self):
+        spotirec.rec.seed_type = 'custom'
+        spotirec.parse_seed_info(['vapor-death-pop'])
+        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'vapor-death-pop', 'type': 'genre'}})
+
+    @ordered
+    def test_parse_seed_info_custom_uri(self):
+        spotirec.rec.seed_type = 'custom'
+        spotirec.parse_seed_info(['spotify:track:testtrack'])
+        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'track0', 'id': 'testtrack', 'type': 'track',
+                                                          'artists': ['frankie0', 'frankie1']}})
+
+    @ordered
+    def test_parse_seed_info_custom_warning(self):
+        expected = 'input \"vapor-death-jazz\" does not match a genre or a valid URI syntax, skipping...'
+        spotirec.logger.set_level(log.WARNING)
+        spotirec.rec.seed_type = 'custom'
+        spotirec.parse_seed_info(['vapor-death-jazz'])
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
+
+    @ordered
+    def test_add_to_blacklist(self):
+        spotirec.add_to_blacklist(['spotify:track:testtrack'])
+        blacklist = spotirec.conf.get_blacklist()
+        self.assertIn('spotify:track:testtrack', blacklist['tracks'].keys())
+        self.assertDictEqual(blacklist['tracks']['spotify:track:testtrack'],
+                             {'name': 'track0', 'uri': 'spotify:track:testtrack', 'artists': ['frankie0', 'frankie1']})
+        spotirec.conf.remove_from_blacklist('spotify:track:testtrack')
+        blacklist = spotirec.conf.get_blacklist()
+        self.assertDictEqual(blacklist['tracks'], {})
+
+    @ordered
     def test_remove_from_blacklist(self):
         spotirec.conf.add_to_blacklist(self.test_track0, 'spotify:track:testid0')
         spotirec.conf.add_to_blacklist(self.test_artist0, 'spotify:artist:testid0')
@@ -1137,15 +1277,59 @@ class TestSpotirec(unittest.TestCase):
         self.assertEqual(img.size, (320, 320))
 
     @ordered
+    def test_add_image_to_playlist(self):
+        # should not cause system exit
+        spotirec.rec.playlist_id = 'testplaylist'
+        spotirec.add_image_to_playlist(['test:test:test', 'test:test:test', 'test:test:test'])
+
+    @ordered
     def test_save_preset(self):
-        presets = spotirec.conf.get_presets()
-        self.assertNotIn('test', presets.keys())
         spotirec.save_preset('test')
         presets = spotirec.conf.get_presets()
         self.assertIn('test', presets.keys())
+        self.assertEqual(presets['test']['limit'], spotirec.rec.limit_original)
+        self.assertEqual(presets['test']['based_on'], spotirec.rec.based_on)
+        self.assertEqual(presets['test']['seed'], spotirec.rec.seed)
+        self.assertEqual(presets['test']['seed_type'], spotirec.rec.seed_type)
+        self.assertEqual(presets['test']['seed_info'], spotirec.rec.seed_info)
+        self.assertEqual(presets['test']['rec_params'], spotirec.rec.rec_params)
+        self.assertEqual(presets['test']['auto_play'], spotirec.rec.auto_play)
+        self.assertEqual(presets['test']['playback_device'], spotirec.rec.playback_device)
+        spotirec.conf.remove_preset('test')
+        presets = spotirec.conf.get_presets()
+        self.assertNotIn('test', presets.keys())
+
+    @ordered
+    def test_load_preset(self):
+        spotirec.save_preset('test')
+        expected_preset = spotirec.conf.get_presets()['test']
+        preset = spotirec.load_preset('test')
+        self.assertEqual(expected_preset['limit'], preset.limit_original)
+        self.assertEqual(expected_preset['based_on'], preset.based_on)
+        self.assertEqual(expected_preset['seed'], preset.seed)
+        self.assertEqual(expected_preset['seed_type'], preset.seed_type)
+        self.assertEqual(expected_preset['seed_info'], preset.seed_info)
+        self.assertEqual(expected_preset['rec_params'], preset.rec_params)
+        self.assertEqual(expected_preset['auto_play'], preset.auto_play)
+        self.assertEqual(expected_preset['playback_device'], preset.playback_device)
+        spotirec.conf.remove_preset('test')
+        presets = spotirec.conf.get_presets()
+        self.assertNotIn('test', presets.keys())
+
+    @ordered
+    def test_load_preset_error(self):
+        spotirec.logger.set_level(log.INFO)
+        self.assertRaises(SystemExit, spotirec.load_preset, name='this-does-not-exist')
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            crash_file = stdout.split('/')[1].strip('\n')
+            os.remove(f'fixtures/{crash_file}')
 
     @ordered
     def test_remove_presets(self):
+        spotirec.save_preset('test')
         presets = spotirec.conf.get_presets()
         self.assertIn('test', presets.keys())
         spotirec.remove_presets(['test'])
@@ -1164,12 +1348,12 @@ class TestSpotirec(unittest.TestCase):
             stdout = f.read()
             self.assertIn(expected0, stdout)
             self.assertIn(expected1, stdout)
-        spotirec.remove_presets(['test'])
+        spotirec.conf.remove_preset('test')
 
     @ordered
     def test_get_device_error(self):
         spotirec.logger.set_level(log.INFO)
-        self.assertRaises(SystemExit, spotirec.get_device, device_name='test')
+        self.assertRaises(SystemExit, spotirec.get_device, device_name='this-does-not-exist')
         sys.stdout.close()
         sys.stdout = sys.__stdout__
         with open(self.test_log, 'r') as f:
@@ -1185,6 +1369,73 @@ class TestSpotirec(unittest.TestCase):
         spotirec.conf.remove_device('test')
 
     @ordered
+    def test_save_device(self):
+        def mock_input(prompt: str):
+            return '1'
+        spotirec.input = mock_input
+        spotirec.save_device()
+        devices = spotirec.conf.get_devices()
+        self.assertIn('1', devices.keys())
+        self.assertDictEqual(devices['1'], {'id': 'testid1', 'name': 'test1', 'type': 'microwave'})
+        spotirec.conf.remove_device('1')
+
+    @ordered
+    def test_save_device_sigint_device_index(self):
+        def mock_input(prompt: str):
+            raise KeyboardInterrupt
+
+        spotirec.input = mock_input
+        self.assertRaises(SystemExit, spotirec.save_device)
+
+    @ordered
+    def test_save_device_sigint_name(self):
+        def mock_input(prompt: str):
+            spotirec.input = mock_input_name
+            return ''
+
+        def mock_input_name(prompt: str):
+            raise KeyboardInterrupt
+
+        spotirec.input = mock_input
+        self.assertRaises(SystemExit, spotirec.save_device)
+
+    @ordered
+    def test_save_device_value_error(self):
+        def mock_input(prompt: str):
+            spotirec.input = mock_input_index
+            return 'test'
+
+        def mock_input_index(prompt: str):
+            spotirec.input = mock_input_sigint
+            return 1
+
+        def mock_input_sigint(prompt: str):
+            raise KeyboardInterrupt
+
+        spotirec.input = mock_input
+        self.assertRaises(SystemExit, spotirec.save_device)
+
+    @ordered
+    def test_save_device_name_error(self):
+        def mock_input_index(prompt: str):
+            spotirec.input = mock_input_name_error
+            return 1
+
+        def mock_input_name_error(prompt: str):
+            spotirec.input = mock_input_name
+            return 'this will not work'
+
+        def mock_input_name(prompt: str):
+            return 'test'
+
+        spotirec.input = mock_input_index
+        spotirec.save_device()
+        devices = spotirec.conf.get_devices()
+        self.assertIn('test', devices.keys())
+        self.assertDictEqual(devices['test'], {'id': 'testid1', 'name': 'test1', 'type': 'microwave'})
+        spotirec.conf.remove_device('test')
+
+    @ordered
     def test_remove_devices(self):
         spotirec.conf.save_device(self.test_device0, 'test')
         devices = spotirec.conf.get_devices()
@@ -1194,9 +1445,9 @@ class TestSpotirec(unittest.TestCase):
         self.assertNotIn('test', devices.keys())
 
     @ordered
-    def print_saved_devices(self):
+    def test_print_saved_devices(self):
         expected0 = f'ID{" " * 18}Name{" " * 16}Type'
-        expected1 = f'testid{" " * 14}test{" " * 16}tester'
+        expected1 = f'test{" " * 16}test{" " * 16}tester'
         spotirec.conf.save_device(self.test_device0, 'test')
         spotirec.print_saved_devices()
         sys.stdout.close()
@@ -1205,6 +1456,7 @@ class TestSpotirec(unittest.TestCase):
             stdout = f.read()
             self.assertIn(expected0, stdout)
             self.assertIn(expected1, stdout)
+        spotirec.conf.remove_device('test')
 
     @ordered
     def test_print_playlists(self):
@@ -1218,6 +1470,74 @@ class TestSpotirec(unittest.TestCase):
             stdout = f.read()
             self.assertIn(expected0, stdout)
             self.assertIn(expected1, stdout)
+        spotirec.conf.remove_playlist('test')
+
+    @ordered
+    def test_save_playlist(self):
+        def mock_input_uri(prompt: str):
+            return 'spotify:playlist:testplaylist'
+
+        def mock_input_name(prompt: str):
+            spotirec.input = mock_input_uri
+            return 'test'
+
+        spotirec.input = mock_input_name
+        spotirec.save_playlist()
+        playlists = spotirec.conf.get_playlists()
+        self.assertIn('test', playlists.keys())
+        self.assertDictEqual(playlists['test'], {'name': 'testplaylist', 'uri': 'spotify:playlist:testplaylist'})
+        spotirec.conf.remove_playlist('test')
+
+    @ordered
+    def test_save_playlist_sigint_name(self):
+        def mock_input(prompt: str):
+            raise KeyboardInterrupt
+
+        spotirec.input = mock_input
+        self.assertRaises(SystemExit, spotirec.save_playlist)
+
+    @ordered
+    def test_save_playlist_sigint_uri(self):
+        def mock_input_name(prompt: str):
+            spotirec.input = mock_input_uri
+            return 'test'
+
+        def mock_input_uri(prompt: str):
+            raise KeyboardInterrupt
+
+        spotirec.input = mock_input_name
+        self.assertRaises(SystemExit, spotirec.save_playlist)
+
+    @ordered
+    def test_save_playlist_name_error(self):
+        def mock_input(prompt: str):
+            spotirec.input = mock_input_sigint
+            return 'this will not work'
+
+        def mock_input_sigint(prompt: str):
+            raise KeyboardInterrupt
+
+        spotirec.input = mock_input
+        self.assertRaises(SystemExit, spotirec.save_playlist)
+
+    @ordered
+    def test_save_playlist_uri_error(self):
+        def mock_input_name(prompt: str):
+            spotirec.input = mock_input_uri_error
+            return 'test'
+
+        def mock_input_uri_error(prompt: str):
+            spotirec.input = mock_input_uri
+            return 'this is not a URI'
+
+        def mock_input_uri(prompt: str):
+            return 'spotify:playlist:testplaylist'
+
+        spotirec.input = mock_input_name
+        spotirec.save_playlist()
+        playlists = spotirec.conf.get_playlists()
+        self.assertIn('test', playlists.keys())
+        self.assertDictEqual(playlists['test'], {'name': 'testplaylist', 'uri': 'spotify:playlist:testplaylist'})
 
     @ordered
     def test_remove_playlists(self):
@@ -1235,10 +1555,61 @@ class TestSpotirec(unittest.TestCase):
         self.assertRaises(SystemExit, spotirec.add_current_track, playlist='test')
 
     @ordered
+    def test_add_current_track(self):
+        # should not cause system exit
+        spotirec.add_current_track('spotify:playlist:testplaylist')
+
+    @ordered
     def test_remove_current_track_error(self):
         playlists = spotirec.conf.get_playlists()
         self.assertNotIn('test', playlists.keys())
         self.assertRaises(SystemExit, spotirec.remove_current_track, playlist='test')
+
+    @ordered
+    def test_remove_current_track(self):
+        # should not cause system exit
+        spotirec.remove_current_track('spotify:playlist:testplaylist')
+
+    @ordered
+    def test_print_track_features_error(self):
+        expected = 'this is not a URI is not a valid track URI'
+        spotirec.logger.set_level(log.INFO)
+        self.assertRaises(SystemExit, spotirec.print_track_features, uri='this is not a URI')
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
+            crash_file = stdout.split('/')[1].strip('\n')
+            os.remove(f'fixtures/{crash_file}')
+
+    @ordered
+    def test_print_track_features(self):
+        spotirec.print_track_features('spotify:track:testtrack')
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn('track0 - frankie0, frankie1', stdout)
+            self.assertIn(f'Track URI{" " * 21}spotify:track:testtrack', stdout)
+            self.assertIn(f'Artist URI(s){" " * 17}frankie0: spotify:artist:testid0, frankie1: spotify:artist:testid1'
+                          , stdout)
+            self.assertIn(f'Album URI{" " * 21}spotify:album:testid0', stdout)
+            self.assertIn(f'Release date{" " * 18}never lol', stdout)
+            self.assertIn(f'Duration{" " * 22}23984723ms (6h 39m 44s)', stdout)
+            self.assertIn(f'Key{" " * 27}10', stdout)
+            self.assertIn(f'Mode{" " * 26}0 (minor)', stdout)
+            self.assertIn(f'Time signature{" " * 16}10', stdout)
+            self.assertIn(f'Popularity{" " * 20}-3', stdout)
+            self.assertIn(f'Acousticness{" " * 18}0.99', stdout)
+            self.assertIn(f'Danceability{" " * 18}0.01', stdout)
+            self.assertIn(f'Energy{" " * 24}0.7', stdout)
+            self.assertIn(f'Instrumentalness{" " * 14}0.001', stdout)
+            self.assertIn(f'Liveness{" " * 22}0.8', stdout)
+            self.assertIn(f'Loudness{" " * 22}-50.0 dB', stdout)
+            self.assertIn(f'Speechiness{" " * 19}0.1', stdout)
+            self.assertIn(f'Valence{" " * 23}0.001', stdout)
+            self.assertIn(f'Tempo{" " * 25}70.0 bpm', stdout)
 
     @ordered
     def test_millis_to_stamp(self):
@@ -1246,6 +1617,17 @@ class TestSpotirec(unittest.TestCase):
         self.assertEqual(spotirec.millis_to_stamp(300 * 1000), '5m 0s')
         self.assertEqual(spotirec.millis_to_stamp(225 * 1000), '3m 45s')
         self.assertEqual(spotirec.millis_to_stamp(3690 * 1000), '1h 1m 30s')
+
+    @ordered
+    def test_transfer_playback(self):
+        spotirec.conf.save_device({'id': 'testid0', 'name': 'test0', 'type': 'fridge'}, 'test')
+        # should not cause system exit
+        spotirec.transfer_playback('test')
+        spotirec.conf.remove_device('test')
+
+    @ordered
+    def test_transfer_playback_error(self):
+        self.assertRaises(SystemExit, spotirec.transfer_playback, device_id='this will not work')
 
     @ordered
     def test_filter_recommendations(self):
@@ -1312,3 +1694,474 @@ class TestSpotirec(unittest.TestCase):
             stdout = f.read()
             self.assertIn(expected0, stdout)
             self.assertIn(expected1, stdout)
+
+    @ordered
+    def test_recommend(self):
+        spotirec.args = mock.MockArgs()
+        spotirec.recommend()
+        self.assertEqual(spotirec.rec.seed, '')
+        playlists = spotirec.conf.get_playlists()
+        self.assertIn('spotirec-default', playlists.keys())
+        spotirec.conf.remove_playlist('spotirec-default')
+
+    @ordered
+    def test_recommend_save_preset(self):
+        spotirec.args = mock.MockArgs(save_preset=['test'])
+        spotirec.recommend()
+        presets = spotirec.conf.get_presets()
+        self.assertIn('test', presets.keys())
+        spotirec.conf.remove_preset('test')
+        spotirec.conf.remove_playlist('spotirec-default')
+
+    @ordered
+    def test_recommend_no_tracks(self):
+        def mock_filter(data):
+            return []
+
+        expected = 'received zero tracks with your options - adjust and try again'
+        filter_func = spotirec.filter_recommendations
+        spotirec.logger.set_level(log.INFO)
+        spotirec.filter_recommendations = mock_filter
+        spotirec.args = mock.MockArgs()
+        self.assertRaises(SystemExit, spotirec.recommend)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
+            crash_file = stdout.split('/')[1].strip('\n')
+            os.remove(f'fixtures/{crash_file}')
+        spotirec.filter_recommendations = filter_func
+
+    @ordered
+    def test_recommend_preserve(self):
+        spotirec.args = mock.MockArgs(preserve=True)
+        spotirec.recommend()
+        playlists = spotirec.conf.get_playlists()
+        self.assertIn('spotirec-default', playlists.keys())
+        spotirec.conf.remove_playlist('spotirec-default')
+
+    @ordered
+    def test_recommend_playlist_exists(self):
+        spotirec.args = mock.MockArgs()
+        spotirec.conf.save_playlist({'name': 'test', 'uri': 'spotify:playlist:testplaylist'}, 'spotirec-default')
+        # should not cause system exit
+        spotirec.recommend()
+        spotirec.conf.remove_playlist('spotirec-default')
+
+    @ordered
+    def test_recommend_auto_play(self):
+        spotirec.args = mock.MockArgs(play=['test'], n=1)
+        spotirec.conf.save_device({'id': 'testid1', 'name': 'test1', 'type': 'microwave'}, 'test')
+        spotirec.parse()
+        # should not cause system exit
+        spotirec.recommend()
+        spotirec.conf.remove_playlist('spotirec-default')
+        spotirec.conf.remove_device('test')
+
+    @ordered
+    def test_parse_b(self):
+        spotirec.args = mock.MockArgs(b=['spotify:track:testtrack'])
+        self.assertRaises(SystemExit, spotirec.parse)
+        spotirec.conf.remove_from_blacklist('spotify:track:testtrack')
+
+    @ordered
+    def test_args_br(self):
+        spotirec.args = mock.MockArgs(br=['spotify:track:testtrack'])
+        spotirec.conf.add_to_blacklist({'name': 'test', 'uri': 'spotify:track:testtrack'}, 'spotify:track:testtrack')
+        self.assertRaises(SystemExit, spotirec.parse)
+        blacklist = spotirec.conf.get_blacklist()
+        self.assertNotIn('spotify:track:testtrack', blacklist['tracks'])
+
+    @ordered
+    def test_args_bc_track(self):
+        spotirec.args = mock.MockArgs(bc=['track'])
+        self.assertRaises(SystemExit, spotirec.parse)
+        blacklist = spotirec.conf.get_blacklist()
+        self.assertIn('spotify:track:testtrack', blacklist['tracks'].keys())
+        spotirec.conf.remove_from_blacklist('spotify:track:testtrack')
+
+    @ordered
+    def test_args_bc_artist(self):
+        spotirec.args = mock.MockArgs(bc=['artist'])
+        self.assertRaises(SystemExit, spotirec.parse)
+        blacklist = spotirec.conf.get_blacklist()
+        self.assertIn('spotify:artist:testartist', blacklist['artists'].keys())
+        spotirec.conf.remove_from_blacklist('spotify:artist:testartist')
+
+    @ordered
+    def test_args_transfer_playback(self):
+        spotirec.conf.save_device({'id': 'testid0', 'name': 'test0', 'type': 'fridge'}, 'test')
+        spotirec.args = mock.MockArgs(transfer_playback=['test'])
+        self.assertRaises(SystemExit, spotirec.parse)
+        spotirec.conf.remove_device('test')
+
+    @ordered
+    def test_args_s(self):
+        spotirec.args = mock.MockArgs(s=True)
+        self.assertRaises(SystemExit, spotirec.parse)
+
+    @ordered
+    def test_args_sr(self):
+        spotirec.args = mock.MockArgs(sr=True)
+        self.assertRaises(SystemExit, spotirec.parse)
+
+    @ordered
+    def test_args_save_playlist(self):
+        def mock_input_name(prompt: str):
+            spotirec.input = mock_input_uri
+            return 'test'
+
+        def mock_input_uri(prompt: str):
+            return 'spotify:playlist:testplaylist'
+
+        spotirec.input = mock_input_name
+        spotirec.args = mock.MockArgs(save_playlist=True)
+        self.assertRaises(SystemExit, spotirec.parse)
+        spotirec.conf.remove_playlist('test')
+
+    @ordered
+    def test_args_remove_playlists(self):
+        spotirec.args = mock.MockArgs(remove_playlists=['test'])
+        self.assertRaises(SystemExit, spotirec.parse)
+
+    @ordered
+    def test_args_save_device(self):
+        def mock_input(prompt: str):
+            return '0'
+
+        spotirec.input = mock_input
+        spotirec.args = mock.MockArgs(save_device=True)
+        self.assertRaises(SystemExit, spotirec.parse)
+        spotirec.conf.remove_device('0')
+
+    @ordered
+    def test_args_remove_devices(self):
+        spotirec.args = mock.MockArgs(remove_devices=['test'])
+        self.assertRaises(SystemExit, spotirec.parse)
+
+    @ordered
+    def test_args_remove_presets(self):
+        spotirec.args = mock.MockArgs(remove_presets=['test'])
+        self.assertRaises(SystemExit, spotirec.parse)
+
+    @ordered
+    def test_args_add_to(self):
+        spotirec.args = mock.MockArgs(add_to=['test'])
+        spotirec.conf.save_playlist({'name': 'testplaylist', 'uri': 'spotify:playlist:testplaylist'}, 'test')
+        self.assertRaises(SystemExit, spotirec.parse)
+        spotirec.conf.remove_playlist('test')
+
+    @ordered
+    def test_args_remove_from(self):
+        spotirec.args = mock.MockArgs(remove_from=['test'])
+        spotirec.conf.save_playlist({'name': 'testplaylist', 'uri': 'spotify:playlist:testplaylist'}, 'test')
+        self.assertRaises(SystemExit, spotirec.parse)
+        spotirec.conf.remove_playlist('test')
+
+    @ordered
+    def test_args_print_artists(self):
+        expected0 = f'0: frankie0{" " * 32}1: frankie1{" " * 32}2: frankie2\n'
+        expected1 = f'3: frankie3{" " * 32}4: frankie4\n'
+        spotirec.args = mock.MockArgs(print=['artists'])
+        self.assertRaises(SystemExit, spotirec.parse)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected0, stdout)
+            self.assertIn(expected1, stdout)
+
+    @ordered
+    def test_args_print_tracks(self):
+        expected0 = f'0: track0{" " * 34}1: track1{" " * 34}2: track2\n'
+        expected1 = f'3: track3{" " * 34}4: track4\n'
+        spotirec.args = mock.MockArgs(print=['tracks'])
+        self.assertRaises(SystemExit, spotirec.parse)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected0, stdout)
+            self.assertIn(expected1, stdout)
+
+    @ordered
+    def test_args_print_genres(self):
+        expected = f'0: poo\n'
+        spotirec.args = mock.MockArgs(print=['genres'])
+        self.assertRaises(SystemExit, spotirec.parse)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
+
+    @ordered
+    def test_args_print_genre_seeds(self):
+        expected0 = f'0: metal{" " * 35}1: metalcore{" " * 31}2: pop\n'
+        expected1 = f'3: vapor-death-pop{" " * 25}4: poo\n'
+        spotirec.args = mock.MockArgs(print=['genre-seeds'])
+        self.assertRaises(SystemExit, spotirec.parse)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected0, stdout)
+            self.assertIn(expected1, stdout)
+
+    @ordered
+    def test_args_print_blacklist(self):
+        spotirec.args = mock.MockArgs(print=['blacklist'])
+        self.assertRaises(SystemExit, spotirec.parse)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn('Tracks', stdout)
+            self.assertIn('Artists', stdout)
+
+    @ordered
+    def test_args_print_devices(self):
+        expected = f'ID{" " * 18}Name{" " * 16}Type'
+        spotirec.args = mock.MockArgs(print=['devices'])
+        self.assertRaises(SystemExit, spotirec.parse)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
+
+    @ordered
+    def test_args_print_presets(self):
+        expected = f'Name{" " * 16}Type{" " * 21}Params{" " * 44}Seeds'
+        spotirec.args = mock.MockArgs(print=['presets'])
+        self.assertRaises(SystemExit, spotirec.parse)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
+
+    @ordered
+    def test_args_print_playlists(self):
+        expected = f'ID{" " * 18}Name{" " * 26}URI'
+        spotirec.args = mock.MockArgs(print=['playlists'])
+        self.assertRaises(SystemExit, spotirec.parse)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
+
+    @ordered
+    def test_args_print_tuning(self):
+        expected0 = 'Attribute           Data type   Range   Recommended range   Function'
+        expected1 = 'note that recommendations may be scarce outside the recommended ranges. If the recommended ' \
+                    'range is not available, they may only be scarce at extreme values.'
+        spotirec.args = mock.MockArgs(print=['tuning'])
+        self.assertRaises(SystemExit, spotirec.parse)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected0, stdout)
+            self.assertIn(expected1, stdout)
+
+    @ordered
+    def test_args_track_features_current(self):
+        spotirec.args = mock.MockArgs(track_features=['current'])
+        self.assertRaises(SystemExit, spotirec.parse)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn('track0 - frankie0, frankie1', stdout)
+            self.assertIn(f'Track URI{" " * 21}spotify:track:testtrack', stdout)
+            self.assertIn(f'Artist URI(s){" " * 17}frankie0: spotify:artist:testid0, frankie1: spotify:artist:testid1'
+                          , stdout)
+            self.assertIn(f'Album URI{" " * 21}spotify:album:testid0', stdout)
+            self.assertIn(f'Release date{" " * 18}never lol', stdout)
+            self.assertIn(f'Duration{" " * 22}23984723ms (6h 39m 44s)', stdout)
+            self.assertIn(f'Key{" " * 27}10', stdout)
+            self.assertIn(f'Mode{" " * 26}0 (minor)', stdout)
+            self.assertIn(f'Time signature{" " * 16}10', stdout)
+            self.assertIn(f'Popularity{" " * 20}-3', stdout)
+            self.assertIn(f'Acousticness{" " * 18}0.99', stdout)
+            self.assertIn(f'Danceability{" " * 18}0.01', stdout)
+            self.assertIn(f'Energy{" " * 24}0.7', stdout)
+            self.assertIn(f'Instrumentalness{" " * 14}0.001', stdout)
+            self.assertIn(f'Liveness{" " * 22}0.8', stdout)
+            self.assertIn(f'Loudness{" " * 22}-50.0 dB', stdout)
+            self.assertIn(f'Speechiness{" " * 19}0.1', stdout)
+            self.assertIn(f'Valence{" " * 23}0.001', stdout)
+            self.assertIn(f'Tempo{" " * 25}70.0 bpm', stdout)
+
+    @ordered
+    def test_args_track_features_uri(self):
+        spotirec.args = mock.MockArgs(track_features=['spotify:track:testtrack'])
+        self.assertRaises(SystemExit, spotirec.parse)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn('track0 - frankie0, frankie1', stdout)
+            self.assertIn(f'Track URI{" " * 21}spotify:track:testtrack', stdout)
+            self.assertIn(f'Artist URI(s){" " * 17}frankie0: spotify:artist:testid0, frankie1: spotify:artist:testid1'
+                          , stdout)
+            self.assertIn(f'Album URI{" " * 21}spotify:album:testid0', stdout)
+            self.assertIn(f'Release date{" " * 18}never lol', stdout)
+            self.assertIn(f'Duration{" " * 22}23984723ms (6h 39m 44s)', stdout)
+            self.assertIn(f'Key{" " * 27}10', stdout)
+            self.assertIn(f'Mode{" " * 26}0 (minor)', stdout)
+            self.assertIn(f'Time signature{" " * 16}10', stdout)
+            self.assertIn(f'Popularity{" " * 20}-3', stdout)
+            self.assertIn(f'Acousticness{" " * 18}0.99', stdout)
+            self.assertIn(f'Danceability{" " * 18}0.01', stdout)
+            self.assertIn(f'Energy{" " * 24}0.7', stdout)
+            self.assertIn(f'Instrumentalness{" " * 14}0.001', stdout)
+            self.assertIn(f'Liveness{" " * 22}0.8', stdout)
+            self.assertIn(f'Loudness{" " * 22}-50.0 dB', stdout)
+            self.assertIn(f'Speechiness{" " * 19}0.1', stdout)
+            self.assertIn(f'Valence{" " * 23}0.001', stdout)
+            self.assertIn(f'Tempo{" " * 25}70.0 bpm', stdout)
+
+    @ordered
+    def test_args_a(self):
+        spotirec.args = mock.MockArgs(a=5)
+        spotirec.parse()
+        self.assertEqual(spotirec.rec.based_on, 'top artists')
+        self.assertEqual(spotirec.rec.seed_type, 'artists')
+        self.assertEqual(len(spotirec.rec.seed_info.keys()), 5)
+        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'frankie0', 'id': 'testid0', 'type': 'artist'},
+                                                      1: {'name': 'frankie1', 'id': 'testid1', 'type': 'artist'},
+                                                      2: {'name': 'frankie2', 'id': 'testid2', 'type': 'artist'},
+                                                      3: {'name': 'frankie3', 'id': 'testid3', 'type': 'artist'},
+                                                      4: {'name': 'frankie4', 'id': 'testid4', 'type': 'artist'}})
+
+    @ordered
+    def test_args_t(self):
+        spotirec.args = mock.MockArgs(t=5)
+        spotirec.parse()
+        self.assertEqual(spotirec.rec.based_on, 'top tracks')
+        self.assertEqual(spotirec.rec.seed_type, 'tracks')
+        self.assertEqual(len(spotirec.rec.seed_info.keys()), 5)
+        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'track0', 'id': 'testid0', 'type': 'track',
+                                                          'artists': ['frankie0', 'frankie1']},
+                                                      1: {'name': 'track1', 'id': 'testid1', 'type': 'track',
+                                                          'artists': ['frankie1']},
+                                                      2: {'name': 'track2', 'id': 'testid2', 'type': 'track',
+                                                          'artists': ['frankie2', 'frankie1']},
+                                                      3: {'name': 'track3', 'id': 'testid3', 'type': 'track',
+                                                          'artists': ['frankie3', 'frankie1']},
+                                                      4: {'name': 'track4', 'id': 'testid4', 'type': 'track',
+                                                          'artists': ['frankie4', 'frankie3']}})
+
+    @ordered
+    def test_args_gcs(self):
+        def mock_input(prompt: str):
+            return '0 1 3'
+
+        spotirec.input = mock_input
+        spotirec.args = mock.MockArgs(gcs=True)
+        spotirec.parse()
+        self.assertEqual(spotirec.rec.based_on, 'custom seed genres')
+        self.assertEqual(spotirec.rec.seed_type, 'genres')
+        self.assertEqual(len(spotirec.rec.seed_info.keys()), 3)
+        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'metal', 'type': 'genre'},
+                                                      1: {'name': 'metalcore', 'type': 'genre'},
+                                                      2: {'name': 'vapor-death-pop', 'type': 'genre'}})
+
+    @ordered
+    def test_args_ac(self):
+        def mock_input(prompt: str):
+            return '1 2'
+
+        spotirec.input = mock_input
+        spotirec.args = mock.MockArgs(ac=True)
+        spotirec.parse()
+        self.assertEqual(spotirec.rec.based_on, 'custom artists')
+        self.assertEqual(spotirec.rec.seed_type, 'artists')
+        self.assertEqual(len(spotirec.rec.seed_info.keys()), 2)
+        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'frankie1', 'id': 'testid1', 'type': 'artist'},
+                                                      1: {'name': 'frankie2', 'id': 'testid2', 'type': 'artist'}})
+
+    @ordered
+    def test_args_tc(self):
+        def mock_input(prompt: str):
+            return '0 4'
+
+        spotirec.input = mock_input
+        spotirec.args = mock.MockArgs(tc=True)
+        spotirec.parse()
+        self.assertEqual(spotirec.rec.based_on, 'custom tracks')
+        self.assertEqual(spotirec.rec.seed_type, 'tracks')
+        self.assertEqual(len(spotirec.rec.seed_info.keys()), 2)
+        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'track0', 'id': 'testid0', 'type': 'track',
+                                                          'artists': ['frankie0', 'frankie1']},
+                                                      1: {'name': 'track4', 'id': 'testid4', 'type': 'track',
+                                                          'artists': ['frankie4', 'frankie3']}})
+
+    @ordered
+    def test_args_gc(self):
+        def mock_input(prompt: str):
+            return '0'
+
+        spotirec.input = mock_input
+        spotirec.args = mock.MockArgs(gc=True)
+        spotirec.parse()
+        self.assertEqual(spotirec.rec.based_on, 'custom top genres')
+        self.assertEqual(spotirec.rec.seed_type, 'genres')
+        self.assertEqual(len(spotirec.rec.seed_info.keys()), 1)
+        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'poo', 'type': 'genre'}})
+
+    @ordered
+    def test_args_c_sigint(self):
+        def mock_input(prompt: str):
+            raise KeyboardInterrupt
+
+        spotirec.input = mock_input
+        spotirec.args = mock.MockArgs(c=True)
+        self.assertRaises(SystemExit, spotirec.parse)
+
+    @ordered
+    def test_args_c_no_input(self):
+        def mock_input(prompt: str):
+            return ''
+
+        spotirec.logger.set_level(log.INFO)
+        spotirec.input = mock_input
+        spotirec.args = mock.MockArgs(c=True)
+        self.assertRaises(SystemExit, spotirec.parse)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            crash_file = stdout.split('/')[1].strip('\n')
+            os.remove(f'fixtures/{crash_file}')
+
+    @ordered
+    def test_args_c(self):
+        def mock_input(prompt: str):
+            return 'vapor-death-pop spotify:track:testtrack spotify:artist:testartist'
+
+        spotirec.input = mock_input
+        spotirec.args = mock.MockArgs(c=True)
+        spotirec.parse()
+        self.assertEqual(len(spotirec.rec.seed_info.keys()), 3)
+        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'vapor-death-pop', 'type': 'genre'},
+                                                      1: {'name': 'track0', 'id': 'testtrack', 'type': 'track',
+                                                          'artists': ['frankie0', 'frankie1']},
+                                                      2: {'name': 'frankie0', 'id': 'testid0', 'type': 'artist'}})
+
+    @ordered
+    def test_args_l(self):
+        spotirec.args = mock.MockArgs(l=[83], n=1)
+        spotirec.parse()
+        self.assertEqual(spotirec.rec.limit, 83)
+        self.assertEqual(spotirec.rec.limit_original, 83)
+
+    @ordered
+    def test_args_tune(self):
+        spotirec.args = mock.MockArgs(tune=['min_tempo=160'], n=1)
+        spotirec.parse()
+        self.assertDictEqual(spotirec.rec.rec_params, {'limit': '20', 'min_tempo': '160'})
