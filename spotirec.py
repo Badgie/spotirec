@@ -1003,8 +1003,7 @@ def parse():
 
 
 def init():
-    global args, logger, conf, api, sp_oauth, rec, headers
-    args = parser.parse_args()
+    global logger, conf, api, sp_oauth, rec, headers
 
     # Logging handler
     logger = log.Log()
@@ -1052,7 +1051,6 @@ def init():
     logger.debug(f'args: {args}')
 
 
-args = None
 logger = None
 conf = None
 api = None
@@ -1060,6 +1058,7 @@ sp_oauth = None
 rec = None
 headers = None
 parser = create_parser()
+args = parser.parse_args()
 # Allows import for tests
 if not any('unittest' in arg for arg in sys.argv):
     if __name__ == '__main__':
