@@ -794,8 +794,8 @@ class TestAPI(unittest.TestCase):
     def test_request_data_artist(self):
         artist = self.api.request_data('spotify:artist:testartist', 'artists', self.headers)
         self.assertEqual('frankie0', artist['name'])
-        self.assertEqual('spotify:artist:testid0', artist['uri'])
-        self.assertListEqual(['poo', 'poop'], artist['genres'])
+        self.assertEqual('spotify:artist:testartist', artist['uri'])
+        self.assertListEqual(['pop', 'metal', 'vapor-death-pop'], artist['genres'])
 
     @ordered
     def test_request_data_track(self):
@@ -809,7 +809,8 @@ class TestAPI(unittest.TestCase):
         seeds = self.api.get_genre_seeds(self.headers)
         self.assertIn('genres', seeds.keys())
         self.assertIn('vapor-death-pop', seeds['genres'])
-        self.assertIn('poo', seeds['genres'])
+        self.assertIn('pop', seeds['genres'])
+        self.assertEqual(seeds['genres'], ['metal', 'metalcore', 'pop', 'vapor-death-pop', 'holidays'])
 
     @ordered
     def test_get_available_devices(self):
@@ -998,18 +999,18 @@ class TestSpotirec(unittest.TestCase):
     @ordered
     def test_get_user_top_genres(self):
         genres = spotirec.get_user_top_genres()
-        # valid genre seed
-        self.assertIn('poo', genres.keys())
-        # invalid genre seed
-        self.assertNotIn('poop', genres.keys())
-        self.assertEqual(5, genres['poo'])
+        self.assertEqual(list(genres.keys()), ['pop', 'metal', 'vapor-death-pop', 'holidays', 'metalcore'])
 
     @ordered
     def test_add_top_genres_seed(self):
-        spotirec.add_top_genres_seed(1)
+        spotirec.add_top_genres_seed(5)
         # rec object should have one seed
         self.assertNotEqual(spotirec.rec.seed_info, {})
-        self.assertDictEqual(list(spotirec.rec.seed_info.values())[0], {'name': 'poo', 'type': 'genre'})
+        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'pop', 'type': 'genre'},
+                                                      1: {'name': 'vapor-death-pop', 'type': 'genre'},
+                                                      2: {'name': 'metal', 'type': 'genre'},
+                                                      3: {'name': 'holidays', 'type': 'genre'},
+                                                      4: {'name': 'metalcore', 'type': 'genre'}})
 
     @ordered
     def test_print_choices(self):
@@ -1609,8 +1610,8 @@ class TestSpotirec(unittest.TestCase):
             stdout = f.read()
             self.assertIn('track0 - frankie0, frankie1', stdout)
             self.assertIn(f'Track URI{" " * 21}spotify:track:testtrack', stdout)
-            self.assertIn(f'Artist URI(s){" " * 17}frankie0: spotify:artist:testid0, frankie1: spotify:artist:testid1'
-                          , stdout)
+            self.assertIn(f'Artist URI(s){" " * 17}frankie0: spotify:artist:testartist, '
+                          f'frankie1: spotify:artist:testartist', stdout)
             self.assertIn(f'Album URI{" " * 21}spotify:album:testid0', stdout)
             self.assertIn(f'Release date{" " * 18}never lol', stdout)
             self.assertIn(f'Duration{" " * 22}23984723ms (6h 39m 44s)', stdout)
@@ -1904,19 +1905,22 @@ class TestSpotirec(unittest.TestCase):
 
     @ordered
     def test_args_print_genres(self):
-        expected = f'0: poo\n'
+        expected0 = f'0: pop{" " * 37}1: vapor-death-pop{" " * 25}2: metal\n'
+        expected1 = f'3: holidays{" " * 32}4: metalcore\n'
         spotirec.args = mock.MockArgs(print=['genres'])
         self.assertRaises(SystemExit, spotirec.parse)
         sys.stdout.close()
         sys.stdout = sys.__stdout__
         with open(self.test_log, 'r') as f:
             stdout = f.read()
-            self.assertIn(expected, stdout)
+            self.assertIn(expected0, stdout)
+            self.assertIn(expected1, stdout)
+
 
     @ordered
     def test_args_print_genre_seeds(self):
         expected0 = f'0: metal{" " * 35}1: metalcore{" " * 31}2: pop\n'
-        expected1 = f'3: vapor-death-pop{" " * 25}4: poo\n'
+        expected1 = f'3: vapor-death-pop{" " * 25}4: holidays\n'
         spotirec.args = mock.MockArgs(print=['genre-seeds'])
         self.assertRaises(SystemExit, spotirec.parse)
         sys.stdout.close()
@@ -1994,8 +1998,8 @@ class TestSpotirec(unittest.TestCase):
             stdout = f.read()
             self.assertIn('track0 - frankie0, frankie1', stdout)
             self.assertIn(f'Track URI{" " * 21}spotify:track:testtrack', stdout)
-            self.assertIn(f'Artist URI(s){" " * 17}frankie0: spotify:artist:testid0, frankie1: spotify:artist:testid1'
-                          , stdout)
+            self.assertIn(f'Artist URI(s){" " * 17}frankie0: spotify:artist:testartist, '
+                          f'frankie1: spotify:artist:testartist', stdout)
             self.assertIn(f'Album URI{" " * 21}spotify:album:testid0', stdout)
             self.assertIn(f'Release date{" " * 18}never lol', stdout)
             self.assertIn(f'Duration{" " * 22}23984723ms (6h 39m 44s)', stdout)
@@ -2023,8 +2027,8 @@ class TestSpotirec(unittest.TestCase):
             stdout = f.read()
             self.assertIn('track0 - frankie0, frankie1', stdout)
             self.assertIn(f'Track URI{" " * 21}spotify:track:testtrack', stdout)
-            self.assertIn(f'Artist URI(s){" " * 17}frankie0: spotify:artist:testid0, frankie1: spotify:artist:testid1'
-                          , stdout)
+            self.assertIn(f'Artist URI(s){" " * 17}frankie0: spotify:artist:testartist, '
+                          f'frankie1: spotify:artist:testartist', stdout)
             self.assertIn(f'Album URI{" " * 21}spotify:album:testid0', stdout)
             self.assertIn(f'Release date{" " * 18}never lol', stdout)
             self.assertIn(f'Duration{" " * 22}23984723ms (6h 39m 44s)', stdout)
@@ -2129,7 +2133,7 @@ class TestSpotirec(unittest.TestCase):
         self.assertEqual(spotirec.rec.based_on, 'custom top genres')
         self.assertEqual(spotirec.rec.seed_type, 'genres')
         self.assertEqual(len(spotirec.rec.seed_info.keys()), 1)
-        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'poo', 'type': 'genre'}})
+        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'pop', 'type': 'genre'}})
 
     @ordered
     def test_args_c_sigint(self):
@@ -2168,7 +2172,7 @@ class TestSpotirec(unittest.TestCase):
         self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'vapor-death-pop', 'type': 'genre'},
                                                       1: {'name': 'track0', 'id': 'testtrack', 'type': 'track',
                                                           'artists': ['frankie0', 'frankie1']},
-                                                      2: {'name': 'frankie0', 'id': 'testid0', 'type': 'artist'}})
+                                                      2: {'name': 'frankie0', 'id': 'testartist', 'type': 'artist'}})
 
     @ordered
     def test_args_l(self):
