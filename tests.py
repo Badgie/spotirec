@@ -2,7 +2,7 @@ import unittest
 import os
 import sys
 import time
-import signal
+import argparse
 import conf
 import api
 import log
@@ -900,6 +900,7 @@ class TestAPI(unittest.TestCase):
 
 class TestSpotirec(unittest.TestCase):
     def setUp(self):
+        spotirec.CONFIG_PATH = 'fixtures/.config'
         spotirec.logger = log.Log()
         spotirec.logger.set_level(0)
         spotirec.logger.LOG_PATH = 'fixtures'
@@ -947,6 +948,7 @@ class TestSpotirec(unittest.TestCase):
         if os.path.isfile(self.test_log):
             os.remove(self.test_log)
         spotirec.input = input
+        spotirec.args = spotirec.parser.parse_args()
 
     @ordered
     def test_index_no_code(self):
@@ -977,6 +979,21 @@ class TestSpotirec(unittest.TestCase):
     @ordered
     def test_get_token(self):
         self.assertEqual(spotirec.get_token(), 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
+
+    @ordered
+    def test_get_token_fail(self):
+        def mock_authorize():
+            self.test = 'success'
+
+        self.test = ''
+        auth_save = spotirec.authorize
+        spotirec.authorize = mock_authorize
+        spotirec.conf.CONFIG_FILE = 'empty.conf'
+        self.assertRaises(SystemExit, spotirec.get_token)
+        self.assertEqual(self.test, 'success')
+        spotirec.authorize = auth_save
+        with open('fixtures/empty.conf', 'w') as f:
+            f.write('')
 
     @ordered
     def test_get_user_top_genres(self):
@@ -2165,3 +2182,232 @@ class TestSpotirec(unittest.TestCase):
         spotirec.args = mock.MockArgs(tune=['min_tempo=160'], n=1)
         spotirec.parse()
         self.assertDictEqual(spotirec.rec.rec_params, {'limit': '20', 'min_tempo': '160'})
+
+    @ordered
+    def test_setup_config_dir(self):
+        spotirec.setup_config_dir()
+        os.rmdir(spotirec.CONFIG_PATH)
+
+    @ordered
+    def test_authorize(self):
+        def mock_run(host: str, port: int):
+            return
+
+        spotirec.webbrowser = mock.MockWebbrowser()
+        spotirec.run = mock_run
+        spotirec.authorize()
+        self.assertEqual(spotirec.webbrowser.url, 'https://real.url')
+
+    @ordered
+    def test_create_parser(self):
+        parser = spotirec.create_parser()
+        args = parser.parse_args()
+        self.assertIn('a', args)
+        self.assertIsNone(args.a)
+        self.assertIn('ac', args)
+        self.assertFalse(args.ac)
+        self.assertIn('add_to', args)
+        self.assertIsNone(args.add_to)
+        self.assertIn('b', args)
+        self.assertIsNone(args.b)
+        self.assertIn('bc', args)
+        self.assertIsNone(args.bc)
+        self.assertIn('br', args)
+        self.assertIsNone(args.br)
+        self.assertIn('c', args)
+        self.assertFalse(args.c)
+        self.assertIn('debug', args)
+        self.assertFalse(args.debug)
+        self.assertIn('gc', args)
+        self.assertFalse(args.gc)
+        self.assertIn('gcs', args)
+        self.assertFalse(args.gcs)
+        self.assertIn('l', args)
+        self.assertIsNone(args.l)
+        self.assertIn('load_preset', args)
+        self.assertIsNone(args.load_preset)
+        self.assertIn('log', args)
+        self.assertFalse(args.log)
+        self.assertIn('n', args)
+        self.assertEqual(args.n, 5)
+        self.assertIn('play', args)
+        self.assertIsNone(args.play)
+        self.assertIn('preserve', args)
+        self.assertFalse(args.preserve)
+        self.assertIn('print', args)
+        self.assertIsNone(args.print)
+        self.assertIn('quiet', args)
+        self.assertFalse(args.quiet)
+        self.assertIn('remove_devices', args)
+        self.assertIsNone(args.remove_devices)
+        self.assertIn('remove_from', args)
+        self.assertIsNone(args.remove_from)
+        self.assertIn('remove_playlists', args)
+        self.assertIsNone(args.remove_playlists)
+        self.assertIn('remove_presets', args)
+        self.assertIsNone(args.remove_presets)
+        self.assertIn('s', args)
+        self.assertFalse(args.s)
+        self.assertIn('save_device', args)
+        self.assertFalse(args.save_device)
+        self.assertIn('save_playlist', args)
+        self.assertFalse(args.save_playlist)
+        self.assertIn('save_preset', args)
+        self.assertIsNone(args.save_preset)
+        self.assertIn('sr', args)
+        self.assertFalse(args.sr)
+        self.assertIn('suppress_warnings', args)
+        self.assertFalse(args.suppress_warnings)
+        self.assertIn('t', args)
+        self.assertIsNone(args.t)
+        self.assertIn('tc', args)
+        self.assertFalse(args.tc)
+        self.assertIn('track_features', args)
+        self.assertIsNone(args.track_features)
+        self.assertIn('transfer_playback', args)
+        self.assertIsNone(args.transfer_playback)
+        self.assertIn('tune', args)
+        self.assertIsNone(args.tune)
+        self.assertIn('verbose', args)
+        self.assertFalse(args.verbose)
+
+    @ordered
+    def test_init(self):
+        def mock_get_token():
+            return 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f'
+
+        def mock_get_user_top_genres():
+            return {'metal': 3, 'vapor-death-pop': 7, 'metalcore': 2, 'pop': 1, 'poo': 23}
+
+        get_token_save = spotirec.get_token
+        top_genres_save = spotirec.get_user_top_genres
+        spotirec.get_token = mock_get_token
+        spotirec.get_user_top_genres = mock_get_user_top_genres
+        expected_args = spotirec.create_parser().parse_args()
+        spotirec.init()
+        self.assertEqual(spotirec.args, expected_args)
+        self.assertIsInstance(spotirec.logger, log.Log)
+        self.assertIsInstance(spotirec.conf, conf.Config)
+        self.assertIsInstance(spotirec.conf.LOGGER, log.Log)
+        self.assertIsInstance(spotirec.api, api.API)
+        self.assertIsInstance(spotirec.api.LOGGER, log.Log)
+        self.assertIsInstance(spotirec.api.CONF, conf.Config)
+        self.assertIsInstance(spotirec.sp_oauth, oauth2.SpotifyOAuth)
+        self.assertIsInstance(spotirec.sp_oauth.LOGGER, log.Log)
+        self.assertIsInstance(spotirec.sp_oauth.CONF, conf.Config)
+        self.assertIsInstance(spotirec.sp_oauth.API, api.API)
+        self.assertDictEqual(spotirec.headers, {'Content-Type': 'application/json',
+                                                'Authorization': 'Bearer f6952d6eef555ddd87aca66e56b91530222d6e3184148'
+                                                                 '16f3ba7cf5bf694bf0f'})
+        self.assertIsInstance(spotirec.rec, recommendation.Recommendation)
+        spotirec.get_token = get_token_save
+        spotirec.get_user_top_genres = top_genres_save
+
+    @ordered
+    def test_init_args_verbose(self):
+        def mock_get_token():
+            return 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f'
+
+        def mock_get_user_top_genres():
+            return {'metal': 3, 'vapor-death-pop': 7, 'metalcore': 2, 'pop': 1, 'poo': 23}
+
+        get_token_save = spotirec.get_token
+        top_genres_save = spotirec.get_user_top_genres
+        spotirec.get_token = mock_get_token
+        spotirec.get_user_top_genres = mock_get_user_top_genres
+        spotirec.args = mock.MockArgs(verbose=True)
+        spotirec.init()
+        self.assertEqual(spotirec.logger.LEVEL, log.VERBOSE)
+        spotirec.get_token = get_token_save
+        spotirec.get_user_top_genres = top_genres_save
+
+    @ordered
+    def test_init_args_quiet(self):
+        def mock_get_token():
+            return 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f'
+
+        def mock_get_user_top_genres():
+            return {'metal': 3, 'vapor-death-pop': 7, 'metalcore': 2, 'pop': 1, 'poo': 23}
+
+        get_token_save = spotirec.get_token
+        top_genres_save = spotirec.get_user_top_genres
+        spotirec.get_token = mock_get_token
+        spotirec.get_user_top_genres = mock_get_user_top_genres
+        spotirec.args = mock.MockArgs(quiet=True)
+        spotirec.init()
+        self.assertEqual(spotirec.logger.LEVEL, log.WARNING)
+        spotirec.get_token = get_token_save
+        spotirec.get_user_top_genres = top_genres_save
+
+    @ordered
+    def test_init_args_debug(self):
+        def mock_get_token():
+            return 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f'
+
+        def mock_get_user_top_genres():
+            return {'metal': 3, 'vapor-death-pop': 7, 'metalcore': 2, 'pop': 1, 'poo': 23}
+
+        get_token_save = spotirec.get_token
+        top_genres_save = spotirec.get_user_top_genres
+        spotirec.get_token = mock_get_token
+        spotirec.get_user_top_genres = mock_get_user_top_genres
+        spotirec.args = mock.MockArgs(debug=True)
+        spotirec.init()
+        self.assertEqual(spotirec.logger.LEVEL, log.DEBUG)
+        spotirec.get_token = get_token_save
+        spotirec.get_user_top_genres = top_genres_save
+
+    @ordered
+    def test_init_args_suppress_warnings(self):
+        def mock_get_token():
+            return 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f'
+
+        def mock_get_user_top_genres():
+            return {'metal': 3, 'vapor-death-pop': 7, 'metalcore': 2, 'pop': 1, 'poo': 23}
+
+        get_token_save = spotirec.get_token
+        top_genres_save = spotirec.get_user_top_genres
+        spotirec.get_token = mock_get_token
+        spotirec.get_user_top_genres = mock_get_user_top_genres
+        spotirec.args = mock.MockArgs(suppress_warnings=True)
+        spotirec.init()
+        self.assertTrue(spotirec.logger.SUPPRESS_WARNINGS)
+        spotirec.get_token = get_token_save
+        spotirec.get_user_top_genres = top_genres_save
+
+    @ordered
+    def test_init_args_load_preset(self):
+        def mock_get_token():
+            return 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f'
+
+        class MockConfig:
+            def Config(self):
+                config = conf.Config()
+                config.CONFIG_DIR = 'fixtures'
+                config.CONFIG_FILE = 'test.conf'
+                return config
+
+        preset = {'limit': 100, 'based_on': 'top artists', 'seed': 'hip-hop,metalcore,metal,pop,death-metal',
+                  'seed_type': 'tracks', 'seed_info':
+                      {0: {'name': 'hip-hop', 'type': 'genre'}, 1: {'name': 'metalcore', 'type': 'genre'},
+                       2: {'name': 'metal', 'type': 'genre'}, 3: {'name': 'pop', 'type': 'genre'},
+                       4: {'name': 'death-metal', 'type': 'genre'}},
+                  'rec_params': {'limit': '100', 'seed_genres': 'hip-hop,metalcore,metal,pop,death-metal'},
+                  'auto_play': True, 'playback_device': {}}
+        spotirec.conf.save_preset(preset, 'test-preset')
+        get_token_save = spotirec.get_token
+        spotirec.get_token = mock_get_token
+        spotirec.sp_conf = MockConfig()
+        spotirec.args = mock.MockArgs(load_preset=['test-preset'])
+        spotirec.init()
+        self.assertEqual(preset['limit'], spotirec.rec.limit)
+        self.assertEqual(preset['limit'], spotirec.rec.limit_original)
+        self.assertEqual(preset['based_on'], spotirec.rec.based_on)
+        self.assertEqual(preset['seed'], spotirec.rec.seed)
+        self.assertEqual(preset['seed_type'], spotirec.rec.seed_type)
+        self.assertDictEqual(preset['seed_info'], spotirec.rec.seed_info)
+        self.assertDictEqual(preset['rec_params'], spotirec.rec.rec_params)
+        self.assertTrue(spotirec.rec.auto_play)
+        self.assertDictEqual(preset['playback_device'], spotirec.rec.playback_device)
+        spotirec.get_token = get_token_save
+        spotirec.conf.remove_preset('test-preset')
