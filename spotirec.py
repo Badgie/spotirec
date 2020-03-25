@@ -44,19 +44,19 @@ URI_RE = r'spotify:(artist|track):[a-zA-Z0-9]+'
 PLAYLIST_URI_RE = r'spotify:playlist:[a-zA-Z0-9]+'
 TRACK_URI_RE = r'spotify:track:[a-zA-Z0-9]+'
 
-# Allows import for tests
-if not any('unittest' in arg for arg in sys.argv):
+
+def create_parser() -> argparse.ArgumentParser:
     # Argument parser
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, prog='spotirec',
-                                     epilog="""
+    arg_parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, prog='spotirec',
+                                         epilog="""
     passing no recommendation scheme argument defaults to basing recommendations off your top 5 valid seed genres
     spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for details read LICENSE""")
-    parser.add_argument('n', nargs='?', type=int, const=5, default=5,
-                        help='amount of seeds to use on no-arg recommendations as an integer - note that this must '
-                             'appear as the first argument if used and can only be used with no-arg')
+    arg_parser.add_argument('n', nargs='?', type=int, const=5, default=5,
+                            help='amount of seeds to use on no-arg recommendations as an integer - note that this must '
+                            'appear as the first argument if used and can only be used with no-arg')
 
     # Verbosity
-    verbosity_group = parser.add_argument_group(title='Verbosity switches')
+    verbosity_group = arg_parser.add_argument_group(title='Verbosity switches')
     mutex_verbosity = verbosity_group.add_mutually_exclusive_group()
     mutex_verbosity.add_argument('-v', '--verbose', action='store_true', help='verbose printing')
     mutex_verbosity.add_argument('-q', '--quiet', action='store_true', help='quiet printing')
@@ -66,7 +66,7 @@ if not any('unittest' in arg for arg in sys.argv):
                                                                     'level, to file')
 
     # Recommendation schemes
-    rec_scheme_group = parser.add_argument_group(title='Recommendation schemes')
+    rec_scheme_group = arg_parser.add_argument_group(title='Recommendation schemes')
     # Create mutually exclusive group for recommendation types to ensure only one is given
     mutex_group = rec_scheme_group.add_mutually_exclusive_group()
     mutex_group.add_argument('-a', metavar='SEED_SIZE', nargs='?', type=int, const=5, choices=range(1, 6),
@@ -81,7 +81,7 @@ if not any('unittest' in arg for arg in sys.argv):
     rec_scheme_group.add_argument('--preserve', action='store_true', help='preserve previous playlist and create new')
 
     # Saving arguments
-    save_group = parser.add_argument_group(title='Saving arguments')
+    save_group = arg_parser.add_argument_group(title='Saving arguments')
     # You should only be able to save or remove the current track at once, not both
     save_mutex_group = save_group.add_mutually_exclusive_group()
     add_mutex_group = save_group.add_mutually_exclusive_group()
@@ -98,17 +98,18 @@ if not any('unittest' in arg for arg in sys.argv):
     save_group.add_argument('--remove-presets', metavar='ID', nargs='+', type=str, help='remove preset(s)')
 
     # Recommendation modifications
-    rec_options_group = parser.add_argument_group(title='Recommendation options',
-                                                  description='These may only appear when creating a playlist')
+    rec_options_group = arg_parser.add_argument_group(title='Recommendation options',
+                                                      description='These may only appear when creating a playlist')
     rec_options_group.add_argument('-l', metavar='LIMIT', nargs=1, type=int, choices=range(1, 101),
                                    help='amount of tracks to add (default: 20, max: 100)')
     rec_options_group.add_argument('--tune', metavar='ATTR', nargs='+', type=str, help='specify tunable attribute(s)')
-    rec_options_group.add_argument('--play', metavar='DEVICE', nargs=1, help='select playback device to start playing on')
+    rec_options_group.add_argument('--play', metavar='DEVICE', nargs=1, help='select playback device to start playing '
+                                                                             'on')
     rec_options_group.add_argument('--load-preset', metavar='ID', nargs=1, type=str, help='load and use preset')
     rec_options_group.add_argument('--save-preset', metavar='ID', nargs=1, type=str, help='save options as preset')
 
     # Blacklisting
-    blacklist_group = parser.add_argument_group(title='Blacklisting')
+    blacklist_group = arg_parser.add_argument_group(title='Blacklisting')
     blacklist_group.add_argument('-b', metavar='URI', nargs='+', type=str, help='blacklist track(s) and/or artist(s)')
     blacklist_group.add_argument('-br', metavar='URI', nargs='+', type=str,
                                  help='remove track(s) and/or artists(s) from blacklist')
@@ -116,12 +117,12 @@ if not any('unittest' in arg for arg in sys.argv):
                                  help='blacklist currently playing artist(s) or track')
 
     # Playback
-    playback_group = parser.add_argument_group(title='Playback')
+    playback_group = arg_parser.add_argument_group(title='Playback')
     playback_group.add_argument('--transfer-playback', metavar='ID', nargs=1, type=str,
                                 help='transfer playback to input device ID')
 
     # Printing
-    print_group = parser.add_argument_group(title='Printing')
+    print_group = arg_parser.add_argument_group(title='Printing')
     print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
                              choices=['artists', 'tracks', 'genres', 'genre-seeds', 'devices', 'blacklist', 'presets',
                                       'playlists', 'tuning'],
@@ -131,6 +132,10 @@ if not any('unittest' in arg for arg in sys.argv):
     print_group.add_argument('--track-features', metavar='[URI | current]', nargs=1, type=str,
                              help='print track features of URI or currently playing track')
 
+    return arg_parser
+
+
+def setup_config_dir():
     # Ensure config dir exists
     if not os.path.isdir(CONFIG_PATH):
         os.makedirs(CONFIG_PATH)
@@ -997,8 +1002,8 @@ def parse():
             rec.rec_params[x.split('=')[0]] = x.split('=')[1]
 
 
-# Allows import for tests
-if not any('unittest' in arg for arg in sys.argv):
+def init():
+    global args, logger, conf, api, sp_oauth, rec, headers
     args = parser.parse_args()
 
     # Logging handler
@@ -1046,7 +1051,20 @@ if not any('unittest' in arg for arg in sys.argv):
 
     logger.debug(f'args: {args}')
 
+
+args = None
+logger = None
+conf = None
+api = None
+sp_oauth = None
+rec = None
+headers = None
+parser = create_parser()
+# Allows import for tests
+if not any('unittest' in arg for arg in sys.argv):
     if __name__ == '__main__':
+        setup_config_dir()
+        init()
         recommend()
         if args.log:
             logger.log_file()
