@@ -56,7 +56,7 @@ class MockAPI:
                  '"artists": [{"name": "frankie4", "uri": "spotify:artist:testid4", "type": "artist", "genres": ' \
                  '["poo", "poop"]}, {"name": "frankie3", "uri": "spotify:artist:testid3", "type": "artist", ' \
                  '"genres": ["poo", "poop"]}]}]}'
-    TRACK = '{"name": "track0", "uri": "spotify:track:testid0", "type": "track", "id": "testid0", "artists": ' \
+    TRACK = '{"name": "track0", "uri": "spotify:track:testtrack", "type": "track", "id": "testtrack", "artists": ' \
             '[{"name": "frankie0", "uri": "spotify:artist:testid0", "type": "artist", "genres": ' \
             '["poo", "poop"]}, {"name": "frankie1", "uri": "spotify:artist:testid1", "type": "artist", ' \
             '"genres": ["poo", "poop"]}], "album": {"uri": "spotify:album:testid0", "release_date": "never lol", ' \
@@ -92,9 +92,11 @@ class MockAPI:
                      '"loudness": -50.0, "speechiness": 0.1, "valence": 0.001, "tempo": 70.0, "id": "testid0", ' \
                      '"uri": "spotify:track:testid0", "type": "audio_features"}'
     PLAYER = '{"timestamp": 0, "device": {"id": "testid0", "name": "test0", "type": "fridge"}, "item": ' \
-             '{"name": "track0", "uri": "spotify:track:testid0", "type": "track", "id": "testid0", "artists": ' \
-             '[{"name": "frankie0", "uri": "spotify:artist:testid0", "type": "artist", "genres": ["poo", "poop"]}, ' \
-             '{"name": "frankie1", "uri": "spotify:artist:testid1", "type": "artist", "genres": ["poo", "poop"]}]}}'
+             '{"name": "track0", "uri": "spotify:track:testtrack", "type": "track", "id": "testtrack", "artists": ' \
+             '[{"name": "frankie0", "uri": "spotify:artist:testartist", "type": "artist", "genres": ["poo", "poop"],' \
+             ' "id": "testartist"}, ' \
+             '{"name": "frankie1", "uri": "spotify:artist:testartist", "type": "artist", "genres": ["poo", "poop"], ' \
+             '"id": "testartist"}]}}'
     TOKEN = '{"access_token": "f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f", ' \
             '"token_type": "Bearer", "expires_in": 3600, ' \
             '"scope": "user-modify-playback-state ugc-image-upload user-library-modify", ' \
