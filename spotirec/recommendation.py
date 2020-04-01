@@ -8,8 +8,9 @@ class Recommendation:
     Recommendation object
     """
     LOGGER = None
+    TIME = time.localtime()
 
-    def __init__(self, t=time.localtime()):
+    def __init__(self, t=TIME):
         self.limit = 20
         self.limit_original = self.limit
         self.created_at = time.ctime(time.time())
@@ -24,10 +25,12 @@ class Recommendation:
         self.playback_device = {}
 
     def __str__(self):
-        return str({'limit': self.limit, 'original limit': self.limit_original, 'created at': self.created_at,
-                    'based on': self.based_on, 'seed': self.seed, 'seed type': self.seed_type,
-                    'seed info': self.seed_info, 'rec params': self.rec_params, 'name': self.playlist_name,
-                    'id': self.playlist_id, 'auto play': self.auto_play, 'device': self.playback_device})
+        return str({'limit': self.limit, 'original limit': self.limit_original,
+                    'created at': self.created_at, 'based on': self.based_on,
+                    'seed': self.seed, 'seed type': self.seed_type, 'seed info': self.seed_info,
+                    'rec params': self.rec_params, 'name': self.playlist_name,
+                    'id': self.playlist_id, 'auto play': self.auto_play,
+                    'device': self.playback_device})
 
     def playlist_description(self) -> str:
         """
@@ -38,7 +41,8 @@ class Recommendation:
         self.LOGGER.verbose('generating playlist description')
         desc = f'Created by Spotirec - {self.created_at} - based on {self.based_on} - seed: '
         seeds = ' | '.join(
-            f'{str(x["name"])}{" - " + ", ".join(str(y) for y in x["artists"]) if x["type"] == "track" else ""}'
+            f'{str(x["name"])}'
+            f'{" - " + ", ".join(str(y) for y in x["artists"]) if x["type"] == "track" else ""}'
             for x in self.seed_info.values())
         self.LOGGER.debug(f'description: {desc}{seeds}')
         return f'{desc}{seeds}'
@@ -63,7 +67,8 @@ class Recommendation:
         self.LOGGER.info('Selection:')
         for x in self.seed_info.values():
             try:
-                self.LOGGER.info(f'\t{x["type"].capitalize()}: {x["name"]} - {", ".join(str(y) for y in x["artists"])}')
+                self.LOGGER.info(f'\t{x["type"].capitalize()}: {x["name"]} - '
+                                 f'{", ".join(str(y) for y in x["artists"])}')
             except KeyError:
                 self.LOGGER.info(f'\t{x["type"].capitalize()}: {x["name"]}')
 
@@ -82,7 +87,8 @@ class Recommendation:
                                                    'type': data_dict['type']}
             try:
                 assert data_dict['artists'] is not None
-                self.seed_info[len(self.seed_info)-1]['artists'] = [x['name'] for x in data_dict['artists']]
+                self.seed_info[len(self.seed_info) - 1]['artists'] = [x['name']
+                                                                      for x in data_dict['artists']]
             except (KeyError, AssertionError):
                 pass
             self.LOGGER.debug(f'data: {self.seed_info[len(self.seed_info)-1]}')
@@ -95,13 +101,14 @@ class Recommendation:
         if 'genres' in self.seed_type:
             self.seed = ','.join(str(x['name']) for x in self.seed_info.values())
         elif 'custom' in self.seed_type:
-            self.rec_params['seed_tracks'] = ','.join(str(x['id']) for x in self.seed_info.values()
-                                                      if x['type'] == 'track')
-            self.rec_params['seed_artists'] = ','.join(str(x['id']) for x in self.seed_info.values()
-                                                       if x['type'] == 'artist')
-            self.rec_params['seed_genres'] = ','.join(str(x['name']) for x in self.seed_info.values()
-                                                      if x['type'] == 'genre')
-            self.LOGGER.debug(f'tracks: {self.rec_params["seed_tracks"]}, artists: {self.rec_params["seed_artists"]}, '
+            self.rec_params['seed_tracks'] = \
+                ','.join(str(x['id']) for x in self.seed_info.values() if x['type'] == 'track')
+            self.rec_params['seed_artists'] = \
+                ','.join(str(x['id']) for x in self.seed_info.values() if x['type'] == 'artist')
+            self.rec_params['seed_genres'] = \
+                ','.join(str(x['name']) for x in self.seed_info.values() if x['type'] == 'genre')
+            self.LOGGER.debug(f'tracks: {self.rec_params["seed_tracks"]}, artists: '
+                              f'{self.rec_params["seed_artists"]}, '
                               f'genres: {self.rec_params["seed_genres"]}')
             return
         else:

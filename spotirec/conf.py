@@ -45,7 +45,8 @@ class Config:
 
     def convert_or_create_config(self):
         """
-        Convert old config files to new. If old files do not exist, simply add the necessary sections.
+        Convert old config files to new. If old files do not exist, simply add the
+        necessary sections.
         """
         c = configparser.ConfigParser()
         old_conf = ['spotirecoauth', 'presets', 'blacklist', 'devices', 'playlists']
@@ -64,7 +65,8 @@ class Config:
                     c.set(x, 'artists', str({}))
                 pass
         self.LOGGER.info('done')
-        self.LOGGER.info('if you have the old style config files you may safely delete these, or save them as backup')
+        self.LOGGER.info('if you have the old style config files you may safely delete these, '
+                         'or save them as backup')
         self.save_config(c)
 
     def get_oauth(self) -> dict:

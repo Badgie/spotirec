@@ -22,7 +22,8 @@ CONFIG_PATH = f'{Path.home()}/.config/spotirec'
 TUNING_FILE = f'{Path.home()}/.config/spotirec/tuning-opts'
 
 TUNE_PREFIX = ['max', 'min', 'target']
-TUNE_ATTR = {'int': {'duration_ms': {'min': 0, 'max': sys.maxsize * 2 + 1, 'rec_min': 0, 'rec_max': 3600000},
+TUNE_ATTR = {'int': {'duration_ms': {'min': 0, 'max': sys.maxsize * 2 + 1, 'rec_min': 0,
+                                     'rec_max': 3600000},
                      'key': {'min': 0, 'max': 11, 'rec_min': 0, 'rec_max': 11},
                      'mode': {'min': 0, 'max': 1, 'rec_min': 0, 'rec_max': 1},
                      'time_signature': {'min': 0, 'max': 500, 'rec_min': 0, 'rec_max': 500},
@@ -40,7 +41,6 @@ URI_RE = r'spotify:(artist|track):[a-zA-Z0-9]+'
 PLAYLIST_URI_RE = r'spotify:playlist:[a-zA-Z0-9]+'
 TRACK_URI_RE = r'spotify:track:[a-zA-Z0-9]+'
 
-
 logger = None
 conf = None
 api = None
@@ -52,38 +52,50 @@ args = None
 
 def create_parser() -> argparse.ArgumentParser:
     # Argument parser
-    arg_parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, prog='spotirec',
-                                         epilog="""
-    passing no recommendation scheme argument defaults to basing recommendations off your top 5 valid seed genres
-    spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for details read LICENSE""")
+    arg_parser = \
+        argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, prog='spotirec',
+                                epilog="""
+passing no recommendation scheme defaults to basing recommendations off your top 5 valid seed genres
+spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for details read LICENSE
+""")
     arg_parser.add_argument('n', nargs='?', type=int, const=5, default=5,
-                            help='amount of seeds to use on no-arg recommendations as an integer - note that this must '
-                            'appear as the first argument if used and can only be used with no-arg')
+                            help='amount of seeds to use on no-arg recommendations as an integer - '
+                                 'note that this must appear as the first argument if used and can '
+                                 'only be used with no-arg')
 
     # Verbosity
     verbosity_group = arg_parser.add_argument_group(title='Verbosity switches')
     mutex_verbosity = verbosity_group.add_mutually_exclusive_group()
     mutex_verbosity.add_argument('-v', '--verbose', action='store_true', help='verbose printing')
     mutex_verbosity.add_argument('-q', '--quiet', action='store_true', help='quiet printing')
-    mutex_verbosity.add_argument('--debug', action='store_true', help='print for debugging purposes')
-    verbosity_group.add_argument('--suppress-warnings', action='store_true', help='suppress warning messages')
-    verbosity_group.add_argument('--log', action='store_true', help='log all output, including those above logging '
-                                                                    'level, to file')
+    mutex_verbosity.add_argument('--debug', action='store_true',
+                                 help='print for debugging purposes')
+    verbosity_group.add_argument('--suppress-warnings', action='store_true',
+                                 help='suppress warning messages')
+    verbosity_group.add_argument('--log', action='store_true',
+                                 help='log all output, including those above logging level, to '
+                                      'file')
 
     # Recommendation schemes
     rec_scheme_group = arg_parser.add_argument_group(title='Recommendation schemes')
     # Create mutually exclusive group for recommendation types to ensure only one is given
     mutex_group = rec_scheme_group.add_mutually_exclusive_group()
-    mutex_group.add_argument('-a', metavar='SEED_SIZE', nargs='?', type=int, const=5, choices=range(1, 6),
-                             help='base recommendations on your top artists')
-    mutex_group.add_argument('-t', metavar='SEED_SIZE', nargs='?', type=int, const=5, choices=range(1, 6),
-                             help='base recommendations on your top tracks')
-    mutex_group.add_argument('-ac', action='store_true', help='base recommendations on custom top artists')
-    mutex_group.add_argument('-tc', action='store_true', help='base recommendations on custom top tracks')
-    mutex_group.add_argument('-gc', action='store_true', help='base recommendations on custom top valid seed genres')
-    mutex_group.add_argument('-gcs', action='store_true', help='base recommendations on custom seed genres')
-    mutex_group.add_argument('-c', action='store_true', help='base recommendations on a custom seed')
-    rec_scheme_group.add_argument('--preserve', action='store_true', help='preserve previous playlist and create new')
+    mutex_group.add_argument('-a', metavar='SEED_SIZE', nargs='?', type=int, const=5,
+                             choices=range(1, 6), help='base recommendations on your top artists')
+    mutex_group.add_argument('-t', metavar='SEED_SIZE', nargs='?', type=int, const=5,
+                             choices=range(1, 6), help='base recommendations on your top tracks')
+    mutex_group.add_argument('-ac', action='store_true',
+                             help='base recommendations on custom top artists')
+    mutex_group.add_argument('-tc', action='store_true',
+                             help='base recommendations on custom top tracks')
+    mutex_group.add_argument('-gc', action='store_true',
+                             help='base recommendations on custom top valid seed genres')
+    mutex_group.add_argument('-gcs', action='store_true',
+                             help='base recommendations on custom seed genres')
+    mutex_group.add_argument('-c', action='store_true',
+                             help='base recommendations on a custom seed')
+    rec_scheme_group.add_argument('--preserve', action='store_true',
+                                  help='preserve previous playlist and create new')
 
     # Saving arguments
     save_group = arg_parser.add_argument_group(title='Saving arguments')
@@ -91,34 +103,44 @@ def create_parser() -> argparse.ArgumentParser:
     save_mutex_group = save_group.add_mutually_exclusive_group()
     add_mutex_group = save_group.add_mutually_exclusive_group()
     save_mutex_group.add_argument('-s', action='store_true', help='like currently playing track')
-    save_mutex_group.add_argument('-sr', action='store_true', help='remove currently playing track from liked tracks')
+    save_mutex_group.add_argument('-sr', action='store_true',
+                                  help='remove currently playing track from liked tracks')
     add_mutex_group.add_argument('--add-to', metavar='[PLAYLIST | URI]', nargs=1, type=str,
                                  help='add currently playing track to input playlist')
     add_mutex_group.add_argument('--remove-from', metavar='[PLAYLIST | URI]', nargs=1, type=str,
                                  help='remove currently playing track from input playlist')
     save_group.add_argument('--save-playlist', action='store_true', help='save a playlist')
-    save_group.add_argument('--remove-playlists', metavar='ID', nargs='+', type=str, help='remove playlist(s)')
+    save_group.add_argument('--remove-playlists', metavar='ID', nargs='+', type=str,
+                            help='remove playlist(s)')
     save_group.add_argument('--save-device', action='store_true', help='save a playback device')
-    save_group.add_argument('--remove-devices', metavar='ID', nargs='+', type=str, help='remove playback device(s)')
-    save_group.add_argument('--remove-presets', metavar='ID', nargs='+', type=str, help='remove preset(s)')
+    save_group.add_argument('--remove-devices', metavar='ID', nargs='+', type=str,
+                            help='remove playback device(s)')
+    save_group.add_argument('--remove-presets', metavar='ID', nargs='+', type=str,
+                            help='remove preset(s)')
 
     # Recommendation modifications
-    rec_options_group = arg_parser.add_argument_group(title='Recommendation options',
-                                                      description='These may only appear when creating a playlist')
+    rec_options_group = arg_parser.add_argument_group(
+        title='Recommendation options',
+        description='These may only appear when creating a playlist')
     rec_options_group.add_argument('-l', metavar='LIMIT', nargs=1, type=int, choices=range(1, 101),
                                    help='amount of tracks to add (default: 20, max: 100)')
-    rec_options_group.add_argument('--tune', metavar='ATTR', nargs='+', type=str, help='specify tunable attribute(s)')
-    rec_options_group.add_argument('--play', metavar='DEVICE', nargs=1, help='select playback device to start playing '
-                                                                             'on')
-    rec_options_group.add_argument('--load-preset', metavar='ID', nargs=1, type=str, help='load and use preset')
-    rec_options_group.add_argument('--save-preset', metavar='ID', nargs=1, type=str, help='save options as preset')
+    rec_options_group.add_argument('--tune', metavar='ATTR', nargs='+', type=str,
+                                   help='specify tunable attribute(s)')
+    rec_options_group.add_argument('--play', metavar='DEVICE', nargs=1,
+                                   help='select playback device to start playing on')
+    rec_options_group.add_argument('--load-preset', metavar='ID', nargs=1, type=str,
+                                   help='load and use preset')
+    rec_options_group.add_argument('--save-preset', metavar='ID', nargs=1, type=str,
+                                   help='save options as preset')
 
     # Blacklisting
     blacklist_group = arg_parser.add_argument_group(title='Blacklisting')
-    blacklist_group.add_argument('-b', metavar='URI', nargs='+', type=str, help='blacklist track(s) and/or artist(s)')
+    blacklist_group.add_argument('-b', metavar='URI', nargs='+', type=str,
+                                 help='blacklist track(s) and/or artist(s)')
     blacklist_group.add_argument('-br', metavar='URI', nargs='+', type=str,
                                  help='remove track(s) and/or artists(s) from blacklist')
-    blacklist_group.add_argument('-bc', metavar='artist | track', nargs=1, choices=['artist', 'track'],
+    blacklist_group.add_argument('-bc', metavar='artist | track', nargs=1,
+                                 choices=['artist', 'track'],
                                  help='blacklist currently playing artist(s) or track')
 
     # Playback
@@ -129,10 +151,11 @@ def create_parser() -> argparse.ArgumentParser:
     # Printing
     print_group = arg_parser.add_argument_group(title='Printing')
     print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
-                             choices=['artists', 'tracks', 'genres', 'genre-seeds', 'devices', 'blacklist', 'presets',
-                                      'playlists', 'tuning'],
-                             help='print a list of genre seeds, or your top artists, tracks, or genres, where '
-                                  'TYPE=[artists|tracks|genres|genre-seeds|devices|blacklist|presets|playlists|tuning]')
+                             choices=['artists', 'tracks', 'genres', 'genre-seeds',
+                                      'devices', 'blacklist', 'presets', 'playlists', 'tuning'],
+                             help='print a list of genre seeds, or your top artists, tracks, or '
+                                  'genres, where TYPE=[artists|tracks|genres|genre-seeds|devices|'
+                                  'blacklist|presets|playlists|tuning]')
     print_group.add_argument('--version', action='version', version=f'%(prog)s v{VERSION}')
     print_group.add_argument('--track-features', metavar='[URI | current]', nargs=1, type=str,
                              help='print track features of URI or currently playing track')
@@ -173,7 +196,8 @@ def index() -> str:
     if access_token:
         logger.verbose('successfully retrieved oauth token')
         logger.debug(f'token: {access_token}')
-        return "<span>Successfully retrieved OAuth token. You may close this tab and start using Spotirec.</span>"
+        return "<span>Successfully retrieved OAuth token. You may close this tab and start " \
+               "using Spotirec.</span>"
     else:
         logger.verbose('code not found, requesting permissions')
         return f"<a href='{sp_oauth.get_authorize_url()}'>Login to Spotify</a>"
@@ -250,18 +274,20 @@ def print_choices(data=None, prompt=True, sort=False) -> str:
                 line += f'{" " * (40 - len(data[x]))}{x + 1}: ' \
                         f'{data[x + 1] if len(data[x + 1]) < 40 else f"{data[x + 1][0:37]}.. "}'
                 if data[x + 2]:
-                    line += f'{" " * (40 - len(data[x + 1]))}{x + 2}: ' \
-                            f'{data[x + 2] if len(data[x + 2]) < 40 else f"{data[x + 2][0:37]}.. "}\n'
+                    line += \
+                        f'{" " * (40 - len(data[x + 1]))}{x + 2}: ' \
+                        f'{data[x + 2] if len(data[x + 2]) < 40 else f"{data[x + 2][0:37]}.. "}\n'
         except IndexError:
             continue
     print(line.strip('\n'))
     if prompt:
         try:
-            input_string = input('Enter integer identifiers for 1-5 whitespace separated selections that you wish to '
-                                 'include [default: top 5]:\n') or '0 1 2 3 4'
+            input_string = input('Enter integer identifiers for 1-5 whitespace separated selections'
+                                 ' that you wish to include [default: top 5]:\n') or '0 1 2 3 4'
         except KeyboardInterrupt:
             exit(0)
-        # If seed type is genres, simply parse the seed, else return the input for further processing
+        # If seed type is genres, simply parse the seed, else return the input for
+        # further processing
         if 'genres' in rec.seed_type:
             parse_seed_info([data[int(x)] for x in input_string.strip(' ').split(' ')])
         else:
@@ -326,14 +352,17 @@ def check_tune_validity(tune: str):
         # Ensure value is within accepted range
         if not TUNE_ATTR[value_type][key]['max'] >= value >= TUNE_ATTR[value_type][key]['min']:
             logger.error(f'value {value} for attribute {key} is outside the accepted range (min: '
-                         f'{TUNE_ATTR[value_type][key]["min"]}, max: {TUNE_ATTR[value_type][key]["max"]})')
+                         f'{TUNE_ATTR[value_type][key]["min"]}, max: '
+                         f'{TUNE_ATTR[value_type][key]["max"]})')
             logger.log_file(crash=True)
             exit(1)
         # Warn if value is outside recommended range
-        if not TUNE_ATTR[value_type][key]['rec_max'] >= value >= TUNE_ATTR[value_type][key]['rec_min']:
-            logger.warning(f'value {value} for attribute {key} is outside the recommended range (min: '
-                           f'{TUNE_ATTR[value_type][key]["rec_min"]}, max: {TUNE_ATTR[value_type][key]["rec_max"]}), '
-                           f'recommendations may be scarce')
+        if not TUNE_ATTR[value_type][key]['rec_max'] >= value >= \
+                TUNE_ATTR[value_type][key]['rec_min']:
+            logger.warning(f'value {value} for attribute {key} is outside the recommended range '
+                           f'(min: {TUNE_ATTR[value_type][key]["rec_min"]}, max: '
+                           f'{TUNE_ATTR[value_type][key]["rec_max"]}), recommendations may be '
+                           f'scarce')
         logger.debug(f'tune attribute {key} with prefix {prefix} and value {value} is valid')
     except ValueError:
         logger.error(f'tune value {value} does not match attribute {key} data type requirements')
@@ -362,7 +391,8 @@ def parse_seed_info(seeds):
             elif re.match(URI_RE, x):
                 rec.add_seed_info(data_dict=api.request_data(x, f'{x.split(":")[1]}s', headers))
             else:
-                logger.warning(f'input \"{x}\" does not match a genre or a valid URI syntax, skipping...')
+                logger.warning(f'input \"{x}\" does not match a genre or a valid URI syntax, '
+                               f'skipping...')
         else:
             rec.add_seed_info(data_dict=x)
 
@@ -415,14 +445,16 @@ def generate_img(tracks: list) -> Image:
     track_hash = hashlib.sha256(''.join(str(x) for x in tracks).encode('utf-8')).hexdigest()
     logger.debug(f'hash: {track_hash}')
     # Use the first six chars of the hash to generate a color
-    # The hex value of three pairs of chars are converted to integers, yielding a list on the form [r, g, b]
+    # The hex value of three pairs of chars are converted to integers, yielding a list on the
+    # form [r, g, b]
     color = [int(track_hash[i:i + 2], 16) for i in (0, 2, 4)]
     logger.debug(f'color: {color}')
     # Create an image object the size of the squared square root of the hash string - always 8x8
     img = Image.new('RGB', (int(math.sqrt(len(track_hash))), int(math.sqrt(len(track_hash)))))
     logger.debug(f'image: {img}')
     pixel_map = []
-    # Iterate over hash string and assign to pixel map each digit to the generated color, each letter to light gray
+    # Iterate over hash string and assign to pixel map each digit to the generated color,
+    # each letter to light gray
     for x in track_hash:
         if re.match(r'[0-9]', x):
             pixel_map.append(color)
@@ -514,9 +546,12 @@ def print_presets():
     presets = conf.get_presets()
     print('\033[1m' + f'Name{" " * 16}Type{" " * 21}Params{" " * 44}Seeds' + '\033[0m')
     for x in presets.items():
-        params = ",".join(f"{y[0]}={y[1]}" if "seed" not in y[0] else "" for y in x[1]["rec_params"].items()).strip(',')
-        print(f'{x[0]}{" " * (20 - len(x[0]))}{x[1]["based_on"]}{" " * (25 - len(x[1]["based_on"]))}'
-              f'{params}{" " * (50 - len(params))}{",".join(str(y["name"]) for y in x[1]["seed_info"].values())}')
+        params = ",".join(f"{y[0]}={y[1]}" if "seed" not in y[0] else "" for y in
+                          x[1]["rec_params"].items()).strip(',')
+        print(
+            f'{x[0]}{" " * (20 - len(x[0]))}{x[1]["based_on"]}{" " * (25 - len(x[1]["based_on"]))}'
+            f'{params}{" " * (50 - len(params))}'
+            f'{",".join(str(y["name"]) for y in x[1]["seed_info"].values())}')
 
 
 def get_device(device_name: str) -> dict:
@@ -562,7 +597,8 @@ def save_device():
             return inp
         except AssertionError:
             logger.error(f'device identifier \"{inp}\" is malformed.')
-            logger.info('please ensure that the identifier contains at least one character, and no whitespaces.')
+            logger.info('please ensure that the identifier contains at least one character, '
+                        'and no whitespaces.')
             return prompt_name()
 
     # Get available devices from API and print
@@ -571,8 +607,9 @@ def save_device():
     print('\033[1m' + f'Name{" " * 19}Type' + '\033[0m')
     for x in devices:
         print(f'{devices.index(x)}. {x["name"]}{" " * (20 - len(x["name"]))}{x["type"]}')
-    logger.info('please note that a player needs to be active to be shown in the above list, i.e. if you want to save '
-                'your phone as a device, the app needs to be launched on your phone')
+    logger.info('please note that a player needs to be active to be shown in the above list, i.e. '
+                'if you want to save your phone as a device, the app needs to be launched on '
+                'your phone')
     # Prompt device selection and identifier, and save to config
     device = devices[prompt_device_index()]
     device_dict = {'id': device['id'], 'name': device['name'], 'type': device['type']}
@@ -611,7 +648,8 @@ def print_playlists():
     playlists = conf.get_playlists()
     print('\033[1m' + f'ID{" " * 18}Name{" " * 26}URI' + '\033[0m')
     for x in playlists.items():
-        print(f'{x[0]}{" " * (20 - len(x[0]))}{x[1]["name"]}{" " * (30 - len(x[1]["name"]))}{x[1]["uri"]}')
+        print(f'{x[0]}{" " * (20 - len(x[0]))}{x[1]["name"]}'
+              f'{" " * (30 - len(x[1]["name"]))}{x[1]["uri"]}')
 
 
 def save_playlist():
@@ -630,7 +668,8 @@ def save_playlist():
             return iden
         except AssertionError:
             logger.error(f'playlist identifier \"{iden}\" is malformed.')
-            logger.info('please ensure that the identifier contains at least one character, and no whitespaces.')
+            logger.info('please ensure that the identifier contains at least one character, '
+                        'and no whitespaces.')
             return input_id()
 
     def input_uri() -> str:
@@ -649,7 +688,8 @@ def save_playlist():
     # Prompt device identifier and URI, and save to config
     playlist_id = input_id()
     playlist_uri = input_uri()
-    playlist = {'name': api.get_playlist(headers, playlist_uri.split(':')[2])["name"], 'uri': playlist_uri}
+    playlist = {'name': api.get_playlist(headers, playlist_uri.split(':')[2])["name"],
+                'uri': playlist_uri}
     logger.verbose(f'saving playlist')
     logger.debug(f'playlist: {playlist}')
     conf.save_playlist(playlist, playlist_id)
@@ -717,15 +757,18 @@ def print_track_features(uri: str):
         exit(1)
     audio_features = api.get_audio_features(uri.split(':')[2], headers)
     track_info = api.request_data(uri, 'tracks', headers)
-    print(
-        '\t' + '\033[1m' + f'{track_info["name"]} - {", ".join(x["name"] for x in track_info["artists"])}' + '\033[0m')
+    print('\t' + '\033[1m' + f'{track_info["name"]} - '
+                             f'{", ".join(x["name"] for x in track_info["artists"])}' + '\033[0m')
     print(f'Track URI{" " * 21}{track_info["uri"]}')
-    print(f'Artist URI(s){" " * 17}{", ".join(x["name"] + ": " + x["uri"] for x in track_info["artists"])}')
+    print(f'Artist URI(s){" " * 17}'
+          f'{", ".join(x["name"] + ": " + x["uri"] for x in track_info["artists"])}')
     print(f'Album URI{" " * 21}{track_info["album"]["uri"]}')
     print(f'Release date{" " * 18}{track_info["album"]["release_date"]}')
-    print(f'Duration{" " * 22}{audio_features["duration_ms"]}ms ({millis_to_stamp(audio_features["duration_ms"])})')
+    print(f'Duration{" " * 22}{audio_features["duration_ms"]}ms '
+          f'({millis_to_stamp(audio_features["duration_ms"])})')
     print(f'Key{" " * 27}{audio_features["key"]}')
-    print(f'Mode{" " * 26}{audio_features["mode"]} ({"minor" if audio_features["mode"] == 0 else "major"})')
+    print(f'Mode{" " * 26}{audio_features["mode"]} '
+          f'({"minor" if audio_features["mode"] == 0 else "major"})')
     print(f'Time signature{" " * 16}{audio_features["time_signature"]}')
     print(f'Popularity{" " * 20}{track_info["popularity"]}')
     print(f'Acousticness{" " * 18}{audio_features["acousticness"]}')
@@ -741,8 +784,8 @@ def print_track_features(uri: str):
 
 def millis_to_stamp(x: int):
     """
-    Convert milliseconds to a timestamp on the form "{hours}h {minutes}m {seconds}s". Hours and minutes are only
-    included if they are present.
+    Convert milliseconds to a timestamp on the form "{hours}h {minutes}m {seconds}s".
+    Hours and minutes are only included if they are present.
     :param x: milliseconds
     :return: formatted timestamp
     """
@@ -780,8 +823,9 @@ def filter_recommendations(data: json) -> list:
     valid_tracks = []
     blacklist = conf.get_blacklist()
     for x in data['tracks']:
-        # If the URI of the current track is blacklisted or there is an intersection between the set of blacklisted
-        # artists and the set of artists of the current track, then skip - otherwise add to valid tracks
+        # If the URI of the current track is blacklisted or there is an intersection between
+        # the set of blacklisted artists and the set of artists of the current track,
+        # then skip - otherwise add to valid tracks
         if any(x['uri'] == s for s in blacklist['tracks'].keys()) or len(
                 set(blacklist['artists'].keys()) & set(y['uri'] for y in x['artists'])) > 0:
             continue
@@ -812,8 +856,8 @@ def print_tuning_options():
             print('\033[1m' + x.strip('\n') + '\033[0m')
         else:
             print(x.strip('\n'))
-    print('note that recommendations may be scarce outside the recommended ranges. If the recommended range is not '
-          'available, they may only be scarce at extreme values.')
+    print('note that recommendations may be scarce outside the recommended ranges. If the '
+          'recommended range is not available, they may only be scarce at extreme values.')
 
 
 def recommend():
@@ -836,15 +880,16 @@ def recommend():
         logger.log_file(crash=True)
         exit(1)
     if len(tracks) <= rec.limit_original / 2:
-        logger.warning(f'only received {len(tracks)} different recommendations, you may receive duplicates of '
-                       f'these (this might take a few seconds)')
+        logger.warning(f'only received {len(tracks)} different recommendations, you may receive '
+                       f'duplicates of these (this might take a few seconds)')
     # Filter recommendations until length of track list matches limit preference
     while len(tracks) < rec.limit_original:
         rec.update_limit(rec.limit_original - len(tracks))
         tracks += filter_recommendations(api.get_recommendations(rec.rec_params, headers))
 
     def create_new_playlist():
-        rec.playlist_id = api.create_playlist(rec.playlist_name, rec.playlist_description(), headers, cache_id=True)
+        rec.playlist_id = api.create_playlist(rec.playlist_name, rec.playlist_description(),
+                                              headers, cache_id=True)
         api.add_to_playlist(tracks, rec.playlist_id, headers=headers)
 
     # Create playlist and add tracks
@@ -856,9 +901,11 @@ def recommend():
             rec.playlist_id = conf.get_playlists()['spotirec-default']['uri'].split(':')[2]
             assert api.check_if_playlist_exists(rec.playlist_id, headers) is True
             api.replace_playlist_tracks(rec.playlist_id, tracks, headers=headers)
-            api.update_playlist_details(rec.playlist_name, rec.playlist_description(), rec.playlist_id, headers=headers)
+            api.update_playlist_details(rec.playlist_name, rec.playlist_description(),
+                                        rec.playlist_id, headers=headers)
         except (KeyError, AssertionError):
-            logger.info('playlist has either been deleted, or made private, creating new default...')
+            logger.info('playlist has either been deleted, or made private, creating new '
+                        'default...')
             create_new_playlist()
     # Generate and upload dank-ass image
     add_image_to_playlist(tracks)
@@ -983,9 +1030,9 @@ def parse():
         rec.seed_type = 'custom'
         print_choices(data=get_user_top_genres(), prompt=False, sort=True)
         try:
-            user_input = input(
-                'Enter a combination of 1-5 whitespace separated genre names, track uris, and artist uris. '
-                '\nGenres with several words should be connected with dashes, e.g.; vapor-death-pop.\n')
+            user_input = input('Enter a combination of 1-5 whitespace separated genre names, '
+                               'track uris, and artist uris. \nGenres with several words should '
+                               'be connected with dashes, e.g.; vapor-death-pop.\n')
         except KeyboardInterrupt:
             exit(0)
         if not user_input:

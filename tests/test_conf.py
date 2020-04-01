@@ -1,4 +1,5 @@
-from tests.lib import ordered, SpotirecTestCase, runner
+from tests.lib import ordered, runner
+from tests.lib.ut_ext import SpotirecTestCase
 from spotirec import conf, log
 import os
 
@@ -103,12 +104,15 @@ class TestConf(SpotirecTestCase):
         Testing get_oauth()
         """
         oauth = self.conf.get_oauth()
-        self.assertEqual(oauth['access_token'], 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
+        self.assertEqual(oauth['access_token'],
+                         'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
         self.assertEqual(oauth['token_type'], 'Bearer')
         self.assertEqual(oauth['expires_in'], '3600')
-        self.assertEqual(oauth['scope'], 'user-modify-playback-state ugc-image-upload user-library-modify')
+        self.assertEqual(oauth['scope'],
+                         'user-modify-playback-state ugc-image-upload user-library-modify')
         self.assertEqual(oauth['expires_at'], '15848754832')
-        self.assertEqual(oauth['refresh_token'], '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
+        self.assertEqual(oauth['refresh_token'],
+                         '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
         self.conf.CONFIG_FILE = 'empty.conf'
         oauth = self.conf.get_oauth()
         self.assertEqual(oauth, {})
@@ -132,7 +136,8 @@ class TestConf(SpotirecTestCase):
         Testing add_to_blacklist()
         """
         test_artist = {'name': 'frankie', 'uri': 'spotify:artist:testuri0frankie'}
-        test_track = {'name': 'nights', 'uri': 'spotify:track:testuri0nights', 'artists': [{'name': 'frankie'}]}
+        test_track = {'name': 'nights', 'uri': 'spotify:track:testuri0nights',
+                      'artists': [{'name': 'frankie'}]}
         self.conf.add_to_blacklist(test_artist, test_artist['uri'])
         self.conf.add_to_blacklist(test_track, test_track['uri'])
         blacklist = self.conf.get_blacklist()
@@ -179,12 +184,15 @@ class TestConf(SpotirecTestCase):
         """
         Testing save_preset()
         """
-        preset = {'limit': 20, 'based_on': 'top genres', 'seed': 'hip-hop,metalcore,metal,pop,death-metal',
+        preset = {'limit': 20, 'based_on': 'top genres',
+                  'seed': 'hip-hop,metalcore,metal,pop,death-metal',
                   'seed_type': 'genres', 'seed_info':
-                      {0: {'name': 'hip-hop', 'type': 'genre'}, 1: {'name': 'metalcore', 'type': 'genre'},
+                      {0: {'name': 'hip-hop', 'type': 'genre'},
+                       1: {'name': 'metalcore', 'type': 'genre'},
                        2: {'name': 'metal', 'type': 'genre'}, 3: {'name': 'pop', 'type': 'genre'},
                        4: {'name': 'death-metal', 'type': 'genre'}},
-                  'rec_params': {'limit': '20', 'seed_genres': 'hip-hop,metalcore,metal,pop,death-metal'},
+                  'rec_params':
+                      {'limit': '20', 'seed_genres': 'hip-hop,metalcore,metal,pop,death-metal'},
                   'auto_play': False, 'playback_device': {}}
         self.conf.save_preset(preset, 'test')
         presets = self.conf.get_presets()
@@ -226,8 +234,8 @@ class TestConf(SpotirecTestCase):
         """
         Testing save_device()
         """
-        device = {'id': '9f7e0c7afa654ecea4052667e58a6e86ef4dd612e4b02155bbd8650757ed593f', 'name': 'pc',
-                  'type': 'Computer'}
+        device = {'id': '9f7e0c7afa654ecea4052667e58a6e86ef4dd612e4b02155bbd8650757ed593f',
+                  'name': 'pc', 'type': 'Computer'}
         self.conf.save_device(device, 'test')
         devices = self.conf.get_devices()
         self.assertEqual(device, devices['test'])

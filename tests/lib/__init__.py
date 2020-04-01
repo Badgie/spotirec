@@ -1,6 +1,5 @@
 from . import lib
-from . import mock
-from .ut_ext import SpotirecTestCase, SpotirecTestResults, SpotirecTestRunner
+from .ut_ext import SpotirecTestResults, SpotirecTestRunner
 
 ordered, compare = lib.order_handler()
 

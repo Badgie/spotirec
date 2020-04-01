@@ -1,4 +1,5 @@
-from tests.lib import ordered, mock, SpotirecTestCase, runner
+from tests.lib import ordered, mock, runner
+from tests.lib.ut_ext import SpotirecTestCase
 from spotirec import api as sp_api, conf, log
 import os
 import sys
@@ -74,7 +75,8 @@ class TestAPI(SpotirecTestCase):
         """
         Testing error_handle()
         """
-        response = mock.MockResponse(200, 'success', 'success', {'success': 'yes lol'}, 'https://success.test')
+        response = mock.MockResponse(200, 'success', 'success', {'success': 'yes lol'},
+                                     'https://success.test')
         self.api.error_handle('test', 200, 'TEST', response=response)
         sys.stdout.close()
         sys.stdout = self.stdout_preserve
@@ -87,10 +89,11 @@ class TestAPI(SpotirecTestCase):
         """
         Testing error_handle() with error (non-200)
         """
-        response = mock.MockResponse(400, 'error', 'error', {'success': 'no lol'}, 'https://error.test')
+        response = mock.MockResponse(400, 'error', 'error', {'success': 'no lol'},
+                                     'https://error.test')
         expected = 'TEST request for test failed with status code 400 (expected 200). Reason: error'
-        self.assertRaises(SystemExit, self.api.error_handle, request_domain='test', expected_code=200,
-                          request_type='TEST', response=response)
+        self.assertRaises(SystemExit, self.api.error_handle, request_domain='test',
+                          expected_code=200, request_type='TEST', response=response)
         sys.stdout.close()
         sys.stdout = self.stdout_preserve
         with open(self.test_log, 'r') as f:
@@ -104,11 +107,12 @@ class TestAPI(SpotirecTestCase):
         """
         Testing error_handle() with error (401)
         """
-        response = mock.MockResponse(401, 'error', 'error', {'success': 'no lol'}, 'https://error.test')
-        expected = 'this may be because this is a new function, and additional authorization is required - try ' \
-                   'reauthorizing and try again.'
-        self.assertRaises(SystemExit, self.api.error_handle, request_domain='test', expected_code=200,
-                          request_type='TEST', response=response)
+        response = mock.MockResponse(401, 'error', 'error', {'success': 'no lol'},
+                                     'https://error.test')
+        expected = 'this may be because this is a new function, and additional authorization ' \
+                   'is required - try reauthorizing and try again.'
+        self.assertRaises(SystemExit, self.api.error_handle, request_domain='test',
+                          expected_code=200, request_type='TEST', response=response)
         sys.stdout.close()
         sys.stdout = self.stdout_preserve
         with open(self.test_log, 'r') as f:
@@ -179,8 +183,8 @@ class TestAPI(SpotirecTestCase):
         Testing add_to_playlist()
         """
         # should not raise sysexit
-        self.api.add_to_playlist(['spotify:track:trackid0', 'spotify:track:trackid1', 'spotify:track:trackid2'],
-                                 'testplaylist', self.headers)
+        self.api.add_to_playlist(['spotify:track:trackid0', 'spotify:track:trackid1',
+                                  'spotify:track:trackid2'], 'testplaylist', self.headers)
 
     @ordered
     def test_get_recommendations(self):
@@ -221,7 +225,8 @@ class TestAPI(SpotirecTestCase):
         self.assertIn('genres', seeds.keys())
         self.assertIn('vapor-death-pop', seeds['genres'])
         self.assertIn('pop', seeds['genres'])
-        self.assertEqual(seeds['genres'], ['metal', 'metalcore', 'pop', 'vapor-death-pop', 'holidays'])
+        self.assertEqual(seeds['genres'], ['metal', 'metalcore', 'pop', 'vapor-death-pop',
+                                           'holidays'])
 
     @ordered
     def test_get_available_devices(self):
@@ -278,7 +283,8 @@ class TestAPI(SpotirecTestCase):
         Testing update_playlist_details()
         """
         # should not raise sysexit
-        self.api.update_playlist_details('new-name', 'new-description', 'testplaylist', self.headers)
+        self.api.update_playlist_details('new-name', 'new-description', 'testplaylist',
+                                         self.headers)
 
     @ordered
     def test_replace_playlist_tracks(self):
@@ -286,8 +292,8 @@ class TestAPI(SpotirecTestCase):
         Testing replace_playlist_tracks()
         """
         # should not raise sysexit
-        self.api.replace_playlist_tracks('testplaylist', ['spotify:track:testid0', 'spotify:track:testid1'],
-                                         self.headers)
+        self.api.replace_playlist_tracks(
+            'testplaylist', ['spotify:track:testid0', 'spotify:track:testid1'], self.headers)
 
     @ordered
     def test_get_playlist(self):
@@ -305,7 +311,8 @@ class TestAPI(SpotirecTestCase):
         Testing remove_from_playlist()
         """
         # should not raise sysexit
-        self.api.remove_from_playlist(['spotify:track:testid0', 'spotify:track:testid1'], 'testplaylist', self.headers)
+        self.api.remove_from_playlist(['spotify:track:testid0', 'spotify:track:testid1'],
+                                      'testplaylist', self.headers)
 
     @ordered
     def test_get_audio_features(self):

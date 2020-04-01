@@ -1,4 +1,5 @@
-from tests.lib import ordered, mock, SpotirecTestCase, runner
+from tests.lib import ordered, mock, runner
+from tests.lib.ut_ext import SpotirecTestCase
 from spotirec import oauth2, api, conf, log
 import os
 import time
@@ -55,12 +56,15 @@ class TestOauth2(SpotirecTestCase):
         """
         oauth = self.oauth.get_credentials()
         self.assertNotEqual(oauth, {})
-        self.assertEqual(oauth['access_token'], 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
+        self.assertEqual(oauth['access_token'],
+                         'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
         self.assertEqual(oauth['token_type'], 'Bearer')
         self.assertEqual(oauth['expires_in'], '3600')
-        self.assertEqual(oauth['scope'], 'user-modify-playback-state ugc-image-upload user-library-modify')
+        self.assertEqual(oauth['scope'],
+                         'user-modify-playback-state ugc-image-upload user-library-modify')
         self.assertEqual(oauth['expires_at'], '15848754832')
-        self.assertEqual(oauth['refresh_token'], '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
+        self.assertEqual(oauth['refresh_token'],
+                         '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
 
     @ordered
     def test_get_credentials_refresh(self):
@@ -73,20 +77,26 @@ class TestOauth2(SpotirecTestCase):
 
         expected_expire = round(time.time()) + 3600
         token = self.oauth.get_credentials()
-        self.assertEqual(token['access_token'], 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
+        self.assertEqual(token['access_token'],
+                         'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
         self.assertEqual(token['token_type'], 'Bearer')
         self.assertEqual(token['expires_in'], 3600)
-        self.assertEqual(token['scope'], 'user-modify-playback-state ugc-image-upload user-library-modify')
+        self.assertEqual(token['scope'],
+                         'user-modify-playback-state ugc-image-upload user-library-modify')
         self.assertEqual(token['expires_at'], expected_expire)
-        self.assertEqual(token['refresh_token'], '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
+        self.assertEqual(token['refresh_token'],
+                         '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
 
         oauth = self.conf.get_oauth()
-        self.assertEqual(oauth['access_token'], 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
+        self.assertEqual(oauth['access_token'],
+                         'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
         self.assertEqual(oauth['token_type'], 'Bearer')
         self.assertEqual(oauth['expires_in'], '3600')
-        self.assertEqual(oauth['scope'], 'user-modify-playback-state ugc-image-upload user-library-modify')
+        self.assertEqual(oauth['scope'],
+                         'user-modify-playback-state ugc-image-upload user-library-modify')
         self.assertEqual(oauth['expires_at'], str(expected_expire))
-        self.assertEqual(oauth['refresh_token'], '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
+        self.assertEqual(oauth['refresh_token'],
+                         '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
 
         config = self.conf.open_config()
         config.set('spotirecoauth', 'expires_at', '15848754832')
@@ -110,21 +120,28 @@ class TestOauth2(SpotirecTestCase):
         """
         self.conf.CONFIG_FILE = 'test-refresh.conf'
         expected_expire = round(time.time()) + 3600
-        token = self.oauth.refresh_token('737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
-        self.assertEqual(token['access_token'], 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
+        token = self.oauth.refresh_token(
+            '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
+        self.assertEqual(token['access_token'],
+                         'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
         self.assertEqual(token['token_type'], 'Bearer')
         self.assertEqual(token['expires_in'], 3600)
-        self.assertEqual(token['scope'], 'user-modify-playback-state ugc-image-upload user-library-modify')
+        self.assertEqual(token['scope'],
+                         'user-modify-playback-state ugc-image-upload user-library-modify')
         self.assertEqual(token['expires_at'], expected_expire)
-        self.assertEqual(token['refresh_token'], '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
+        self.assertEqual(token['refresh_token'],
+                         '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
 
         oauth = self.conf.get_oauth()
-        self.assertEqual(oauth['access_token'], 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
+        self.assertEqual(oauth['access_token'],
+                         'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
         self.assertEqual(oauth['token_type'], 'Bearer')
         self.assertEqual(oauth['expires_in'], '3600')
-        self.assertEqual(oauth['scope'], 'user-modify-playback-state ugc-image-upload user-library-modify')
+        self.assertEqual(oauth['scope'],
+                         'user-modify-playback-state ugc-image-upload user-library-modify')
         self.assertEqual(oauth['expires_at'], str(expected_expire))
-        self.assertEqual(oauth['refresh_token'], '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
+        self.assertEqual(oauth['refresh_token'],
+                         '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
         os.remove('fixtures/test-refresh.conf')
 
     @ordered
@@ -135,20 +152,26 @@ class TestOauth2(SpotirecTestCase):
         self.conf.CONFIG_FILE = 'test-refresh.conf'
         expected_expire = round(time.time()) + 3600
         token = self.oauth.refresh_token('no_refresh')
-        self.assertEqual(token['access_token'], 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
+        self.assertEqual(token['access_token'],
+                         'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
         self.assertEqual(token['token_type'], 'Bearer')
         self.assertEqual(token['expires_in'], 3600)
-        self.assertEqual(token['scope'], 'user-modify-playback-state ugc-image-upload user-library-modify')
+        self.assertEqual(token['scope'],
+                         'user-modify-playback-state ugc-image-upload user-library-modify')
         self.assertEqual(token['expires_at'], expected_expire)
-        self.assertEqual(token['refresh_token'], '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
+        self.assertEqual(token['refresh_token'],
+                         '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
 
         oauth = self.conf.get_oauth()
-        self.assertEqual(oauth['access_token'], 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
+        self.assertEqual(oauth['access_token'],
+                         'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
         self.assertEqual(oauth['token_type'], 'Bearer')
         self.assertEqual(oauth['expires_in'], '3600')
-        self.assertEqual(oauth['scope'], 'user-modify-playback-state ugc-image-upload user-library-modify')
+        self.assertEqual(oauth['scope'],
+                         'user-modify-playback-state ugc-image-upload user-library-modify')
         self.assertEqual(oauth['expires_at'], str(expected_expire))
-        self.assertEqual(oauth['refresh_token'], '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
+        self.assertEqual(oauth['refresh_token'],
+                         '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
         os.remove('fixtures/test-refresh.conf')
 
     @ordered
@@ -166,7 +189,8 @@ class TestOauth2(SpotirecTestCase):
         """
         Testing encode_header()
         """
-        expected = {'Authorization': 'Basic dGhpc2lzYXJlYWxjbGllbnRpZDp0aGlzaXNhcmVhbGNsaWVudHNlY3JldA=='}
+        expected = {'Authorization':
+                    'Basic dGhpc2lzYXJlYWxjbGllbnRpZDp0aGlzaXNhcmVhbGNsaWVudHNlY3JldA=='}
         self.oauth.client_id = 'thisisarealclientid'
         self.oauth.client_secret = 'thisisarealclientsecret'
         header = self.oauth.encode_header()
@@ -180,20 +204,26 @@ class TestOauth2(SpotirecTestCase):
         self.conf.CONFIG_FILE = 'test-retrieve.conf'
         expected_expire = round(time.time()) + 3600
         token = self.oauth.retrieve_access_token('testcode')
-        self.assertEqual(token['access_token'], 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
+        self.assertEqual(token['access_token'],
+                         'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
         self.assertEqual(token['token_type'], 'Bearer')
         self.assertEqual(token['expires_in'], 3600)
-        self.assertEqual(token['scope'], 'user-modify-playback-state ugc-image-upload user-library-modify')
+        self.assertEqual(token['scope'],
+                         'user-modify-playback-state ugc-image-upload user-library-modify')
         self.assertEqual(token['expires_at'], expected_expire)
-        self.assertEqual(token['refresh_token'], '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
+        self.assertEqual(token['refresh_token'],
+                         '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
 
         oauth = self.conf.get_oauth()
-        self.assertEqual(oauth['access_token'], 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
+        self.assertEqual(oauth['access_token'],
+                         'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
         self.assertEqual(oauth['token_type'], 'Bearer')
         self.assertEqual(oauth['expires_in'], '3600')
-        self.assertEqual(oauth['scope'], 'user-modify-playback-state ugc-image-upload user-library-modify')
+        self.assertEqual(oauth['scope'],
+                         'user-modify-playback-state ugc-image-upload user-library-modify')
         self.assertEqual(oauth['expires_at'], str(expected_expire))
-        self.assertEqual(oauth['refresh_token'], '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
+        self.assertEqual(oauth['refresh_token'],
+                         '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
         os.remove('fixtures/test-retrieve.conf')
 
     @ordered
@@ -201,9 +231,9 @@ class TestOauth2(SpotirecTestCase):
         """
         Testing get_authorize_url()
         """
-        expected = 'https://accounts.spotify.com/authorize?client_id=thisisarealclientid&response_type=code&redirect' \
-                   '_uri=https%3A%2F%2Fthis-is-a-real-redirect.uri&scope=user-modify-playback-state+ugc-image-upload' \
-                   '+user-library-modify'
+        expected = 'https://accounts.spotify.com/authorize?client_id=thisisarealclientid&' \
+                   'response_type=code&redirect_uri=https%3A%2F%2Fthis-is-a-real-redirect.uri&' \
+                   'scope=user-modify-playback-state+ugc-image-upload+user-library-modify'
         self.oauth.client_id = 'thisisarealclientid'
         self.oauth.redirect = 'https://this-is-a-real-redirect.uri'
         self.oauth.scopes = 'user-modify-playback-state ugc-image-upload user-library-modify'
@@ -234,7 +264,8 @@ class TestOauth2(SpotirecTestCase):
         Testing save_token()
         """
         self.oauth.CONF.CONFIG_FILE = 'save-test'
-        token = {'access_token': 'test', 'token_type': 'test', 'expires_in': '3600', 'scope': 'test-test'}
+        token = {'access_token': 'test', 'token_type': 'test', 'expires_in': '3600',
+                 'scope': 'test-test'}
         expires_at = str(round(time.time()) + 3600)
         self.oauth.save_token(token, refresh_token='test')
         oauth = self.oauth.CONF.get_oauth()
