@@ -2,7 +2,7 @@ import json
 import re
 import configparser
 import ast
-import log
+from spotirec import log
 from pathlib import Path
 
 
