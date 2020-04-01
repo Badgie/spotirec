@@ -1,10 +1,6 @@
 from tests.lib import ordered, mock, SpotirecTestCase, runner
-import log
 import spotirec
-import oauth2
-import recommendation
-import api
-import conf
+from spotirec import oauth2, api, conf, log, recommendation, spotirec
 import os
 import sys
 import time
@@ -83,7 +79,7 @@ class TestSpotirec(SpotirecTestCase):
         if os.path.isfile(self.test_log):
             os.remove(self.test_log)
         spotirec.input = input
-        spotirec.args = spotirec.parser.parse_args()
+        spotirec.args = spotirec.create_parser().parse_args()
 
     @ordered
     def test_index_no_code(self):

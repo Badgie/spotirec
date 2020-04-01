@@ -1,7 +1,5 @@
 from tests.lib import ordered, mock, SpotirecTestCase, runner
-import log
-import api as sp_api
-import conf
+from spotirec import api as sp_api, conf, log
 import os
 import sys
 

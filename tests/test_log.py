@@ -1,5 +1,5 @@
 from tests.lib import ordered, SpotirecTestCase, runner
-import log
+from spotirec import log
 import os
 import sys
 
