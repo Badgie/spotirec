@@ -58,12 +58,12 @@ class TestSpotirec(SpotirecTestCase):
         """
         Setup any necessary data or states before each test is run
         """
-        spotirec.CONFIG_PATH = 'fixtures/.config'
+        spotirec.CONFIG_PATH = 'tests/fixtures/.config'
         spotirec.logger.set_level(0)
         spotirec.rec = recommendation.Recommendation()
         spotirec.rec.set_logger(spotirec.logger)
-        spotirec.logger.LOG_PATH = 'fixtures'
-        spotirec.conf.CONFIG_DIR = 'fixtures'
+        spotirec.logger.LOG_PATH = 'tests/fixtures'
+        spotirec.conf.CONFIG_DIR = 'tests/fixtures'
         spotirec.conf.CONFIG_FILE = 'test.conf'
         spotirec.sp_oauth.OAUTH_TOKEN_URL = '/api/token'
         spotirec.sp_oauth.OAUTH_AUTH_URL = '/authorize'
@@ -72,7 +72,7 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.sp_oauth.redirect = 'https://real.url'
         spotirec.sp_oauth.scopes = 'scope'
         spotirec.api.URL_BASE = ''
-        self.test_log = 'fixtures/test-log'
+        self.test_log = 'tests/fixtures/test-log'
         sys.stdout = open(self.test_log, 'w')
 
     def tearDown(self):
@@ -115,7 +115,7 @@ class TestSpotirec(SpotirecTestCase):
         self.assertEqual(oauth['scope'], 'user-modify-playback-state ugc-image-upload user-library-modify')
         self.assertEqual(oauth['expires_at'], expected_expire)
         self.assertEqual(oauth['refresh_token'], '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
-        os.remove('fixtures/test-index.conf')
+        os.remove('tests/fixtures/test-index.conf')
 
     @ordered
     def test_get_token(self):
@@ -140,7 +140,7 @@ class TestSpotirec(SpotirecTestCase):
         self.assertRaises(SystemExit, spotirec.get_token)
         self.assertEqual(self.test, 'success')
         spotirec.authorize = auth_save
-        with open('fixtures/empty.conf', 'w') as f:
+        with open('tests/fixtures/empty.conf', 'w') as f:
             f.write('')
 
     @ordered
@@ -296,8 +296,8 @@ class TestSpotirec(SpotirecTestCase):
         with open(self.test_log, 'r') as f:
             stdout = f.read()
             self.assertIn(expected, stdout)
-            crash_file = stdout.split('/')[1].strip('\n')
-            os.remove(f'fixtures/{crash_file}')
+            crash_file = stdout.split('/')[2].strip('\n')
+            os.remove(f'tests/fixtures/{crash_file}')
 
     @ordered
     def test_check_tune_validity_fail_attribute(self):
@@ -312,8 +312,8 @@ class TestSpotirec(SpotirecTestCase):
         with open(self.test_log, 'r') as f:
             stdout = f.read()
             self.assertIn(expected, stdout)
-            crash_file = stdout.split('/')[1].strip('\n')
-            os.remove(f'fixtures/{crash_file}')
+            crash_file = stdout.split('/')[2].strip('\n')
+            os.remove(f'tests/fixtures/{crash_file}')
 
     @ordered
     def test_check_tune_validity_fail_value_type(self):
@@ -328,8 +328,8 @@ class TestSpotirec(SpotirecTestCase):
         with open(self.test_log, 'r') as f:
             stdout = f.read()
             self.assertIn(expected, stdout)
-            crash_file = stdout.split('/')[1].strip('\n')
-            os.remove(f'fixtures/{crash_file}')
+            crash_file = stdout.split('/')[2].strip('\n')
+            os.remove(f'tests/fixtures/{crash_file}')
 
     @ordered
     def test_check_tune_validity_fail_value_range(self):
@@ -344,8 +344,8 @@ class TestSpotirec(SpotirecTestCase):
         with open(self.test_log, 'r') as f:
             stdout = f.read()
             self.assertIn(expected, stdout)
-            crash_file = stdout.split('/')[1].strip('\n')
-            os.remove(f'fixtures/{crash_file}')
+            crash_file = stdout.split('/')[2].strip('\n')
+            os.remove(f'tests/fixtures/{crash_file}')
 
     @ordered
     def test_check_tune_validity_warn_value_range(self):
@@ -375,8 +375,8 @@ class TestSpotirec(SpotirecTestCase):
         with open(self.test_log, 'r') as f:
             stdout = f.read()
             self.assertIn(expected, stdout)
-            crash_file = stdout.split('/')[1].strip('\n')
-            os.remove(f'fixtures/{crash_file}')
+            crash_file = stdout.split('/')[2].strip('\n')
+            os.remove(f'tests/fixtures/{crash_file}')
 
     @ordered
     def test_parse_seed_info_error_list(self):
@@ -391,8 +391,8 @@ class TestSpotirec(SpotirecTestCase):
         with open(self.test_log, 'r') as f:
             stdout = f.read()
             self.assertIn(expected, stdout)
-            crash_file = stdout.split('/')[1].strip('\n')
-            os.remove(f'fixtures/{crash_file}')
+            crash_file = stdout.split('/')[2].strip('\n')
+            os.remove(f'tests/fixtures/{crash_file}')
 
     @ordered
     def test_parse_seed_info_genres_str(self):
@@ -590,8 +590,8 @@ class TestSpotirec(SpotirecTestCase):
         sys.stdout = self.stdout_preserve
         with open(self.test_log, 'r') as f:
             stdout = f.read()
-            crash_file = stdout.split('/')[1].strip('\n')
-            os.remove(f'fixtures/{crash_file}')
+            crash_file = stdout.split('/')[2].strip('\n')
+            os.remove(f'tests/fixtures/{crash_file}')
 
     @ordered
     def test_remove_presets(self):
@@ -633,8 +633,8 @@ class TestSpotirec(SpotirecTestCase):
         sys.stdout = self.stdout_preserve
         with open(self.test_log, 'r') as f:
             stdout = f.read()
-            crash_file = stdout.split('/')[1].strip('\n')
-            os.remove(f'fixtures/{crash_file}')
+            crash_file = stdout.split('/')[2].strip('\n')
+            os.remove(f'tests/fixtures/{crash_file}')
 
     @ordered
     def test_get_device_success(self):
@@ -926,8 +926,8 @@ class TestSpotirec(SpotirecTestCase):
         with open(self.test_log, 'r') as f:
             stdout = f.read()
             self.assertIn(expected, stdout)
-            crash_file = stdout.split('/')[1].strip('\n')
-            os.remove(f'fixtures/{crash_file}')
+            crash_file = stdout.split('/')[2].strip('\n')
+            os.remove(f'tests/fixtures/{crash_file}')
 
     @ordered
     def test_print_track_features(self):
@@ -1028,8 +1028,8 @@ class TestSpotirec(SpotirecTestCase):
         with open(self.test_log, 'r') as f:
             stdout = f.read()
             self.assertIn(expected, stdout)
-            crash_file = stdout.split('/')[1].strip('\n')
-            os.remove(f'fixtures/{crash_file}')
+            crash_file = stdout.split('/')[2].strip('\n')
+            os.remove(f'tests/fixtures/{crash_file}')
 
     @ordered
     def test_print_tuning_options_empty(self):
@@ -1037,7 +1037,7 @@ class TestSpotirec(SpotirecTestCase):
         Testing print_tuning_options() empty file
         """
         expected = 'tuning options file is empty'
-        spotirec.TUNING_FILE = 'fixtures/tuning-opts-empty'
+        spotirec.TUNING_FILE = 'tests/fixtures/tuning-opts-empty'
         spotirec.logger.set_level(log.INFO)
         self.assertRaises(SystemExit, spotirec.print_tuning_options)
         sys.stdout.close()
@@ -1045,8 +1045,8 @@ class TestSpotirec(SpotirecTestCase):
         with open(self.test_log, 'r') as f:
             stdout = f.read()
             self.assertIn(expected, stdout)
-            crash_file = stdout.split('/')[1].strip('\n')
-            os.remove(f'fixtures/{crash_file}')
+            crash_file = stdout.split('/')[2].strip('\n')
+            os.remove(f'tests/fixtures/{crash_file}')
 
     @ordered
     def test_print_tuning_options_success(self):
@@ -1109,8 +1109,8 @@ class TestSpotirec(SpotirecTestCase):
         with open(self.test_log, 'r') as f:
             stdout = f.read()
             self.assertIn(expected, stdout)
-            crash_file = stdout.split('/')[1].strip('\n')
-            os.remove(f'fixtures/{crash_file}')
+            crash_file = stdout.split('/')[2].strip('\n')
+            os.remove(f'tests/fixtures/{crash_file}')
         spotirec.filter_recommendations = filter_func
 
     @ordered
@@ -1634,8 +1634,8 @@ class TestSpotirec(SpotirecTestCase):
         sys.stdout = self.stdout_preserve
         with open(self.test_log, 'r') as f:
             stdout = f.read()
-            crash_file = stdout.split('/')[1].strip('\n')
-            os.remove(f'fixtures/{crash_file}')
+            crash_file = stdout.split('/')[2].strip('\n')
+            os.remove(f'tests/fixtures/{crash_file}')
 
     @ordered
     def test_args_c(self):
@@ -1908,7 +1908,7 @@ class TestSpotirec(SpotirecTestCase):
         class MockConfig:
             def Config(self):
                 config = conf.Config()
-                config.CONFIG_DIR = 'fixtures'
+                config.CONFIG_DIR = 'tests/fixtures'
                 config.CONFIG_FILE = 'test.conf'
                 return config
 

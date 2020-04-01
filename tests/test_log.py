@@ -32,15 +32,15 @@ class TestLog(SpotirecTestCase):
         """
         Setup any necessary data or states before each test is run
         """
-        self.logger.LOG_PATH = 'fixtures/logs'
+        self.logger.LOG_PATH = 'tests/fixtures/logs'
         self.logger.set_level(50)
-        sys.stdout = open('fixtures/log-test', 'w')
+        sys.stdout = open('tests/fixtures/log-test', 'w')
 
     def tearDown(self):
         """
         Clear or resolve any necessary data or states after each test is run
         """
-        os.remove('fixtures/log-test')
+        os.remove('tests/fixtures/log-test')
         sys.stdout = self.stdout_preserve
 
     @ordered
@@ -70,8 +70,8 @@ class TestLog(SpotirecTestCase):
         self.logger.log_file()
         sys.stdout.close()
         sys.stdout = self.stdout_preserve
-        with open('fixtures/log-test', 'r') as f:
-            file = f.read().split('/')[2].strip('\n')
+        with open('tests/fixtures/log-test', 'r') as f:
+            file = f.read().split('/')[3].strip('\n')
             with open(f'{self.logger.LOG_PATH}/{file}') as f1:
                 stdout = f1.read()
                 self.assertIn('test_log', stdout)
@@ -87,8 +87,8 @@ class TestLog(SpotirecTestCase):
         self.logger.log_file(crash=True)
         sys.stdout.close()
         sys.stdout = self.stdout_preserve
-        with open('fixtures/log-test', 'r') as f:
-            file = f.read().split('/')[2].strip('\n')
+        with open('tests/fixtures/log-test', 'r') as f:
+            file = f.read().split('/')[3].strip('\n')
             with open(f'{self.logger.LOG_PATH}/{file}') as f1:
                 stdout = f1.read()
                 self.assertIn('test_log', stdout)
@@ -105,7 +105,7 @@ class TestLog(SpotirecTestCase):
         self.assertIn(s, self.logger.LOG)
         sys.stdout.close()
         sys.stdout = self.stdout_preserve
-        with open('fixtures/log-test', 'r') as f:
+        with open('tests/fixtures/log-test', 'r') as f:
             stdout = f.read()
             self.assertIn('ERROR', stdout)
             self.assertIn('test_error', stdout)
@@ -120,7 +120,7 @@ class TestLog(SpotirecTestCase):
         self.assertIn(s, self.logger.LOG)
         sys.stdout.close()
         sys.stdout = self.stdout_preserve
-        with open('fixtures/log-test', 'r') as f:
+        with open('tests/fixtures/log-test', 'r') as f:
             stdout = f.read()
             self.assertIn('WARNING', stdout)
             self.assertIn('test_warning', stdout)
@@ -135,7 +135,7 @@ class TestLog(SpotirecTestCase):
         self.assertIn(s, self.logger.LOG)
         sys.stdout.close()
         sys.stdout = self.stdout_preserve
-        with open('fixtures/log-test', 'r') as f:
+        with open('tests/fixtures/log-test', 'r') as f:
             stdout = f.read()
             self.assertIn('INFO', stdout)
             self.assertIn('test_info', stdout)
@@ -150,7 +150,7 @@ class TestLog(SpotirecTestCase):
         self.assertIn(s, self.logger.LOG)
         sys.stdout.close()
         sys.stdout = self.stdout_preserve
-        with open('fixtures/log-test', 'r') as f:
+        with open('tests/fixtures/log-test', 'r') as f:
             stdout = f.read()
             self.assertIn('INFO', stdout)
             self.assertIn('test_verbose', stdout)
@@ -165,7 +165,7 @@ class TestLog(SpotirecTestCase):
         self.assertIn(s, self.logger.LOG)
         sys.stdout.close()
         sys.stdout = self.stdout_preserve
-        with open('fixtures/log-test', 'r') as f:
+        with open('tests/fixtures/log-test', 'r') as f:
             stdout = f.read()
             self.assertIn('DEBUG', stdout)
             self.assertIn('test_debug', stdout)
