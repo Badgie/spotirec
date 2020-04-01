@@ -1,6 +1,7 @@
 from tests.lib import ordered, mock, SpotirecTestCase, runner
 import spotirec
 from spotirec import oauth2, api, conf, log, recommendation, spotirec
+import _io
 import os
 import sys
 import time
@@ -69,12 +70,14 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.sp_oauth.scopes = 'scope'
         spotirec.api.URL_BASE = ''
         self.test_log = 'fixtures/test-log'
-        sys.stdout = open(self.test_log, 'w')
+        self.log_file = open(self.test_log, 'w')
+        sys.stdout = self.log_file
 
     def tearDown(self):
         """
         Clear or resolve any necessary data or states after each test is run
         """
+        self.log_file.close()
         sys.stdout = self.stdout_preserve
         if os.path.isfile(self.test_log):
             os.remove(self.test_log)

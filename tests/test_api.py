@@ -48,12 +48,14 @@ class TestAPI(SpotirecTestCase):
         Setup any necessary data or states before each test is run
         """
         self.logger.set_level(log.INFO)
-        sys.stdout = open(self.test_log, 'w')
+        self.log_file = open(self.test_log, 'w')
+        sys.stdout = self.log_file
 
     def tearDown(self):
         """
         Clear or resolve any necessary data or states after each test is run
         """
+        self.log_file.close()
         sys.stdout = self.stdout_preserve
         os.remove(self.test_log)
         self.api.set_conf(self.config)
