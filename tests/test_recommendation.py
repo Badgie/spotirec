@@ -115,17 +115,17 @@ class TestRecommendation(SpotirecTestCase):
         self.rec.add_seed_info(data_dict=self.test_artist)
         self.assertEqual(self.rec.seed_info, self.test_seed)
         self.rec.LOGGER.set_level(50)
-        sys.stdout = open('fixtures/select', 'w')
+        sys.stdout = open('tests/fixtures/select', 'w')
         self.rec.print_selection()
         sys.stdout.close()
         sys.stdout = sys.__stdout__
-        with open('fixtures/select', 'r') as f:
+        with open('tests/fixtures/select', 'r') as f:
             stdout = f.readlines()
             self.assertIn('Selection:', stdout[0])
             self.assertIn('Genre: metal', stdout[1])
             self.assertIn('Track: test - frankie', stdout[2])
             self.assertIn('Artist: frankie', stdout[3])
-        os.remove('fixtures/select')
+        os.remove('tests/fixtures/select')
 
     @ordered
     def test_create_seed_genres(self):

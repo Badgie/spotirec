@@ -45,7 +45,7 @@ class TestOauth2(SpotirecTestCase):
         self.oauth.client_secret = 'client_secret'
         self.oauth.scopes = 'user-modify-playback-state ugc-image-upload user-library-modify'
         self.logger.set_level(0)
-        self.conf.CONFIG_DIR = 'fixtures/'
+        self.conf.CONFIG_DIR = 'tests/fixtures/'
         self.conf.CONFIG_FILE = 'test.conf'
 
     @ordered
@@ -100,7 +100,7 @@ class TestOauth2(SpotirecTestCase):
         self.conf.CONFIG_FILE = 'empty.conf'
         token = self.oauth.get_credentials()
         self.assertIsNone(token)
-        with open(f'fixtures/empty.conf', 'w') as f:
+        with open(f'tests/fixtures/empty.conf', 'w') as f:
             f.write('')
 
     @ordered
@@ -125,7 +125,7 @@ class TestOauth2(SpotirecTestCase):
         self.assertEqual(oauth['scope'], 'user-modify-playback-state ugc-image-upload user-library-modify')
         self.assertEqual(oauth['expires_at'], str(expected_expire))
         self.assertEqual(oauth['refresh_token'], '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
-        os.remove('fixtures/test-refresh.conf')
+        os.remove('tests/fixtures/test-refresh.conf')
 
     @ordered
     def test_refresh_token_no_refresh(self):
@@ -149,7 +149,7 @@ class TestOauth2(SpotirecTestCase):
         self.assertEqual(oauth['scope'], 'user-modify-playback-state ugc-image-upload user-library-modify')
         self.assertEqual(oauth['expires_at'], str(expected_expire))
         self.assertEqual(oauth['refresh_token'], '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
-        os.remove('fixtures/test-refresh.conf')
+        os.remove('tests/fixtures/test-refresh.conf')
 
     @ordered
     def test_is_token_expired(self):
@@ -194,7 +194,7 @@ class TestOauth2(SpotirecTestCase):
         self.assertEqual(oauth['scope'], 'user-modify-playback-state ugc-image-upload user-library-modify')
         self.assertEqual(oauth['expires_at'], str(expected_expire))
         self.assertEqual(oauth['refresh_token'], '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
-        os.remove('fixtures/test-retrieve.conf')
+        os.remove('tests/fixtures/test-retrieve.conf')
 
     @ordered
     def test_get_authorize_url(self):
@@ -244,7 +244,7 @@ class TestOauth2(SpotirecTestCase):
         self.assertEqual(oauth['scope'], 'test-test')
         self.assertEqual(oauth['expires_at'], expires_at)
         self.assertEqual(oauth['refresh_token'], 'test')
-        os.remove('fixtures/save-test')
+        os.remove('tests/fixtures/save-test')
 
     @ordered
     def test_set_api(self):

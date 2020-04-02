@@ -34,14 +34,14 @@ class TestConf(SpotirecTestCase):
         Setup any necessary data or states before each test is run
         """
         self.logger.set_level(0)
-        self.conf.CONFIG_DIR = 'fixtures/'
+        self.conf.CONFIG_DIR = 'tests/fixtures/'
         self.conf.CONFIG_FILE = 'test.conf'
 
     def tearDown(self) -> None:
         """
         Clear or resolve any necessary data or states after each test is run
         """
-        with open('fixtures/empty.conf', 'w') as f:
+        with open('tests/fixtures/empty.conf', 'w') as f:
             f.write('')
 
     @ordered
@@ -62,7 +62,7 @@ class TestConf(SpotirecTestCase):
         self.conf.CONFIG_FILE = 'this-does-not-exist.conf'
         c = self.conf.open_config()
         self.assertEqual(c.sections(), self.sections)
-        os.remove('fixtures/this-does-not-exist.conf')
+        os.remove('tests/fixtures/this-does-not-exist.conf')
 
     @ordered
     def test_convert_or_create_config(self):
@@ -81,7 +81,7 @@ class TestConf(SpotirecTestCase):
         self.assertNotEqual(c['devices'], {})
         self.assertNotEqual(c['playlists'], {})
         self.conf.CONFIG_FILE = 'test.conf'
-        os.remove('fixtures/test-convert.conf')
+        os.remove('tests/fixtures/test-convert.conf')
 
     @ordered
     def test_save_config(self):
