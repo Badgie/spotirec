@@ -20,7 +20,7 @@ class TestLog(SpotirecTestCase):
             print(f'file:/{__file__}\n')
         cls.logger = log.Log()
         cls.stdout_preserve = sys.__stdout__
-        cls.test_log = 'fixtures/test-log'
+        cls.test_log = 'tests/fixtures/test-log'
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -34,7 +34,7 @@ class TestLog(SpotirecTestCase):
         """
         Setup any necessary data or states before each test is run
         """
-        self.logger.LOG_PATH = 'fixtures/logs'
+        self.logger.LOG_PATH = 'tests/fixtures/logs'
         self.logger.set_level(50)
         self.log_file = open(self.test_log, 'w')
         sys.stdout = self.log_file
@@ -75,7 +75,7 @@ class TestLog(SpotirecTestCase):
         sys.stdout.close()
         sys.stdout = self.stdout_preserve
         with open(self.test_log, 'r') as f:
-            file = f.read().split('/')[2].strip('\n')
+            file = f.read().split('/')[3].strip('\n')
             with open(f'{self.logger.LOG_PATH}/{file}') as f1:
                 stdout = f1.read()
                 self.assertIn('test_log', stdout)
@@ -92,7 +92,7 @@ class TestLog(SpotirecTestCase):
         sys.stdout.close()
         sys.stdout = self.stdout_preserve
         with open(self.test_log, 'r') as f:
-            file = f.read().split('/')[2].strip('\n')
+            file = f.read().split('/')[3].strip('\n')
             with open(f'{self.logger.LOG_PATH}/{file}') as f1:
                 stdout = f1.read()
                 self.assertIn('test_log', stdout)

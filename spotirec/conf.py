@@ -190,8 +190,7 @@ class Config:
         :return:
         """
         c = self.open_config()
-        success = c.remove_option('presets', iden)
-        if success:
+        if c.remove_option('presets', iden):
             self.LOGGER.info(f'deleted preset {iden} from config')
             self.save_config(c)
         else:
@@ -239,8 +238,7 @@ class Config:
         :return:
         """
         c = self.open_config()
-        success = c.remove_option('devices', iden)
-        if success:
+        if c.remove_option('devices', iden):
             self.LOGGER.info(f'deleted device {iden} from config')
             self.save_config(c)
         else:
@@ -288,8 +286,7 @@ class Config:
         :return:
         """
         c = self.open_config()
-        success = c.remove_option('playlists', iden)
-        if success:
+        if c.remove_option('playlists', iden):
             self.LOGGER.info(f'deleted playlist {iden} from config')
             self.save_config(c)
         else:

@@ -21,13 +21,13 @@ class TestAPI(SpotirecTestCase):
         cls.stdout_preserve = sys.__stdout__
         cls.api = sp_api.API()
         cls.api.URL_BASE = ''
-        cls.test_log = 'fixtures/test-api'
+        cls.test_log = 'tests/fixtures/test-api'
         sp_api.requests = mock.MockAPI()
         cls.logger = log.Log()
-        cls.logger.LOG_PATH = 'fixtures'
+        cls.logger.LOG_PATH = 'tests/fixtures'
         cls.api.set_logger(cls.logger)
         cls.config = conf.Config()
-        cls.config.CONFIG_DIR = 'fixtures'
+        cls.config.CONFIG_DIR = 'tests/fixtures'
         cls.config.CONFIG_FILE = 'test.conf'
         cls.config.set_logger(cls.logger)
         cls.api.set_conf(cls.config)
@@ -99,8 +99,8 @@ class TestAPI(SpotirecTestCase):
         with open(self.test_log, 'r') as f:
             stdout = f.read()
             self.assertIn(expected, stdout)
-            crash_file = stdout.split('/')[1].strip('\n')
-            os.remove(f'fixtures/{crash_file}')
+            crash_file = stdout.split('/')[2].strip('\n')
+            os.remove(f'tests/fixtures/{crash_file}')
 
     @ordered
     def test_error_handle_401(self):
@@ -118,8 +118,8 @@ class TestAPI(SpotirecTestCase):
         with open(self.test_log, 'r') as f:
             stdout = f.read()
             self.assertIn(expected, stdout)
-            crash_file = stdout.split('/')[1].strip('\n')
-            os.remove(f'fixtures/{crash_file}')
+            crash_file = stdout.split('/')[2].strip('\n')
+            os.remove(f'tests/fixtures/{crash_file}')
 
     @ordered
     def test_get_top_list_artists(self):

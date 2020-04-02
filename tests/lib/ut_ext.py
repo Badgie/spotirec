@@ -7,7 +7,7 @@ import time
 
 class SpotirecTestCase(TestCase):
     """
-    Class for customizing the TestCase class. Should be passed in all GIRAF test classes.
+    Class for customizing the TestCase class. Should be passed in all Spotirec test classes.
     """
 
     @classmethod
