@@ -23,6 +23,7 @@ VERSION = '1.2'
 
 PORT = 8080
 CONFIG_PATH = f'{Path.home()}/.config/spotirec'
+TUNING_FILE = f'{Path.home()}/.config/spotirec/tuning-opts'
 
 TUNE_PREFIX = ['max', 'min', 'target']
 TUNE_ATTR = {'int': {'duration_ms': {'min': 0, 'max': sys.maxsize * 2 + 1, 'rec_min': 0, 'rec_max': 3600000},
@@ -43,94 +44,101 @@ URI_RE = r'spotify:(artist|track):[a-zA-Z0-9]+'
 PLAYLIST_URI_RE = r'spotify:playlist:[a-zA-Z0-9]+'
 TRACK_URI_RE = r'spotify:track:[a-zA-Z0-9]+'
 
-# Argument parser
-parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, prog='spotirec',
-                                 epilog="""
-passing no recommendation scheme argument defaults to basing recommendations off your top 5 valid seed genres
-spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for details read LICENSE""")
-parser.add_argument('n', nargs='?', type=int, const=5, default=5,
-                    help='amount of seeds to use on no-arg recommendations as an integer - note that this must appear '
-                         'as the first argument if used and can only be used with no-arg')
 
-# Verbosity
-verbosity_group = parser.add_argument_group(title='Verbosity switches')
-mutex_verbosity = verbosity_group.add_mutually_exclusive_group()
-mutex_verbosity.add_argument('-v', '--verbose', action='store_true', help='verbose printing')
-mutex_verbosity.add_argument('-q', '--quiet', action='store_true', help='quiet printing')
-mutex_verbosity.add_argument('--debug', action='store_true', help='print for debugging purposes')
-verbosity_group.add_argument('--suppress-warnings', action='store_true', help='suppress warning messages')
-verbosity_group.add_argument('--log', action='store_true', help='log all output, including those above logging level, '
-                                                                'to file')
+def create_parser() -> argparse.ArgumentParser:
+    # Argument parser
+    arg_parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, prog='spotirec',
+                                         epilog="""
+    passing no recommendation scheme argument defaults to basing recommendations off your top 5 valid seed genres
+    spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for details read LICENSE""")
+    arg_parser.add_argument('n', nargs='?', type=int, const=5, default=5,
+                            help='amount of seeds to use on no-arg recommendations as an integer - note that this must '
+                            'appear as the first argument if used and can only be used with no-arg')
 
-# Recommendation schemes
-rec_scheme_group = parser.add_argument_group(title='Recommendation schemes')
-# Create mutually exclusive group for recommendation types to ensure only one is given
-mutex_group = rec_scheme_group.add_mutually_exclusive_group()
-mutex_group.add_argument('-a', metavar='SEED_SIZE', nargs='?', type=int, const=5, choices=range(1, 6),
-                         help='base recommendations on your top artists')
-mutex_group.add_argument('-t', metavar='SEED_SIZE', nargs='?', type=int, const=5, choices=range(1, 6),
-                         help='base recommendations on your top tracks')
-mutex_group.add_argument('-ac', action='store_true', help='base recommendations on custom top artists')
-mutex_group.add_argument('-tc', action='store_true', help='base recommendations on custom top tracks')
-mutex_group.add_argument('-gc', action='store_true', help='base recommendations on custom top valid seed genres')
-mutex_group.add_argument('-gcs', action='store_true', help='base recommendations on custom seed genres')
-mutex_group.add_argument('-c', action='store_true', help='base recommendations on a custom seed')
-rec_scheme_group.add_argument('--preserve', action='store_true', help='preserve previous playlist and create new')
+    # Verbosity
+    verbosity_group = arg_parser.add_argument_group(title='Verbosity switches')
+    mutex_verbosity = verbosity_group.add_mutually_exclusive_group()
+    mutex_verbosity.add_argument('-v', '--verbose', action='store_true', help='verbose printing')
+    mutex_verbosity.add_argument('-q', '--quiet', action='store_true', help='quiet printing')
+    mutex_verbosity.add_argument('--debug', action='store_true', help='print for debugging purposes')
+    verbosity_group.add_argument('--suppress-warnings', action='store_true', help='suppress warning messages')
+    verbosity_group.add_argument('--log', action='store_true', help='log all output, including those above logging '
+                                                                    'level, to file')
 
-# Saving arguments
-save_group = parser.add_argument_group(title='Saving arguments')
-# You should only be able to save or remove the current track at once, not both
-save_mutex_group = save_group.add_mutually_exclusive_group()
-add_mutex_group = save_group.add_mutually_exclusive_group()
-save_mutex_group.add_argument('-s', action='store_true', help='like currently playing track')
-save_mutex_group.add_argument('-sr', action='store_true', help='remove currently playing track from liked tracks')
-add_mutex_group.add_argument('--add-to', metavar='[PLAYLIST | URI]', nargs=1, type=str,
-                             help='add currently playing track to input playlist')
-add_mutex_group.add_argument('--remove-from', metavar='[PLAYLIST | URI]', nargs=1, type=str,
-                             help='remove currently playing track from input playlist')
-save_group.add_argument('--save-playlist', action='store_true', help='save a playlist')
-save_group.add_argument('--remove-playlists', metavar='ID', nargs='+', type=str, help='remove playlist(s)')
-save_group.add_argument('--save-device', action='store_true', help='save a playback device')
-save_group.add_argument('--remove-devices', metavar='ID', nargs='+', type=str, help='remove playback device(s)')
-save_group.add_argument('--remove-presets', metavar='ID', nargs='+', type=str, help='remove preset(s)')
+    # Recommendation schemes
+    rec_scheme_group = arg_parser.add_argument_group(title='Recommendation schemes')
+    # Create mutually exclusive group for recommendation types to ensure only one is given
+    mutex_group = rec_scheme_group.add_mutually_exclusive_group()
+    mutex_group.add_argument('-a', metavar='SEED_SIZE', nargs='?', type=int, const=5, choices=range(1, 6),
+                             help='base recommendations on your top artists')
+    mutex_group.add_argument('-t', metavar='SEED_SIZE', nargs='?', type=int, const=5, choices=range(1, 6),
+                             help='base recommendations on your top tracks')
+    mutex_group.add_argument('-ac', action='store_true', help='base recommendations on custom top artists')
+    mutex_group.add_argument('-tc', action='store_true', help='base recommendations on custom top tracks')
+    mutex_group.add_argument('-gc', action='store_true', help='base recommendations on custom top valid seed genres')
+    mutex_group.add_argument('-gcs', action='store_true', help='base recommendations on custom seed genres')
+    mutex_group.add_argument('-c', action='store_true', help='base recommendations on a custom seed')
+    rec_scheme_group.add_argument('--preserve', action='store_true', help='preserve previous playlist and create new')
 
-# Recommendation modifications
-rec_options_group = parser.add_argument_group(title='Recommendation options',
-                                              description='These may only appear when creating a playlist')
-rec_options_group.add_argument('-l', metavar='LIMIT', nargs=1, type=int, choices=range(1, 101),
-                               help='amount of tracks to add (default: 20, max: 100)')
-rec_options_group.add_argument('--tune', metavar='ATTR', nargs='+', type=str, help='specify tunable attribute(s)')
-rec_options_group.add_argument('--play', metavar='DEVICE', nargs=1, help='select playback device to start playing on')
-rec_options_group.add_argument('--load-preset', metavar='ID', nargs=1, type=str, help='load and use preset')
-rec_options_group.add_argument('--save-preset', metavar='ID', nargs=1, type=str, help='save options as preset')
+    # Saving arguments
+    save_group = arg_parser.add_argument_group(title='Saving arguments')
+    # You should only be able to save or remove the current track at once, not both
+    save_mutex_group = save_group.add_mutually_exclusive_group()
+    add_mutex_group = save_group.add_mutually_exclusive_group()
+    save_mutex_group.add_argument('-s', action='store_true', help='like currently playing track')
+    save_mutex_group.add_argument('-sr', action='store_true', help='remove currently playing track from liked tracks')
+    add_mutex_group.add_argument('--add-to', metavar='[PLAYLIST | URI]', nargs=1, type=str,
+                                 help='add currently playing track to input playlist')
+    add_mutex_group.add_argument('--remove-from', metavar='[PLAYLIST | URI]', nargs=1, type=str,
+                                 help='remove currently playing track from input playlist')
+    save_group.add_argument('--save-playlist', action='store_true', help='save a playlist')
+    save_group.add_argument('--remove-playlists', metavar='ID', nargs='+', type=str, help='remove playlist(s)')
+    save_group.add_argument('--save-device', action='store_true', help='save a playback device')
+    save_group.add_argument('--remove-devices', metavar='ID', nargs='+', type=str, help='remove playback device(s)')
+    save_group.add_argument('--remove-presets', metavar='ID', nargs='+', type=str, help='remove preset(s)')
 
-# Blacklisting
-blacklist_group = parser.add_argument_group(title='Blacklisting')
-blacklist_group.add_argument('-b', metavar='URI', nargs='+', type=str, help='blacklist track(s) and/or artist(s)')
-blacklist_group.add_argument('-br', metavar='URI', nargs='+', type=str,
-                             help='remove track(s) and/or artists(s) from blacklist')
-blacklist_group.add_argument('-bc', metavar='artist | track', nargs=1, choices=['artist', 'track'],
-                             help='blacklist currently playing artist(s) or track')
+    # Recommendation modifications
+    rec_options_group = arg_parser.add_argument_group(title='Recommendation options',
+                                                      description='These may only appear when creating a playlist')
+    rec_options_group.add_argument('-l', metavar='LIMIT', nargs=1, type=int, choices=range(1, 101),
+                                   help='amount of tracks to add (default: 20, max: 100)')
+    rec_options_group.add_argument('--tune', metavar='ATTR', nargs='+', type=str, help='specify tunable attribute(s)')
+    rec_options_group.add_argument('--play', metavar='DEVICE', nargs=1, help='select playback device to start playing '
+                                                                             'on')
+    rec_options_group.add_argument('--load-preset', metavar='ID', nargs=1, type=str, help='load and use preset')
+    rec_options_group.add_argument('--save-preset', metavar='ID', nargs=1, type=str, help='save options as preset')
 
-# Playback
-playback_group = parser.add_argument_group(title='Playback')
-playback_group.add_argument('--transfer-playback', metavar='ID', nargs=1, type=str,
-                            help='transfer playback to input device ID')
+    # Blacklisting
+    blacklist_group = arg_parser.add_argument_group(title='Blacklisting')
+    blacklist_group.add_argument('-b', metavar='URI', nargs='+', type=str, help='blacklist track(s) and/or artist(s)')
+    blacklist_group.add_argument('-br', metavar='URI', nargs='+', type=str,
+                                 help='remove track(s) and/or artists(s) from blacklist')
+    blacklist_group.add_argument('-bc', metavar='artist | track', nargs=1, choices=['artist', 'track'],
+                                 help='blacklist currently playing artist(s) or track')
 
-# Printing
-print_group = parser.add_argument_group(title='Printing')
-print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
-                         choices=['artists', 'tracks', 'genres', 'genre-seeds', 'devices', 'blacklist', 'presets',
-                                  'playlists', 'tuning'],
-                         help='print a list of genre seeds, or your top artists, tracks, or genres, where '
-                              'TYPE=[artists|tracks|genres|genre-seeds|devices|blacklist|presets|playlists|tuning]')
-print_group.add_argument('--version', action='version', version=f'%(prog)s v{VERSION}')
-print_group.add_argument('--track-features', metavar='[URI | current]', nargs=1, type=str,
-                         help='print track features of URI or currently playing track')
+    # Playback
+    playback_group = arg_parser.add_argument_group(title='Playback')
+    playback_group.add_argument('--transfer-playback', metavar='ID', nargs=1, type=str,
+                                help='transfer playback to input device ID')
 
-# Ensure config dir exists
-if not os.path.isdir(CONFIG_PATH):
-    os.makedirs(CONFIG_PATH)
+    # Printing
+    print_group = arg_parser.add_argument_group(title='Printing')
+    print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
+                             choices=['artists', 'tracks', 'genres', 'genre-seeds', 'devices', 'blacklist', 'presets',
+                                      'playlists', 'tuning'],
+                             help='print a list of genre seeds, or your top artists, tracks, or genres, where '
+                                  'TYPE=[artists|tracks|genres|genre-seeds|devices|blacklist|presets|playlists|tuning]')
+    print_group.add_argument('--version', action='version', version=f'%(prog)s v{VERSION}')
+    print_group.add_argument('--track-features', metavar='[URI | current]', nargs=1, type=str,
+                             help='print track features of URI or currently playing track')
+
+    return arg_parser
+
+
+def setup_config_dir():
+    # Ensure config dir exists
+    if not os.path.isdir(CONFIG_PATH):
+        os.makedirs(CONFIG_PATH)
 
 
 def authorize():
@@ -296,13 +304,13 @@ def check_tune_validity(tune: str):
     # Check prefix validity
     if prefix not in TUNE_PREFIX:
         logger.error(f'tune prefix \"{tune.split("_", 1)[0]}\" is malformed')
-        logger.verbose(TUNE_PREFIX)
+        logger.verbose(str(TUNE_PREFIX))
         logger.log_file(crash=True)
         exit(1)
     # Check attribute validity
     if key not in list(TUNE_ATTR['int'].keys()) + list(TUNE_ATTR['float'].keys()):
         logger.error(f'tune attribute \"{tune.split("=")[0].split("_", 1)[1]}\" is malformed')
-        logger.verbose(list(TUNE_ATTR['int'].keys()) + list(TUNE_ATTR['float'].keys()))
+        logger.verbose(str(list(TUNE_ATTR['int'].keys()) + list(TUNE_ATTR['float'].keys())))
         logger.log_file(crash=True)
         exit(1)
     # Try parsing value to number
@@ -464,7 +472,7 @@ def load_preset(name: str) -> recommendation.Recommendation:
     presets = conf.get_presets()
     try:
         logger.verbose('getting preset')
-        contents = presets.get(name)
+        contents = presets[name]
     except KeyError:
         logger.error(f'could not find preset \"{name}\", check spelling and try again')
         logger.log_file(crash=True)
@@ -508,13 +516,12 @@ def print_presets():
 
 def get_device(device_name: str) -> dict:
     """
-    Set playback device. Prompt from available devices if none exist.
-    Print saved devices if it does not exist.
+    Get device from config
     :param device_name: name of playback device
     """
     devices = conf.get_devices()
     try:
-        return devices.get(device_name)
+        return devices[device_name]
     except KeyError:
         logger.error(f'device {device_name} does not exist in config')
         logger.log_file(crash=True)
@@ -785,14 +792,14 @@ def print_tuning_options():
     Prints available tuning options
     """
     try:
-        with open(f'{Path.home()}/.config/spotirec/tuning-opts', 'r') as file:
+        with open(TUNING_FILE, 'r') as file:
             tuning_opts = file.readlines()
     except FileNotFoundError:
-        logger.error('could not find tuning options file.')
+        logger.error('could not find tuning options file')
         logger.log_file(crash=True)
         exit(1)
     if len(tuning_opts) == 0:
-        logger.error('tuning options file is empty.')
+        logger.error('tuning options file is empty')
         logger.log_file(crash=True)
         exit(1)
     for x in tuning_opts:
@@ -827,12 +834,9 @@ def recommend():
         logger.warning(f'only received {len(tracks)} different recommendations, you may receive duplicates of '
                        f'these (this might take a few seconds)')
     # Filter recommendations until length of track list matches limit preference
-    while True:
-        if len(tracks) < rec.limit_original:
-            rec.update_limit(rec.limit_original - len(tracks))
-            tracks += filter_recommendations(api.get_recommendations(rec.rec_params, headers))
-        else:
-            break
+    while len(tracks) < rec.limit_original:
+        rec.update_limit(rec.limit_original - len(tracks))
+        tracks += filter_recommendations(api.get_recommendations(rec.rec_params, headers))
 
     def create_new_playlist():
         rec.playlist_id = api.create_playlist(rec.playlist_name, rec.playlist_description(), headers, cache_id=True)
@@ -998,53 +1002,68 @@ def parse():
             rec.rec_params[x.split('=')[0]] = x.split('=')[1]
 
 
+def init():
+    global logger, conf, api, sp_oauth, rec, headers
+
+    # Logging handler
+    logger = log.Log()
+    if args.verbose:
+        logger.set_level(log.VERBOSE)
+    elif args.quiet:
+        logger.set_level(log.WARNING)
+    elif args.debug:
+        logger.set_level(log.DEBUG)
+
+    if args.suppress_warnings:
+        logger.suppress_warnings(True)
+
+    logger.verbose('initialising')
+    logger.debug(f'log level: {logger.LEVEL} ({log.LOG_LEVELS[logger.LEVEL]})')
+    logger.debug(f'suppress warnings: {logger.SUPPRESS_WARNINGS}')
+
+    # Config handler
+    conf = sp_conf.Config()
+    conf.set_logger(logger)
+
+    # API handler
+    api = sp_api.API()
+    api.set_logger(logger)
+    api.set_conf(conf)
+
+    # OAuth handler
+    sp_oauth = oauth2.SpotifyOAuth()
+    sp_oauth.set_logger(logger)
+    sp_oauth.set_conf(conf)
+    sp_oauth.set_api(api)
+
+    headers = {'Content-Type': 'application/json',
+               'Authorization': f'Bearer {get_token()}'}
+
+    # Recommendation object
+    if args.load_preset:
+        rec = load_preset(args.load_preset[0])
+        rec.set_logger(logger)
+    else:
+        rec = recommendation.Recommendation()
+        rec.set_logger(logger)
+        parse()
+
+    logger.debug(f'args: {args}')
+
+
+logger = None
+conf = None
+api = None
+sp_oauth = None
+rec = None
+headers = None
+parser = create_parser()
 args = parser.parse_args()
-
-# Logging handler
-logger = log.Log()
-if args.verbose:
-    logger.set_level(log.VERBOSE)
-elif args.quiet:
-    logger.set_level(log.WARNING)
-elif args.debug:
-    logger.set_level(log.DEBUG)
-
-if args.suppress_warnings:
-    logger.suppress_warnings(True)
-
-logger.verbose('initialising')
-logger.debug(f'log level: {logger.LEVEL} ({log.LOG_LEVELS[logger.LEVEL]})')
-logger.debug(f'suppress warnings: {logger.SUPPRESS_WARNINGS}')
-
-# Config handler
-conf = sp_conf.Config()
-conf.set_logger(logger)
-
-# API handler
-api = sp_api.API()
-api.set_logger(logger)
-api.set_conf(conf)
-
-# OAuth handler
-sp_oauth = oauth2.SpotifyOAuth()
-sp_oauth.set_logger(logger)
-sp_oauth.set_conf(conf)
-sp_oauth.set_api(api)
-
-headers = {'Content-Type': 'application/json',
-           'Authorization': f'Bearer {get_token()}'}
-
-# Recommendation object
-if args.load_preset:
-    rec = load_preset(args.load_preset[0])
-else:
-    rec = recommendation.Recommendation()
-    parse()
-rec.set_logger(logger)
-
-logger.debug(f'args: {args}')
-
-if __name__ == '__main__':
-    recommend()
-    if args.log:
-        logger.log_file()
+# Allows import for tests
+if not any('unittest' in arg for arg in sys.argv):
+    if __name__ == '__main__':
+        setup_config_dir()
+        init()
+        recommend()
+        if args.log:
+            logger.log_file()

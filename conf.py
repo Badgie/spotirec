@@ -8,6 +8,7 @@ from pathlib import Path
 
 class Config:
     CONFIG_DIR = f'{Path.home()}/.config/spotirec'
+    CONFIG_FILE = 'spotirec.conf'
     URI_RE = r'spotify:(artist|track):[a-zA-Z0-9]'
     LOGGER = None
 
@@ -23,7 +24,8 @@ class Config:
             # Read config and assert size
             self.LOGGER.verbose('getting config')
             c = configparser.ConfigParser()
-            c.read_file(open(f'{self.CONFIG_DIR}/spotirec.conf'))
+            with open(f'{self.CONFIG_DIR}/{self.CONFIG_FILE}', 'r') as f:
+                c.read_file(f)
             assert len(c.keys()) > 0
             return c
         except (FileNotFoundError, AssertionError):
@@ -38,7 +40,8 @@ class Config:
         :param c: config object
         """
         self.LOGGER.verbose('writing config')
-        c.write(open(f'{self.CONFIG_DIR}/spotirec.conf', 'w'))
+        with open(f'{self.CONFIG_DIR}/{self.CONFIG_FILE}', 'w') as f:
+            c.write(f)
 
     def convert_or_create_config(self):
         """
@@ -95,8 +98,11 @@ class Config:
         except KeyError:
             self.LOGGER.verbose('blacklist not found, creating empty')
             c.add_section('blacklist')
+            c.set('blacklist', 'tracks', str({}))
+            c.set('blacklist', 'artists', str({}))
             self.save_config(c)
-            return c['blacklist']
+            return {'tracks': ast.literal_eval(c.get('blacklist', 'tracks')),
+                    'artists': ast.literal_eval(c.get('blacklist', 'artists'))}
 
     def add_to_blacklist(self, uri_data: json, uri: str):
         """
@@ -128,7 +134,7 @@ class Config:
         """
         # Ensure input is valid
         if not re.match(self.URI_RE, uri):
-            print(f'Error: uri {uri} is not a valid uri')
+            self.LOGGER.error(f'uri {uri} is not a valid uri')
             return
         c = self.open_config()
         uri_type = uri.split(':')[1]
@@ -182,11 +188,10 @@ class Config:
         :return:
         """
         c = self.open_config()
-        try:
-            c.remove_option('presets', iden)
+        if c.remove_option('presets', iden):
             self.LOGGER.info(f'deleted preset {iden} from config')
             self.save_config(c)
-        except KeyError:
+        else:
             self.LOGGER.error(f'preset {iden} does not exist in config')
 
     def get_devices(self) -> dict:
@@ -231,11 +236,10 @@ class Config:
         :return:
         """
         c = self.open_config()
-        try:
-            c.remove_option('devices', iden)
+        if c.remove_option('devices', iden):
             self.LOGGER.info(f'deleted device {iden} from config')
             self.save_config(c)
-        except KeyError:
+        else:
             self.LOGGER.error(f'device {iden} does not exist in config')
 
     def get_playlists(self) -> dict:
@@ -280,9 +284,8 @@ class Config:
         :return:
         """
         c = self.open_config()
-        try:
-            c.remove_option('playlists', iden)
+        if c.remove_option('playlists', iden):
             self.LOGGER.info(f'deleted playlist {iden} from config')
             self.save_config(c)
-        except KeyError:
+        else:
             self.LOGGER.error(f'playlist {iden} does not exist in config')
