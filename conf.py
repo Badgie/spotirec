@@ -237,8 +237,7 @@ class Config:
         :return:
         """
         c = self.open_config()
-        success = c.remove_option('devices', iden)
-        if success:
+        if c.remove_option('devices', iden):
             self.LOGGER.info(f'deleted device {iden} from config')
             self.save_config(c)
         else:
