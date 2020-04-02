@@ -1,8 +1,5 @@
 from tests.lib import ordered, mock, SpotirecTestCase, runner
-import log
-import oauth2
-import api
-import conf
+from spotirec import oauth2, api, conf, log
 import os
 import time
 

@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 import json
 import requests
-import conf as sp_conf
-import log
+from spotirec import conf as sp_conf, log
 
 
 class API:

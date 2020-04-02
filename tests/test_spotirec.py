@@ -1,10 +1,7 @@
 from tests.lib import ordered, mock, SpotirecTestCase, runner
-import log
 import spotirec
-import oauth2
-import recommendation
-import api
-import conf
+from spotirec import oauth2, api, conf, log, recommendation, spotirec
+import _io
 import os
 import sys
 import time
@@ -73,18 +70,20 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.sp_oauth.redirect = 'https://real.url'
         spotirec.sp_oauth.scopes = 'scope'
         spotirec.api.URL_BASE = ''
-        self.test_log = 'tests/fixtures/test-log'
-        sys.stdout = open(self.test_log, 'w')
+        self.test_log = 'fixtures/test-log'
+        self.log_file = open(self.test_log, 'w')
+        sys.stdout = self.log_file
 
     def tearDown(self):
         """
         Clear or resolve any necessary data or states after each test is run
         """
+        self.log_file.close()
         sys.stdout = self.stdout_preserve
         if os.path.isfile(self.test_log):
             os.remove(self.test_log)
         spotirec.input = input
-        spotirec.args = spotirec.parser.parse_args()
+        spotirec.args = spotirec.create_parser().parse_args()
 
     @ordered
     def test_index_no_code(self):

@@ -4,5 +4,5 @@ omit =
     fixtures/*
     __pycache__/*
     htmlcov/*
-    tests.py
-    mock.py
+    tests/*
+    test.py

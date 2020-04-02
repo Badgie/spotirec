@@ -1,6 +1,5 @@
 from tests.lib import ordered, SpotirecTestCase, runner
-import log
-import recommendation
+from spotirec import log, recommendation
 import os
 import sys
 import time

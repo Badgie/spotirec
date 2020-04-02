@@ -3,9 +3,7 @@ import json
 import time
 import requests
 import base64
-import api as sp_api
-import conf as sp_conf
-import log
+from spotirec import api as sp_api, conf as sp_conf, log
 from urllib import parse
 
 
