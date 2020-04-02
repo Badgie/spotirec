@@ -18,3 +18,5 @@ I have in accordance to contribution guidelines...
 - [ ] included docstrings and comments where necessary
 - [ ] updated the README
 - [ ] ensured that everything still works
+- [ ] tested my changes, if applicable
+- [ ] ensured that my code follows the code style, if applicable
