@@ -8,6 +8,7 @@ import conf
 import os
 import sys
 import time
+from PIL import Image
 
 
 class TestSpotirec(SpotirecTestCase):
@@ -529,6 +530,18 @@ class TestSpotirec(SpotirecTestCase):
         self.assertTrue(any(x[1] == (46, 204, 213) for x in img.getcolors()))
         self.assertTrue(any(x[1] == (200, 200, 200) for x in img.getcolors()))
         self.assertEqual(img.size, (320, 320))
+        # resize img
+        img = img.resize((10, 10), Image.ANTIALIAS)
+        # reduce colors
+        img = img.convert('L')
+        # find average pixel
+        pixels = list(img.getdata())
+        avg_pixel = sum(pixels) / len(pixels)
+        # convert to bits
+        bits = ''.join('1' if px >= avg_pixel else '0' for px in pixels)
+        # hash
+        hashed_img = str(hex(int(bits, 2)))[2:][::-1].upper()
+        self.assertEqual(hashed_img, 'FC33689D57F00F814C01320C7')
 
     @ordered
     def test_add_image_to_playlist(self):
