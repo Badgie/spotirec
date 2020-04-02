@@ -1,4 +1,5 @@
-from tests.lib import ordered, SpotirecTestCase, runner
+from tests.lib import ordered, runner
+from tests.lib.ut_ext import SpotirecTestCase
 from spotirec import log
 import os
 import sys
@@ -37,7 +38,6 @@ class TestLog(SpotirecTestCase):
         self.logger.set_level(50)
         self.log_file = open(self.test_log, 'w')
         sys.stdout = self.log_file
-
 
     def tearDown(self):
         """

@@ -67,40 +67,45 @@ class SpotirecTestResults(TextTestResult):
 
     def addSuccess(self, test: TestCase) -> None:
         """
-        If the test passes, this is printed to its line in the terminal, and a result is added to the results object
+        If the test passes, this is printed to its line in the terminal, and a result is added
+        to the results object
         :param test: test case class
         """
         super(TextTestResult, self).addSuccess(test)
         if self.showAll:
             # pretty printing
-            self.stream.writeln(f'{" " * (120 - len(test.shortDescription()))}' + '\033[32m' + 'OK' + '\033[0m')
+            self.stream.writeln(f'{" " * (120 - len(test.shortDescription()))}' + '\033[32m'
+                                + 'OK' + '\033[0m')
         elif self.dots:
             self.stream.write('.')
             self.stream.flush()
 
     def addError(self, test: TestCase, err) -> None:
         """
-        If the test yields an error, this is printed to its line in the terminal, and a result is added to the
-        results object
+        If the test yields an error, this is printed to its line in the terminal, and a result
+        is added to the results object
         :param test: test case class
         """
         super(TextTestResult, self).addError(test, err)
         if self.showAll:
             # pretty printing
-            self.stream.writeln(f'{" " * (120 - len(test.shortDescription()))}' + '\033[93m' + 'ERROR' + '\033[0m')
+            self.stream.writeln(f'{" " * (120 - len(test.shortDescription()))}' + '\033[93m'
+                                + 'ERROR' + '\033[0m')
         elif self.dots:
             self.stream.write('E')
             self.stream.flush()
 
     def addFailure(self, test: TestCase, err) -> None:
         """
-        If the test fails, this is printed to its line in the terminal, and a result is added to the results object
+        If the test fails, this is printed to its line in the terminal, and a result is added to
+        the results object
         :param test: test case class
         """
         super(TextTestResult, self).addFailure(test, err)
         if self.showAll:
             # pretty printing
-            self.stream.writeln(f'{" " * (120 - len(test.shortDescription()))}' + '\033[91m' + 'FAIL' + '\033[0m')
+            self.stream.writeln(f'{" " * (120 - len(test.shortDescription()))}' + '\033[91m'
+                                + 'FAIL' + '\033[0m')
         elif self.dots:
             self.stream.write('F')
             self.stream.flush()
@@ -140,8 +145,8 @@ class SpotirecTestRunner(TextTestRunner):
                 # only when self.warnings is None.
                 if self.warnings in ['default', 'always']:
                     self.warnings.filterwarnings('module',
-                                 category=DeprecationWarning,
-                                 message=r'Please use assert\w+ instead.')
+                                                 category=DeprecationWarning,
+                                                 message=r'Please use assert\w+ instead.')
             startTime = time.perf_counter()
             startTestRun = getattr(result, 'startTestRun', None)
             if startTestRun is not None:
@@ -161,9 +166,10 @@ class SpotirecTestRunner(TextTestRunner):
         self.stream.writeln()
 
         # pretty printing
-        self.stream.writeln(f'{result.testsRun - len(result.errors) - len(result.failures)} passed ('
-                            f'{len(result.unexpectedSuccesses)} unexpected), {len(result.errors)} errors, '
-                            f'{len(result.failures)} failed ({len(result.expectedFailures)} expected), '
+        self.stream.writeln(f'{result.testsRun - len(result.errors) - len(result.failures)} '
+                            f'passed ({len(result.unexpectedSuccesses)} unexpected), '
+                            f'{len(result.errors)} errors, {len(result.failures)} '
+                            f'failed ({len(result.expectedFailures)} expected), '
                             f'{len(result.skipped)} skipped')
         self.stream.writeln()
 

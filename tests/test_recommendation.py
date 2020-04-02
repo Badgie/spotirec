@@ -1,4 +1,5 @@
-from tests.lib import ordered, SpotirecTestCase, runner
+from tests.lib import ordered, runner
+from tests.lib.ut_ext import SpotirecTestCase
 from spotirec import log, recommendation
 import os
 import sys
@@ -19,9 +20,11 @@ class TestRecommendation(SpotirecTestCase):
             super(TestRecommendation, cls).setUpClass()
             print(f'file:/{__file__}\n')
         cls.test_seed = {0: {'name': 'metal', 'type': 'genre'},
-                         1: {'name': 'test', 'id': 'testid', 'type': 'track', 'artists': ['frankie']},
+                         1: {'name': 'test', 'id': 'testid', 'type': 'track', 'artists':
+                             ['frankie']},
                          2: {'name': 'frankie', 'id': 'testid', 'type': 'artist'}}
-        cls.test_track = {'name': 'test', 'id': 'testid', 'type': 'track', 'artists': [{'name': 'frankie'}]}
+        cls.test_track = {'name': 'test', 'id': 'testid', 'type': 'track', 'artists':
+                          [{'name': 'frankie'}]}
         cls.test_artist = {'name': 'frankie', 'id': 'testid', 'type': 'artist'}
         # unset limit on string comparison
         cls.maxDiff = None
@@ -69,8 +72,9 @@ class TestRecommendation(SpotirecTestCase):
         Testing __str__()
         """
         s = "{'limit': 20, 'original limit': 20, 'created at': '" + self.timestamp + \
-            "', 'based on': 'top genres', 'seed': '', 'seed type': 'genres', 'seed info': {}, 'rec params': " \
-            "{'limit': '20'}, 'name': 'Spotirec-1-1-1970', 'id': '', 'auto play': False, 'device': {}}"
+            "', 'based on': 'top genres', 'seed': '', 'seed type': 'genres', 'seed info': {}, " \
+            "'rec params': {'limit': '20'}, 'name': 'Spotirec-1-1-1970', 'id': '', " \
+            "'auto play': False, 'device': {}}"
         self.assertEqual(str(self.rec), s)
 
     @ordered

@@ -1,7 +1,6 @@
-from tests.lib import ordered, mock, SpotirecTestCase, runner
-import spotirec
+from tests.lib import ordered, mock, runner
+from tests.lib.ut_ext import SpotirecTestCase
 from spotirec import oauth2, api, conf, log, recommendation, spotirec
-import _io
 import os
 import sys
 import time
@@ -32,11 +31,15 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.api.set_logger(spotirec.logger)
         spotirec.api.set_conf(spotirec.conf)
         spotirec.sp_oauth.set_api(spotirec.api)
-        spotirec.headers = {'Content-Type': 'application/json',
-                            'Authorization': 'Bearer f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f'}
-        cls.test_track0 = {'name': 'test0', 'id': 'testid0', 'type': 'track', 'artists': [{'name': 'frankie0'}]}
-        cls.test_track1 = {'name': 'test1', 'id': 'testid1', 'type': 'track', 'artists': [{'name': 'frankie1'}]}
-        cls.test_track2 = {'name': 'test2', 'id': 'testid2', 'type': 'track', 'artists': [{'name': 'frankie2'}]}
+        spotirec.headers = \
+            {'Content-Type': 'application/json', 'Authorization':
+                'Bearer f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f'}
+        cls.test_track0 = {'name': 'test0', 'id': 'testid0', 'type': 'track', 'artists':
+                           [{'name': 'frankie0'}]}
+        cls.test_track1 = {'name': 'test1', 'id': 'testid1', 'type': 'track', 'artists':
+                           [{'name': 'frankie1'}]}
+        cls.test_track2 = {'name': 'test2', 'id': 'testid2', 'type': 'track', 'artists':
+                           [{'name': 'frankie2'}]}
         cls.test_artist0 = {'name': 'frankie0', 'id': 'testid0', 'type': 'artist'}
         cls.test_artist1 = {'name': 'frankie1', 'id': 'testid1', 'type': 'artist'}
         cls.test_artist2 = {'name': 'frankie2', 'id': 'testid2', 'type': 'artist'}
@@ -70,7 +73,7 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.sp_oauth.redirect = 'https://real.url'
         spotirec.sp_oauth.scopes = 'scope'
         spotirec.api.URL_BASE = ''
-        self.test_log = 'fixtures/test-log'
+        self.test_log = 'tests/fixtures/test-log'
         self.log_file = open(self.test_log, 'w')
         sys.stdout = self.log_file
 
@@ -91,8 +94,8 @@ class TestSpotirec(SpotirecTestCase):
         Testing index() without url code
         """
         spotirec.request = mock.MockRequest('https://real.url')
-        expected = "<a href='/authorize?client_id=client_id&response_type=code&redirect_uri=https%3A%2F%2Freal.url&" \
-                   "scope=scope'>Login to Spotify</a>"
+        expected = "<a href='/authorize?client_id=client_id&response_type=code&" \
+                   "redirect_uri=https%3A%2F%2Freal.url&scope=scope'>Login to Spotify</a>"
         res = spotirec.index()
         self.assertEqual(res, expected)
 
@@ -103,18 +106,22 @@ class TestSpotirec(SpotirecTestCase):
         """
         spotirec.conf.CONFIG_FILE = 'test-index.conf'
         spotirec.request = mock.MockRequest('https://real.url?code=testcode')
-        expected = '<span>Successfully retrieved OAuth token. You may close this tab and start using Spotirec.</span>'
+        expected = '<span>Successfully retrieved OAuth token. You may close this tab and start ' \
+                   'using Spotirec.</span>'
         expected_expire = str(round(time.time()) + 3600)
         res = spotirec.index()
         self.assertEqual(res, expected)
 
         oauth = spotirec.conf.get_oauth()
-        self.assertEqual(oauth['access_token'], 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
+        self.assertEqual(oauth['access_token'],
+                         'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
         self.assertEqual(oauth['token_type'], 'Bearer')
         self.assertEqual(oauth['expires_in'], '3600')
-        self.assertEqual(oauth['scope'], 'user-modify-playback-state ugc-image-upload user-library-modify')
+        self.assertEqual(oauth['scope'],
+                         'user-modify-playback-state ugc-image-upload user-library-modify')
         self.assertEqual(oauth['expires_at'], expected_expire)
-        self.assertEqual(oauth['refresh_token'], '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
+        self.assertEqual(oauth['refresh_token'],
+                         '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
         os.remove('tests/fixtures/test-index.conf')
 
     @ordered
@@ -122,7 +129,8 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing get_token() success
         """
-        self.assertEqual(spotirec.get_token(), 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
+        self.assertEqual(spotirec.get_token(),
+                         'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f')
 
     @ordered
     def test_get_token_fail(self):
@@ -149,7 +157,8 @@ class TestSpotirec(SpotirecTestCase):
         Testing get_user_top_genres()
         """
         genres = spotirec.get_user_top_genres()
-        self.assertEqual(list(genres.keys()), ['pop', 'metal', 'vapor-death-pop', 'holidays', 'metalcore'])
+        self.assertEqual(list(genres.keys()),
+                         ['pop', 'metal', 'vapor-death-pop', 'holidays', 'metalcore'])
 
     @ordered
     def test_add_top_genres_seed(self):
@@ -158,11 +167,12 @@ class TestSpotirec(SpotirecTestCase):
         """
         spotirec.add_top_genres_seed(5)
         self.assertNotEqual(spotirec.rec.seed_info, {})
-        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'pop', 'type': 'genre'},
-                                                      1: {'name': 'vapor-death-pop', 'type': 'genre'},
-                                                      2: {'name': 'metal', 'type': 'genre'},
-                                                      3: {'name': 'holidays', 'type': 'genre'},
-                                                      4: {'name': 'metalcore', 'type': 'genre'}})
+        self.assertDictEqual(spotirec.rec.seed_info,
+                             {0: {'name': 'pop', 'type': 'genre'},
+                              1: {'name': 'vapor-death-pop', 'type': 'genre'},
+                              2: {'name': 'metal', 'type': 'genre'},
+                              3: {'name': 'holidays', 'type': 'genre'},
+                              4: {'name': 'metalcore', 'type': 'genre'}})
 
     @ordered
     def test_print_choices(self):
@@ -201,8 +211,9 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.input = mock_input
         spotirec.print_choices(data=['metal', 'metalcore', 'vapor-death-pop', 'pop'])
         self.assertNotEqual(spotirec.rec.seed_info, {})
-        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'metal', 'type': 'genre'},
-                                                      1: {'name': 'vapor-death-pop', 'type': 'genre'}})
+        self.assertDictEqual(spotirec.rec.seed_info,
+                             {0: {'name': 'metal', 'type': 'genre'},
+                              1: {'name': 'vapor-death-pop', 'type': 'genre'}})
 
     @ordered
     def test_print_choices_prompt_other(self):
@@ -252,8 +263,9 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.rec.seed_type = 'artists'
         spotirec.print_artists_or_tracks(spotirec.api.get_top_list('artists', 20, spotirec.headers))
         self.assertNotEqual(spotirec.rec.seed_info, {})
-        self.assertEqual(spotirec.rec.seed_info, {0: {'id': 'testid0', 'name': 'frankie0', 'type': 'artist'},
-                                                  1: {'id': 'testid2', 'name': 'frankie2', 'type': 'artist'}})
+        self.assertEqual(spotirec.rec.seed_info,
+                         {0: {'id': 'testid0', 'name': 'frankie0', 'type': 'artist'},
+                          1: {'id': 'testid2', 'name': 'frankie2', 'type': 'artist'}})
 
     @ordered
     def test_check_if_valid_genre_true(self):
@@ -336,7 +348,8 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing check_tune_validity() invalid value range
         """
-        expected = 'value 300.0 for attribute tempo is outside the accepted range (min: 0.0, max: 220.0)'
+        expected = 'value 300.0 for attribute tempo is outside the accepted range ' \
+                   '(min: 0.0, max: 220.0)'
         spotirec.logger.set_level(log.INFO)
         self.assertRaises(SystemExit, spotirec.check_tune_validity, tune='max_tempo=300')
         sys.stdout.close()
@@ -352,8 +365,8 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing check_tune_validity() outside recommended range
         """
-        expected = 'value 215.0 for attribute tempo is outside the recommended range (min: 60.0, max: 210.0), ' \
-                   'recommendations may be scarce'
+        expected = 'value 215.0 for attribute tempo is outside the recommended range ' \
+                   '(min: 60.0, max: 210.0), recommendations may be scarce'
         spotirec.logger.set_level(log.WARNING)
         spotirec.check_tune_validity('max_tempo=215')
         sys.stdout.close()
@@ -399,7 +412,8 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing parse_seed_info() genres str
         """
-        expected = {0: {'name': 'metal', 'type': 'genre'}, 1: {'name': 'vapor-death-pop', 'type': 'genre'}}
+        expected = {0: {'name': 'metal', 'type': 'genre'},
+                    1: {'name': 'vapor-death-pop', 'type': 'genre'}}
         spotirec.rec.seed_type = 'genres'
         spotirec.parse_seed_info('metal vapor-death-pop')
         self.assertDictEqual(expected, spotirec.rec.seed_info)
@@ -409,7 +423,8 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing parse_seed_info() genres list
         """
-        expected = {0: {'name': 'metal', 'type': 'genre'}, 1: {'name': 'vapor-death-pop', 'type': 'genre'}}
+        expected = {0: {'name': 'metal', 'type': 'genre'},
+                    1: {'name': 'vapor-death-pop', 'type': 'genre'}}
         spotirec.rec.seed_type = 'genres'
         spotirec.parse_seed_info(['metal', 'vapor-death-pop'])
         self.assertDictEqual(expected, spotirec.rec.seed_info)
@@ -445,7 +460,8 @@ class TestSpotirec(SpotirecTestCase):
         """
         spotirec.rec.seed_type = 'custom'
         spotirec.parse_seed_info(['vapor-death-pop'])
-        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'vapor-death-pop', 'type': 'genre'}})
+        self.assertDictEqual(spotirec.rec.seed_info,
+                             {0: {'name': 'vapor-death-pop', 'type': 'genre'}})
 
     @ordered
     def test_parse_seed_info_custom_uri(self):
@@ -454,15 +470,17 @@ class TestSpotirec(SpotirecTestCase):
         """
         spotirec.rec.seed_type = 'custom'
         spotirec.parse_seed_info(['spotify:track:testtrack'])
-        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'track0', 'id': 'testtrack', 'type': 'track',
-                                                          'artists': ['frankie0', 'frankie1']}})
+        self.assertDictEqual(spotirec.rec.seed_info,
+                             {0: {'name': 'track0', 'id': 'testtrack', 'type': 'track',
+                                  'artists': ['frankie0', 'frankie1']}})
 
     @ordered
     def test_parse_seed_info_custom_warning(self):
         """
         Testing parse_seed_info() custom uri warning
         """
-        expected = 'input \"vapor-death-jazz\" does not match a genre or a valid URI syntax, skipping...'
+        expected = 'input \"vapor-death-jazz\" does not match a genre or a valid URI syntax, ' \
+                   'skipping...'
         spotirec.logger.set_level(log.WARNING)
         spotirec.rec.seed_type = 'custom'
         spotirec.parse_seed_info(['vapor-death-jazz'])
@@ -481,7 +499,8 @@ class TestSpotirec(SpotirecTestCase):
         blacklist = spotirec.conf.get_blacklist()
         self.assertIn('spotify:track:testtrack', blacklist['tracks'].keys())
         self.assertDictEqual(blacklist['tracks']['spotify:track:testtrack'],
-                             {'name': 'track0', 'uri': 'spotify:track:testtrack', 'artists': ['frankie0', 'frankie1']})
+                             {'name': 'track0', 'uri': 'spotify:track:testtrack',
+                              'artists': ['frankie0', 'frankie1']})
         spotirec.conf.remove_from_blacklist('spotify:track:testtrack')
         blacklist = spotirec.conf.get_blacklist()
         self.assertDictEqual(blacklist['tracks'], {})
@@ -743,7 +762,8 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.save_device()
         devices = spotirec.conf.get_devices()
         self.assertIn('test', devices.keys())
-        self.assertDictEqual(devices['test'], {'id': 'testid1', 'name': 'test1', 'type': 'microwave'})
+        self.assertDictEqual(devices['test'], {'id': 'testid1', 'name': 'test1',
+                                               'type': 'microwave'})
         spotirec.conf.remove_device('test')
 
     @ordered
@@ -809,7 +829,8 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.save_playlist()
         playlists = spotirec.conf.get_playlists()
         self.assertIn('test', playlists.keys())
-        self.assertDictEqual(playlists['test'], {'name': 'testplaylist', 'uri': 'spotify:playlist:testplaylist'})
+        self.assertDictEqual(playlists['test'], {'name': 'testplaylist',
+                                                 'uri': 'spotify:playlist:testplaylist'})
         spotirec.conf.remove_playlist('test')
 
     @ordered
@@ -877,7 +898,8 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.save_playlist()
         playlists = spotirec.conf.get_playlists()
         self.assertIn('test', playlists.keys())
-        self.assertDictEqual(playlists['test'], {'name': 'testplaylist', 'uri': 'spotify:playlist:testplaylist'})
+        self.assertDictEqual(playlists['test'], {'name': 'testplaylist',
+                                                 'uri': 'spotify:playlist:testplaylist'})
 
     @ordered
     def test_remove_playlists(self):
@@ -1004,12 +1026,19 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing filter_recommendations()
         """
-        test_data = {'tracks': [{'uri': 'spotify:track:testid0', 'artists': [{'uri': 'spotify:artist:testid0'}]},
-                                {'uri': 'spotify:track:testid1', 'artists': [{'uri': 'spotify:artist:testid1'}]},
-                                {'uri': 'spotify:track:testid2', 'artists': [{'uri': 'spotify:artist:testid2'}]},
-                                {'uri': 'spotify:track:testid3', 'artists': [{'uri': 'spotify:artist:testid3'}]},
-                                {'uri': 'spotify:track:testid4', 'artists': [{'uri': 'spotify:artist:testid1'}]},
-                                {'uri': 'spotify:track:testid5', 'artists': [{'uri': 'spotify:artist:testid5'}]}]}
+        test_data = \
+            {'tracks': [{'uri': 'spotify:track:testid0', 'artists':
+                        [{'uri': 'spotify:artist:testid0'}]},
+                        {'uri': 'spotify:track:testid1', 'artists':
+                        [{'uri': 'spotify:artist:testid1'}]},
+                        {'uri': 'spotify:track:testid2', 'artists':
+                        [{'uri': 'spotify:artist:testid2'}]},
+                        {'uri': 'spotify:track:testid3', 'artists':
+                        [{'uri': 'spotify:artist:testid3'}]},
+                        {'uri': 'spotify:track:testid4', 'artists':
+                        [{'uri': 'spotify:artist:testid1'}]},
+                        {'uri': 'spotify:track:testid5', 'artists':
+                        [{'uri': 'spotify:artist:testid5'}]}]}
         spotirec.conf.add_to_blacklist(self.test_track2, 'spotify:track:testid2')
         spotirec.conf.add_to_blacklist(self.test_artist1, 'spotify:artist:testid1')
         valid = spotirec.filter_recommendations(test_data)
@@ -1066,8 +1095,9 @@ class TestSpotirec(SpotirecTestCase):
         Testing print_tuning_options()
         """
         expected0 = 'Attribute           Data type   Range   Recommended range   Function'
-        expected1 = 'note that recommendations may be scarce outside the recommended ranges. If the recommended ' \
-                    'range is not available, they may only be scarce at extreme values.'
+        expected1 = 'note that recommendations may be scarce outside the recommended ranges. ' \
+                    'If the recommended range is not available, they may only be scarce at ' \
+                    'extreme values.'
         spotirec.TUNING_FILE = 'tuning-opts'
         spotirec.print_tuning_options()
         sys.stdout.close()
@@ -1142,7 +1172,8 @@ class TestSpotirec(SpotirecTestCase):
         Testing recommend() with existing playlist
         """
         spotirec.args = mock.MockArgs()
-        spotirec.conf.save_playlist({'name': 'test', 'uri': 'spotify:playlist:testplaylist'}, 'spotirec-default')
+        spotirec.conf.save_playlist({'name': 'test', 'uri': 'spotify:playlist:testplaylist'},
+                                    'spotirec-default')
         # should not cause system exit
         spotirec.recommend()
         spotirec.conf.remove_playlist('spotirec-default')
@@ -1175,7 +1206,8 @@ class TestSpotirec(SpotirecTestCase):
         Testing parse() with br arg
         """
         spotirec.args = mock.MockArgs(br=['spotify:track:testtrack'])
-        spotirec.conf.add_to_blacklist({'name': 'test', 'uri': 'spotify:track:testtrack'}, 'spotify:track:testtrack')
+        spotirec.conf.add_to_blacklist({'name': 'test', 'uri': 'spotify:track:testtrack'},
+                                       'spotify:track:testtrack')
         self.assertRaises(SystemExit, spotirec.parse)
         blacklist = spotirec.conf.get_blacklist()
         self.assertNotIn('spotify:track:testtrack', blacklist['tracks'])
@@ -1290,7 +1322,8 @@ class TestSpotirec(SpotirecTestCase):
         Testing parse() with add to arg
         """
         spotirec.args = mock.MockArgs(add_to=['test'])
-        spotirec.conf.save_playlist({'name': 'testplaylist', 'uri': 'spotify:playlist:testplaylist'}, 'test')
+        spotirec.conf.save_playlist({'name': 'testplaylist',
+                                     'uri': 'spotify:playlist:testplaylist'}, 'test')
         self.assertRaises(SystemExit, spotirec.parse)
         spotirec.conf.remove_playlist('test')
 
@@ -1300,7 +1333,8 @@ class TestSpotirec(SpotirecTestCase):
         Testing parse() with remove from arg
         """
         spotirec.args = mock.MockArgs(remove_from=['test'])
-        spotirec.conf.save_playlist({'name': 'testplaylist', 'uri': 'spotify:playlist:testplaylist'}, 'test')
+        spotirec.conf.save_playlist({'name': 'testplaylist',
+                                     'uri': 'spotify:playlist:testplaylist'}, 'test')
         self.assertRaises(SystemExit, spotirec.parse)
         spotirec.conf.remove_playlist('test')
 
@@ -1430,8 +1464,9 @@ class TestSpotirec(SpotirecTestCase):
         Testing parse() with print arg (tuning)
         """
         expected0 = 'Attribute           Data type   Range   Recommended range   Function'
-        expected1 = 'note that recommendations may be scarce outside the recommended ranges. If the recommended ' \
-                    'range is not available, they may only be scarce at extreme values.'
+        expected1 = 'note that recommendations may be scarce outside the recommended ranges. ' \
+                    'If the recommended range is not available, they may only be scarce at ' \
+                    'extreme values.'
         spotirec.args = mock.MockArgs(print=['tuning'])
         self.assertRaises(SystemExit, spotirec.parse)
         sys.stdout.close()
@@ -1515,11 +1550,12 @@ class TestSpotirec(SpotirecTestCase):
         self.assertEqual(spotirec.rec.based_on, 'top artists')
         self.assertEqual(spotirec.rec.seed_type, 'artists')
         self.assertEqual(len(spotirec.rec.seed_info.keys()), 5)
-        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'frankie0', 'id': 'testid0', 'type': 'artist'},
-                                                      1: {'name': 'frankie1', 'id': 'testid1', 'type': 'artist'},
-                                                      2: {'name': 'frankie2', 'id': 'testid2', 'type': 'artist'},
-                                                      3: {'name': 'frankie3', 'id': 'testid3', 'type': 'artist'},
-                                                      4: {'name': 'frankie4', 'id': 'testid4', 'type': 'artist'}})
+        self.assertDictEqual(spotirec.rec.seed_info,
+                             {0: {'name': 'frankie0', 'id': 'testid0', 'type': 'artist'},
+                              1: {'name': 'frankie1', 'id': 'testid1', 'type': 'artist'},
+                              2: {'name': 'frankie2', 'id': 'testid2', 'type': 'artist'},
+                              3: {'name': 'frankie3', 'id': 'testid3', 'type': 'artist'},
+                              4: {'name': 'frankie4', 'id': 'testid4', 'type': 'artist'}})
 
     @ordered
     def test_args_t(self):
@@ -1531,16 +1567,17 @@ class TestSpotirec(SpotirecTestCase):
         self.assertEqual(spotirec.rec.based_on, 'top tracks')
         self.assertEqual(spotirec.rec.seed_type, 'tracks')
         self.assertEqual(len(spotirec.rec.seed_info.keys()), 5)
-        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'track0', 'id': 'testid0', 'type': 'track',
-                                                          'artists': ['frankie0', 'frankie1']},
-                                                      1: {'name': 'track1', 'id': 'testid1', 'type': 'track',
-                                                          'artists': ['frankie1']},
-                                                      2: {'name': 'track2', 'id': 'testid2', 'type': 'track',
-                                                          'artists': ['frankie2', 'frankie1']},
-                                                      3: {'name': 'track3', 'id': 'testid3', 'type': 'track',
-                                                          'artists': ['frankie3', 'frankie1']},
-                                                      4: {'name': 'track4', 'id': 'testid4', 'type': 'track',
-                                                          'artists': ['frankie4', 'frankie3']}})
+        self.assertDictEqual(spotirec.rec.seed_info,
+                             {0: {'name': 'track0', 'id': 'testid0', 'type': 'track',
+                                  'artists': ['frankie0', 'frankie1']},
+                              1: {'name': 'track1', 'id': 'testid1', 'type': 'track',
+                                  'artists': ['frankie1']},
+                              2: {'name': 'track2', 'id': 'testid2', 'type': 'track',
+                                  'artists': ['frankie2', 'frankie1']},
+                              3: {'name': 'track3', 'id': 'testid3', 'type': 'track',
+                                  'artists': ['frankie3', 'frankie1']},
+                              4: {'name': 'track4', 'id': 'testid4', 'type': 'track',
+                                  'artists': ['frankie4', 'frankie3']}})
 
     @ordered
     def test_args_gcs(self):
@@ -1557,9 +1594,10 @@ class TestSpotirec(SpotirecTestCase):
         self.assertEqual(spotirec.rec.based_on, 'custom seed genres')
         self.assertEqual(spotirec.rec.seed_type, 'genres')
         self.assertEqual(len(spotirec.rec.seed_info.keys()), 3)
-        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'metal', 'type': 'genre'},
-                                                      1: {'name': 'metalcore', 'type': 'genre'},
-                                                      2: {'name': 'vapor-death-pop', 'type': 'genre'}})
+        self.assertDictEqual(spotirec.rec.seed_info,
+                             {0: {'name': 'metal', 'type': 'genre'},
+                              1: {'name': 'metalcore', 'type': 'genre'},
+                              2: {'name': 'vapor-death-pop', 'type': 'genre'}})
 
     @ordered
     def test_args_ac(self):
@@ -1576,8 +1614,9 @@ class TestSpotirec(SpotirecTestCase):
         self.assertEqual(spotirec.rec.based_on, 'custom artists')
         self.assertEqual(spotirec.rec.seed_type, 'artists')
         self.assertEqual(len(spotirec.rec.seed_info.keys()), 2)
-        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'frankie1', 'id': 'testid1', 'type': 'artist'},
-                                                      1: {'name': 'frankie2', 'id': 'testid2', 'type': 'artist'}})
+        self.assertDictEqual(spotirec.rec.seed_info,
+                             {0: {'name': 'frankie1', 'id': 'testid1', 'type': 'artist'},
+                              1: {'name': 'frankie2', 'id': 'testid2', 'type': 'artist'}})
 
     @ordered
     def test_args_tc(self):
@@ -1594,10 +1633,11 @@ class TestSpotirec(SpotirecTestCase):
         self.assertEqual(spotirec.rec.based_on, 'custom tracks')
         self.assertEqual(spotirec.rec.seed_type, 'tracks')
         self.assertEqual(len(spotirec.rec.seed_info.keys()), 2)
-        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'track0', 'id': 'testid0', 'type': 'track',
-                                                          'artists': ['frankie0', 'frankie1']},
-                                                      1: {'name': 'track4', 'id': 'testid4', 'type': 'track',
-                                                          'artists': ['frankie4', 'frankie3']}})
+        self.assertDictEqual(spotirec.rec.seed_info,
+                             {0: {'name': 'track0', 'id': 'testid0', 'type': 'track',
+                                  'artists': ['frankie0', 'frankie1']},
+                              1: {'name': 'track4', 'id': 'testid4', 'type': 'track',
+                                  'artists': ['frankie4', 'frankie3']}})
 
     @ordered
     def test_args_gc(self):
@@ -1662,10 +1702,11 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.args = mock.MockArgs(c=True)
         spotirec.parse()
         self.assertEqual(len(spotirec.rec.seed_info.keys()), 3)
-        self.assertDictEqual(spotirec.rec.seed_info, {0: {'name': 'vapor-death-pop', 'type': 'genre'},
-                                                      1: {'name': 'track0', 'id': 'testtrack', 'type': 'track',
-                                                          'artists': ['frankie0', 'frankie1']},
-                                                      2: {'name': 'frankie0', 'id': 'testartist', 'type': 'artist'}})
+        self.assertDictEqual(spotirec.rec.seed_info,
+                             {0: {'name': 'vapor-death-pop', 'type': 'genre'},
+                              1: {'name': 'track0', 'id': 'testtrack', 'type': 'track',
+                                  'artists': ['frankie0', 'frankie1']},
+                              2: {'name': 'frankie0', 'id': 'testartist', 'type': 'artist'}})
 
     @ordered
     def test_args_l(self):
@@ -1813,9 +1854,10 @@ class TestSpotirec(SpotirecTestCase):
         self.assertIsInstance(spotirec.sp_oauth.LOGGER, log.Log)
         self.assertIsInstance(spotirec.sp_oauth.CONF, conf.Config)
         self.assertIsInstance(spotirec.sp_oauth.API, api.API)
-        self.assertDictEqual(spotirec.headers, {'Content-Type': 'application/json',
-                                                'Authorization': 'Bearer f6952d6eef555ddd87aca66e56b91530222d6e3184148'
-                                                                 '16f3ba7cf5bf694bf0f'})
+        self.assertDictEqual(
+            spotirec.headers, {'Content-Type': 'application/json',
+                               'Authorization': 'Bearer f6952d6eef555ddd87aca66e56b91530222d6e3184'
+                                                '14816f3ba7cf5bf694bf0f'})
         self.assertIsInstance(spotirec.rec, recommendation.Recommendation)
         spotirec.get_token = get_token_save
         spotirec.get_user_top_genres = top_genres_save
@@ -1924,12 +1966,15 @@ class TestSpotirec(SpotirecTestCase):
                 config.CONFIG_FILE = 'test.conf'
                 return config
 
-        preset = {'limit': 100, 'based_on': 'top artists', 'seed': 'hip-hop,metalcore,metal,pop,death-metal',
+        preset = {'limit': 100, 'based_on': 'top artists',
+                  'seed': 'hip-hop,metalcore,metal,pop,death-metal',
                   'seed_type': 'tracks', 'seed_info':
-                      {0: {'name': 'hip-hop', 'type': 'genre'}, 1: {'name': 'metalcore', 'type': 'genre'},
+                      {0: {'name': 'hip-hop', 'type': 'genre'},
+                       1: {'name': 'metalcore', 'type': 'genre'},
                        2: {'name': 'metal', 'type': 'genre'}, 3: {'name': 'pop', 'type': 'genre'},
                        4: {'name': 'death-metal', 'type': 'genre'}},
-                  'rec_params': {'limit': '100', 'seed_genres': 'hip-hop,metalcore,metal,pop,death-metal'},
+                  'rec_params': {'limit': '100',
+                                 'seed_genres': 'hip-hop,metalcore,metal,pop,death-metal'},
                   'auto_play': True, 'playback_device': {}}
         spotirec.conf.save_preset(preset, 'test-preset')
         get_token_save = spotirec.get_token

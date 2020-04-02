@@ -19,9 +19,9 @@ class SpotifyOAuth:
         self.client_id = '466a89a53359403b82df7d714030ec5f'
         self.client_secret = '28147de72c3549e98b1e790f3d080b85'
         self.redirect = f'http://localhost:{self.PORT}'
-        self.scopes = 'user-top-read playlist-modify-public playlist-modify-private user-read-private ' \
-                      'user-read-email ugc-image-upload user-read-playback-state user-modify-playback-state ' \
-                      'user-library-modify'
+        self.scopes = 'user-top-read playlist-modify-public playlist-modify-private ' \
+                      'user-read-private user-read-email ugc-image-upload ' \
+                      'user-read-playback-state user-modify-playback-state user-library-modify'
 
     def get_credentials(self) -> json:
         """
@@ -42,7 +42,8 @@ class SpotifyOAuth:
 
     def is_token_expired(self, token_expire: int) -> bool:
         """
-        Check if token is about to expire - add 30 sec to current time to ensure it doesn't expire during run.
+        Check if token is about to expire - add 30 sec to current time to ensure it doesn't
+        expire during run.
         :param token_expire: time at which the token expires in seconds
         :return: whether or not token is about to expire as a bool
         """
@@ -74,7 +75,8 @@ class SpotifyOAuth:
         :return: dict containing header with base64 encoded client credentials
         """
         self.LOGGER.verbose('encoding header for oauth')
-        encoded_header = base64.b64encode(f"{self.client_id}:{self.client_secret}".encode("ascii")).decode("ascii")
+        encoded_header = base64.b64encode(f"{self.client_id}:{self.client_secret}"
+                                          .encode("ascii")).decode("ascii")
         self.LOGGER.debug(f'header: {encoded_header}')
         return {'Authorization': f'Basic {encoded_header}'}
 
