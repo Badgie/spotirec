@@ -1,0 +1,23 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Set up Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Lint
+        run: |
+          pip install flake8
+          flake8 --max-line-length 100 --exclude .git,__pycache__,fixtures,htmlcov,.coverage,.coveragerc,.gitignore,LICENSE,README.md,requirements.txt,tuning-opts,venv,spotirec/__pycache__,tests/__pycache__,tests/lib/__pycache__ --select C,E,F,W,B --ignore E203,W503,E741
+      - name: Test
+        run: python test.py
