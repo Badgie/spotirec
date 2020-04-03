@@ -4,7 +4,6 @@ from spotirec.spotirec import setup_config_dir, init, recommend
 parser = spotirec.create_parser()
 
 spotirec.args = parser.parse_args()
-s = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
 
 if __name__ == '__main__':
     setup_config_dir()
