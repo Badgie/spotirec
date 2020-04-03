@@ -328,7 +328,7 @@ class MockAPI:
         elif method == 'DELETE':
             return MockResponse(200, 'OK', method, headers, '/me/tracks')
         elif method == 'GET':
-            return MockResponse(200, 'OK', method, headers, '//me/tracks',
+            return MockResponse(200, 'OK', method, headers, '/me/tracks',
                                 content=self.SAVED_TRACKS)
         else:
             return MockResponse(403, 'Forbidden', method, headers, '/me/tracks')
