@@ -41,12 +41,12 @@ URI_RE = r'spotify:(artist|track):[a-zA-Z0-9]+'
 PLAYLIST_URI_RE = r'spotify:playlist:[a-zA-Z0-9]+'
 TRACK_URI_RE = r'spotify:track:[a-zA-Z0-9]+'
 
-logger = None
-conf = None
-api = None
-sp_oauth = None
-rec = None
-headers = None
+logger = log.Log()
+conf = sp_conf.Config()
+api = sp_api.API()
+sp_oauth = oauth2.SpotifyOAuth()
+rec = recommendation.Recommendation()
+headers = {}
 args = None
 
 
@@ -1055,10 +1055,9 @@ def parse():
 
 
 def init():
-    global logger, conf, api, sp_oauth, rec, headers
+    global rec, headers
 
     # Logging handler
-    logger = log.Log()
     if args.verbose:
         logger.set_level(log.VERBOSE)
     elif args.quiet:
@@ -1074,16 +1073,13 @@ def init():
     logger.debug(f'suppress warnings: {logger.SUPPRESS_WARNINGS}')
 
     # Config handler
-    conf = sp_conf.Config()
     conf.set_logger(logger)
 
     # API handler
-    api = sp_api.API()
     api.set_logger(logger)
     api.set_conf(conf)
 
     # OAuth handler
-    sp_oauth = oauth2.SpotifyOAuth()
     sp_oauth.set_logger(logger)
     sp_oauth.set_conf(conf)
     sp_oauth.set_api(api)
