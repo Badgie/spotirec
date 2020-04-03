@@ -18,6 +18,9 @@ jobs:
       - name: Lint
         run: |
           pip install flake8
-          flake8 --max-line-length 100 --exclude .git,__pycache__,fixtures,htmlcov,.coverage,.coveragerc,.gitignore,LICENSE,README.md,requirements.txt,tuning-opts,venv,spotirec/__pycache__,tests/__pycache__,tests/lib/__pycache__ --select C,E,F,W,B --ignore E203,W503,E741
+          flake8 --max-line-length 100 --exclude .git,__pycache__,fixtures,htmlcov,.coverage, \
+          .coveragerc,.gitignore,LICENSE,README.md,requirements.txt,tuning-opts,venv, \
+          spotirec/__pycache__,tests/__pycache__,tests/lib/__pycache__ \
+           --select C,E,F,W,B --ignore E203,W503,E741
       - name: Test
         run: python test.py
