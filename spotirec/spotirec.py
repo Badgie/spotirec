@@ -1027,7 +1027,7 @@ def parse():
         parse_seed_info([x for x in api.get_top_list('tracks', args.t, headers)['items']])
     elif args.st:
         logger.info(f'basing recommendations off your top {args.st} saved track(s)')
-        rec.based_on = 'top saved tracks'
+        rec.based_on = 'recent saved tracks'
         rec.seed_type = 'tracks'
         parse_seed_info([x['track'] for x in api.get_saved_tracks(headers, limit=5)['items']])
     elif args.gcs:
