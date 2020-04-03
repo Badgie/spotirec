@@ -19,9 +19,10 @@ class SpotifyOAuth:
         self.client_id = '466a89a53359403b82df7d714030ec5f'
         self.client_secret = '28147de72c3549e98b1e790f3d080b85'
         self.redirect = f'http://localhost:{self.PORT}'
-        self.scopes = 'user-top-read playlist-modify-public playlist-modify-private ' \
-                      'user-read-private user-read-email ugc-image-upload ' \
-                      'user-read-playback-state user-modify-playback-state user-library-modify'
+        self.scopes = ['user-top-read', 'playlist-modify-public', 'playlist-modify-private',
+                       'user-read-private', 'user-read-email', 'ugc-image-upload',
+                       'user-read-playback-state', 'user-modify-playback-state',
+                       'user-library-modify', 'user-library-read']
 
     def get_credentials(self) -> json:
         """
@@ -105,7 +106,7 @@ class SpotifyOAuth:
         params = {'client_id': self.client_id,
                   'response_type': 'code',
                   'redirect_uri': self.redirect,
-                  'scope': self.scopes}
+                  'scope': ' '.join(x for x in self.scopes)}
         self.LOGGER.debug(f'url: {self.OAUTH_AUTH_URL}?{parse.urlencode(params)}')
         return f'{self.OAUTH_AUTH_URL}?{parse.urlencode(params)}'
 
