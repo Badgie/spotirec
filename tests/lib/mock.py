@@ -165,7 +165,7 @@ class MockAPI:
                          'genres': ['pop', 'metal', 'vapor-death-pop']},
                         {'name': 'frankie1', 'uri': 'spotify:artist:testartist', 'type': 'artist',
                          'genres': ['pop', 'vapor-death-pop', 'hip-hop']}],
-                   'album': {'uri': 'spotify:album:testid0',  'release_date': 'never lol',
+                   'album': {'uri': 'spotify:album:testid0', 'release_date': 'never lol',
                              'name': 'cool album'}, 'popularity': -3}}
     TOKEN = {'access_token': 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f',
              'token_type': 'Bearer', 'expires_in': 3600,
