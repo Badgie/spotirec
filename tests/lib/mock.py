@@ -384,6 +384,8 @@ class MockArgs:
         self.save_playlist = kwargs.pop('save_playlist', False)
         self.save_preset = kwargs.pop('save_preset', None)
         self.sr = kwargs.pop('sr', False)
+        self.st = kwargs.pop('st', None)
+        self.stc = kwargs.pop('stc', None)
         self.suppress_warnings = kwargs.pop('suppress_warnings', False)
         self.t = kwargs.pop('t', None)
         self.tc = kwargs.pop('tc', False)

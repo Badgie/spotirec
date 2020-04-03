@@ -71,7 +71,8 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.sp_oauth.client_secret = 'client_secret'
         spotirec.sp_oauth.client_id = 'client_id'
         spotirec.sp_oauth.redirect = 'https://real.url'
-        spotirec.sp_oauth.scopes = 'scope'
+        spotirec.sp_oauth.scopes = ['user-modify-playback-state', 'ugc-image-upload',
+                                    'user-library-modify']
         spotirec.api.URL_BASE = ''
         self.test_log = 'tests/fixtures/test-log'
         self.log_file = open(self.test_log, 'w')
@@ -95,7 +96,8 @@ class TestSpotirec(SpotirecTestCase):
         """
         spotirec.request = mock.MockRequest('https://real.url')
         expected = "<a href='/authorize?client_id=client_id&response_type=code&" \
-                   "redirect_uri=https%3A%2F%2Freal.url&scope=scope'>Login to Spotify</a>"
+                   "redirect_uri=https%3A%2F%2Freal.url&scope=user-modify-playback-state+" \
+                   "ugc-image-upload+user-library-modify'>Login to Spotify</a>"
         res = spotirec.index()
         self.assertEqual(res, expected)
 
