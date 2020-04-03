@@ -1029,7 +1029,7 @@ def parse():
         logger.info(f'basing recommendations off your top {args.st} saved track(s)')
         rec.based_on = 'recent saved tracks'
         rec.seed_type = 'tracks'
-        parse_seed_info([x['track'] for x in api.get_saved_tracks(headers, limit=5)['items']])
+        parse_seed_info([x['track'] for x in api.get_saved_tracks(headers, limit=args.st)['items']])
     elif args.gcs:
         rec.based_on = 'custom seed genres'
         print_choices(data=api.get_genre_seeds(headers)['genres'])

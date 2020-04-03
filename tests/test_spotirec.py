@@ -1711,6 +1711,62 @@ class TestSpotirec(SpotirecTestCase):
                               2: {'name': 'frankie0', 'id': 'testartist', 'type': 'artist'}})
 
     @ordered
+    def test_args_st(self):
+        """
+        Testing parse() with st arg
+        """
+        spotirec.args = mock.MockArgs(st=3)
+        spotirec.parse()
+        self.assertEqual(spotirec.rec.based_on, 'recent saved tracks')
+        self.assertEqual(spotirec.rec.seed_type, 'tracks')
+        self.assertEqual(len(spotirec.rec.seed_info.keys()), 5)
+        self.assertDictEqual(spotirec.rec.seed_info,
+                             {0: {'name': 'track0', 'id': 'testid0', 'type': 'track',
+                                  'artists': ['frankie0', 'frankie1']},
+                              1: {'name': 'track1', 'id': 'testid1', 'type': 'track',
+                                  'artists': ['frankie1']},
+                              2: {'name': 'track2', 'id': 'testid2', 'type': 'track',
+                                  'artists': ['frankie2', 'frankie1']},
+                              3: {'name': 'track3', 'id': 'testid3', 'type': 'track',
+                                  'artists': ['frankie3', 'frankie1']},
+                              4: {'name': 'track4', 'id': 'testid4', 'type': 'track',
+                                  'artists': ['frankie4', 'frankie3']}})
+
+    @ordered
+    def test_args_stc(self):
+        """
+        Testing parse() with stc arg
+        """
+
+        def mock_input(prompt: str):
+            return '0 4'
+
+        spotirec.input = mock_input
+        spotirec.args = mock.MockArgs(stc=True)
+        spotirec.parse()
+        self.assertEqual(spotirec.rec.based_on, 'custom saved tracks')
+        self.assertEqual(spotirec.rec.seed_type, 'tracks')
+        self.assertEqual(len(spotirec.rec.seed_info.keys()), 2)
+        self.assertDictEqual(spotirec.rec.seed_info,
+                             {0: {'name': 'track0', 'id': 'testid0', 'type': 'track',
+                                  'artists': ['frankie0', 'frankie1']},
+                              1: {'name': 'track4', 'id': 'testid4', 'type': 'track',
+                                  'artists': ['frankie4', 'frankie3']}})
+
+    @ordered
+    def test_args_stc_sigint(self):
+        """
+        Testing parse() with stc arg (sigint)
+        """
+
+        def mock_input(prompt: str):
+            raise KeyboardInterrupt
+
+        spotirec.input = mock_input
+        spotirec.args = mock.MockArgs(stc=True)
+        self.assertRaises(SystemExit, spotirec.parse)
+
+    @ordered
     def test_args_l(self):
         """
         Testing parse() with l arg
@@ -1812,6 +1868,10 @@ class TestSpotirec(SpotirecTestCase):
         self.assertIsNone(args.save_preset)
         self.assertIn('sr', args)
         self.assertFalse(args.sr)
+        self.assertIn('st', args)
+        self.assertIsNone(args.st)
+        self.assertIn('stc', args)
+        self.assertFalse(args.stc)
         self.assertIn('suppress_warnings', args)
         self.assertFalse(args.suppress_warnings)
         self.assertIn('t', args)
@@ -1995,3 +2055,29 @@ class TestSpotirec(SpotirecTestCase):
         self.assertDictEqual(preset['playback_device'], spotirec.rec.playback_device)
         spotirec.get_token = get_token_save
         spotirec.conf.remove_preset('test-preset')
+
+    @ordered
+    def test_check_scope_perms(self):
+        """
+        Testing check_scope_permissions()
+        """
+        # should not cause system exit
+        spotirec.check_scope_permissions()
+
+    @ordered
+    def test_check_scope_perms_error(self):
+        """
+        Testing check_scope_permissions() fail
+        """
+
+        def mock_authorize():
+            self.test = 'success'
+
+        self.test = ''
+        spotirec.sp_oauth.scopes.append('this-is-not-a-scope')
+        auth_save = spotirec.authorize
+        spotirec.authorize = mock_authorize
+        self.assertRaises(SystemExit, spotirec.check_scope_permissions)
+        self.assertEqual(self.test, 'success')
+        spotirec.authorize = auth_save
+        spotirec.sp_oauth.scopes.remove('this-is-not-a-scope')

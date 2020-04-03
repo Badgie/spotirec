@@ -37,6 +37,33 @@ class MockAPI:
     ARTIST = '{"name": "frankie0", "uri": "spotify:artist:testartist", "type": "artist", ' \
              '"genres": ["pop", "metal", "vapor-death-pop"], "id": "testartist"}'
 
+    SAVED_TRACKS = '{"items": [{"track": {"name": "track0", "uri": "spotify:track:testid0", ' \
+                   '"type": "track", "id": "testid0", "artists": [{"name": "frankie0", "uri": ' \
+                   '"spotify:artist:testid0", "type": "artist", "genres": ["pop", "metal", ' \
+                   '"vapor-death-pop"]}, {"name": "frankie1", "uri": "spotify:artist:testid1", ' \
+                   '"type": "artist", "genres": ["pop", "vapor-death-pop", "hip-hop"]}]}},' \
+                   '{"track": {"name": "track1", "uri": "spotify:track:testid1", "type": ' \
+                   '"track", "id": "testid1", "artists": [{"name": "frankie1", "uri": ' \
+                   '"spotify:artist:testid1", "type": "artist", "genres": ["pop", ' \
+                   '"vapor-death-pop", "hip-hop"]}]}},' \
+                   '{"track": {"name": "track2", "uri": "spotify:track:testid2", "type": ' \
+                   '"track", "id": "testid2", "artists": [{"name": "frankie2", "uri": ' \
+                   '"spotify:artist:testid2", "type": "artist", "genres": ["hip-hop", ' \
+                   '"holidays", "vapor"]}, {"name": "frankie1", "uri": "spotify:artist:testid1",' \
+                   ' "type": "artist", "genres": ["pop", "vapor-death-pop", "hip-hop"]}]}},' \
+                   '{"track": {"name": "track3", "uri": "spotify:track:testid3", "type": ' \
+                   '"track", "id": "testid3", "artists": [{"name": "frankie3", "uri": ' \
+                   '"spotify:artist:testid3", "type": "artist", "genres": ["vapor-death-jazz", ' \
+                   '"invalid-genre", "siesta"]}, {"name": "frankie1", "uri": ' \
+                   '"spotify:artist:testid1", "type": "artist", "genres": ["pop", ' \
+                   '"vapor-death-pop", "hip-hop"]}]}},' \
+                   '{"track": {"name": "track4", "uri": "spotify:track:testid4", "type": ' \
+                   '"track", "id": "testid4", "artists": [{"name": "frankie4", "uri": ' \
+                   '"spotify:artist:testid4", "type": "artist", "genres": ["metalcore", ' \
+                   '"making-up-genres-is-hard"]}, {"name": "frankie3", "uri": ' \
+                   '"spotify:artist:testid3", "type": "artist", "genres": ' \
+                   '["vapor-death-jazz", "invalid-genre", "siesta"]}]}}]}'
+
     TOP_TRACKS = '{"items": [{"name": "track0", "uri": "spotify:track:testid0", "type": "track",' \
                  ' "id": "testid0", "artists": [{"name": "frankie0", "uri": ' \
                  '"spotify:artist:testid0", "type": "artist", "genres": ["pop", "metal", ' \
@@ -294,12 +321,15 @@ class MockAPI:
         else:
             return MockResponse(403, 'Forbidden', method, headers, '/me/player/play')
 
-    @route('/me/tracks', ['PUT', 'DELETE'])
+    @route('/me/tracks', ['PUT', 'DELETE', 'GET'])
     def saved_tracks(self, method, headers, data, json, params):
         if method == 'PUT':
             return MockResponse(200, 'OK', method, headers, '/me/tracks')
         elif method == 'DELETE':
             return MockResponse(200, 'OK', method, headers, '/me/tracks')
+        elif method == 'GET':
+            return MockResponse(200, 'OK', method, headers, '//me/tracks',
+                                content=self.SAVED_TRACKS)
         else:
             return MockResponse(403, 'Forbidden', method, headers, '/me/tracks')
 
@@ -385,7 +415,7 @@ class MockArgs:
         self.save_preset = kwargs.pop('save_preset', None)
         self.sr = kwargs.pop('sr', False)
         self.st = kwargs.pop('st', None)
-        self.stc = kwargs.pop('stc', None)
+        self.stc = kwargs.pop('stc', False)
         self.suppress_warnings = kwargs.pop('suppress_warnings', False)
         self.t = kwargs.pop('t', None)
         self.tc = kwargs.pop('tc', False)
