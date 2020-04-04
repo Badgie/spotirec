@@ -1735,18 +1735,14 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.parse()
         self.assertEqual(spotirec.rec.based_on, 'recent saved tracks')
         self.assertEqual(spotirec.rec.seed_type, 'tracks')
-        self.assertEqual(len(spotirec.rec.seed_info.keys()), 5)
+        self.assertEqual(len(spotirec.rec.seed_info.keys()), 3)
         self.assertDictEqual(spotirec.rec.seed_info,
                              {0: {'name': 'track0', 'id': 'testid0', 'type': 'track',
                                   'artists': ['frankie0', 'frankie1']},
                               1: {'name': 'track1', 'id': 'testid1', 'type': 'track',
                                   'artists': ['frankie1']},
                               2: {'name': 'track2', 'id': 'testid2', 'type': 'track',
-                                  'artists': ['frankie2', 'frankie1']},
-                              3: {'name': 'track3', 'id': 'testid3', 'type': 'track',
-                                  'artists': ['frankie3', 'frankie1']},
-                              4: {'name': 'track4', 'id': 'testid4', 'type': 'track',
-                                  'artists': ['frankie4', 'frankie3']}})
+                                  'artists': ['frankie2', 'frankie1']}})
 
     @ordered
     def test_args_stc(self):
