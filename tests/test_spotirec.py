@@ -298,6 +298,22 @@ class TestSpotirec(SpotirecTestCase):
             self.assertIn(expected, stdout)
 
     @ordered
+    def test_check_tune_validity_improper_format(self):
+        """
+        Testing check_tune_validity() improper format
+        """
+        expected = 'tune max_tempo_160 does not match the proper format'
+        spotirec.logger.set_level(log.INFO)
+        self.assertRaises(SystemExit, spotirec.check_tune_validity, tune='max_tempo_160')
+        sys.stdout.close()
+        sys.stdout = self.stdout_preserve
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
+            crash_file = stdout.split('/')[2].strip('\n')
+            os.remove(f'tests/fixtures/{crash_file}')
+
+    @ordered
     def test_check_tune_validity_fail_prefix(self):
         """
         Testing check_tune_validity() invalid prefix
@@ -334,9 +350,9 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing check_tune_validity() invalid value
         """
-        expected = 'tune value test does not match attribute tempo data type requirements'
+        expected = 'tune value 160,0 does not match attribute tempo data type requirements'
         spotirec.logger.set_level(log.INFO)
-        self.assertRaises(SystemExit, spotirec.check_tune_validity, tune='max_tempo=test')
+        self.assertRaises(SystemExit, spotirec.check_tune_validity, tune='max_tempo=160,0')
         sys.stdout.close()
         sys.stdout = self.stdout_preserve
         with open(self.test_log, 'r') as f:
