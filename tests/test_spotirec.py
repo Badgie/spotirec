@@ -177,6 +177,20 @@ class TestSpotirec(SpotirecTestCase):
                               4: {'name': 'metalcore', 'type': 'genre'}})
 
     @ordered
+    def test_add_top_genres_seed_out_of_bounds(self):
+        """
+        Testing add_top_genres_seed() more seeds than available
+        """
+        spotirec.add_top_genres_seed(7)
+        self.assertNotEqual(spotirec.rec.seed_info, {})
+        self.assertDictEqual(spotirec.rec.seed_info,
+                             {0: {'name': 'pop', 'type': 'genre'},
+                              1: {'name': 'vapor-death-pop', 'type': 'genre'},
+                              2: {'name': 'metal', 'type': 'genre'},
+                              3: {'name': 'holidays', 'type': 'genre'},
+                              4: {'name': 'metalcore', 'type': 'genre'}})
+
+    @ordered
     def test_print_choices(self):
         """
         Testing print_choices() default
