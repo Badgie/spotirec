@@ -40,6 +40,7 @@ TUNE_ATTR = {'int': {'duration_ms': {'min': 0, 'max': sys.maxsize * 2 + 1, 'rec_
 URI_RE = r'spotify:(artist|track):[a-zA-Z0-9]+'
 PLAYLIST_URI_RE = r'spotify:playlist:[a-zA-Z0-9]+'
 TRACK_URI_RE = r'spotify:track:[a-zA-Z0-9]+'
+TUNE_RE = r'\w+_\w+=\d+(.\d+)?'
 
 logger = log.Log()
 conf = sp_conf.Config()
@@ -342,6 +343,9 @@ def check_tune_validity(tune: str):
     :param tune: tune input as string
     """
     logger.verbose('checking tune validity')
+    if not re.match(TUNE_RE, tune):
+        logger.error(f'tune {tune} does not match the proper format')
+        exit(1)
     prefix = tune.split('_', 1)[0]
     key = tune.split('=')[0].split('_', 1)[1]
     value = tune.split('=')[1]
