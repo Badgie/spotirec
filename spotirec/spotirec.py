@@ -17,7 +17,7 @@ from pathlib import Path
 
 VERSION = '1.2'
 
-PORT = 8080
+PORTS = [8000, 8001, 8002, 8003, 8004, 8005, 8006, 8007, 8008, 8009]
 CONFIG_PATH = f'{Path.home()}/.config/spotirec'
 TUNING_FILE = f'{Path.home()}/.config/spotirec/tuning-opts'
 
@@ -184,14 +184,26 @@ def check_scope_permissions():
         exit(0)
 
 
-def authorize():
+def authorize(port=PORTS[0]):
     """
     Open redirect URL in browser, and host http server on localhost.
     Function index() will be routed on said http server.
     """
     logger.verbose('hosting localhost server')
-    webbrowser.open(sp_oauth.redirect)
-    run(host='', port=PORT)
+    sp_oauth.PORT = port
+    webbrowser.open(f'{sp_oauth.redirect}:{port}')
+    try:
+        logger.info(f'running authorization on {sp_oauth.redirect}:{port}')
+        run(host='', port=port, quiet=True)
+    except OSError as ex:
+        if ex.errno == 98:
+            next_port = PORTS.index(port) + 1
+            if next_port > len(PORTS) - 1:
+                logger.error(f'tried all ports ({",".join(str(x) for x in PORTS)}, all are in use')
+                logger.error(f'please ensure one of them is available and try again')
+                exit(1)
+            logger.warning(f'port {port} is already in use, trying {PORTS[next_port]}')
+            authorize(port=PORTS[next_port])
 
 
 @route('/')
