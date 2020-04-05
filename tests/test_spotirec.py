@@ -4,6 +4,7 @@ from spotirec import oauth2, api, conf, log, recommendation, spotirec
 import os
 import sys
 import time
+import errno
 from PIL import Image
 
 
@@ -1832,6 +1833,39 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.run = mock_run
         spotirec.authorize()
         self.assertEqual(spotirec.webbrowser.url, 'https://real.url:8000')
+
+    @ordered
+    def test_authorize_retry_once(self):
+        """
+        Testing authorize() with one retry
+        """
+
+        def mock_run(host: str, port: int, quiet: bool):
+            spotirec.run = mock_run_second
+            raise OSError(errno.EADDRINUSE, 'address in use')
+
+        def mock_run_second(host: str, port: int, quiet: bool):
+            nonlocal second_port
+            second_port = port
+
+        second_port = 0
+        spotirec.webbrowser = mock.MockWebbrowser()
+        spotirec.run = mock_run
+        spotirec.authorize()
+        self.assertEqual(second_port, 8001)
+
+    @ordered
+    def test_authorize_all_ports_in_use(self):
+        """
+        Testing authorize() all ports in use
+        """
+
+        def mock_run(host: str, port: int, quiet: bool):
+            raise OSError(errno.EADDRINUSE, 'address in use')
+
+        spotirec.webbrowser = mock.MockWebbrowser()
+        spotirec.run = mock_run
+        self.assertRaises(SystemExit, spotirec.authorize)
 
     @ordered
     def test_create_parser(self):
