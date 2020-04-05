@@ -96,7 +96,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         spotirec.request = mock.MockRequest('https://real.url')
         expected = "<a href='/authorize?client_id=client_id&response_type=code&" \
-                   "redirect_uri=https%3A%2F%2Freal.url&scope=user-modify-playback-state+" \
+                   "redirect_uri=https%3A%2F%2Freal.url%3A0&scope=user-modify-playback-state+" \
                    "ugc-image-upload+user-library-modify'>Login to Spotify</a>"
         res = spotirec.index()
         self.assertEqual(res, expected)
@@ -1825,13 +1825,13 @@ class TestSpotirec(SpotirecTestCase):
         Testing authorize()
         """
 
-        def mock_run(host: str, port: int):
+        def mock_run(host: str, port: int, quiet: bool):
             return
 
         spotirec.webbrowser = mock.MockWebbrowser()
         spotirec.run = mock_run
         spotirec.authorize()
-        self.assertEqual(spotirec.webbrowser.url, 'https://real.url')
+        self.assertEqual(spotirec.webbrowser.url, 'https://real.url:8000')
 
     @ordered
     def test_create_parser(self):

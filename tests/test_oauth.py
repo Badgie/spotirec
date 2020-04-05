@@ -233,8 +233,8 @@ class TestOauth2(SpotirecTestCase):
         Testing get_authorize_url()
         """
         expected = 'https://accounts.spotify.com/authorize?client_id=thisisarealclientid&' \
-                   'response_type=code&redirect_uri=https%3A%2F%2Fthis-is-a-real-redirect.uri&' \
-                   'scope=user-modify-playback-state+ugc-image-upload+user-library-modify'
+                   'response_type=code&redirect_uri=https%3A%2F%2Fthis-is-a-real-redirect' \
+                   '.uri%3A0&scope=user-modify-playback-state+ugc-image-upload+user-library-modify'
         self.oauth.client_id = 'thisisarealclientid'
         self.oauth.redirect = 'https://this-is-a-real-redirect.uri'
         self.oauth.scopes = ['user-modify-playback-state', 'ugc-image-upload',
