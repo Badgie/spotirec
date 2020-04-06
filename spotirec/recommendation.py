@@ -88,10 +88,9 @@ class Recommendation:
                                                    'id': data_dict['id'],
                                                    'type': data_dict['type']}
             try:
-                assert data_dict['artists'] is not None
                 self.seed_info[len(self.seed_info) - 1]['artists'] = [x['name']
                                                                       for x in data_dict['artists']]
-            except (KeyError, AssertionError):
+            except KeyError:
                 pass
             self.LOGGER.debug(f'data: {self.seed_info[len(self.seed_info)-1]}')
 
