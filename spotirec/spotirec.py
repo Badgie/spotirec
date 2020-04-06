@@ -199,7 +199,7 @@ def authorize(port=PORTS[0]):
         if ex.errno == 98:
             next_port = PORTS.index(port) + 1
             if next_port > len(PORTS) - 1:
-                logger.error(f'tried all ports ({",".join(str(x) for x in PORTS)}, all are in use')
+                logger.error(f'tried all ports ({",".join(str(x) for x in PORTS)}), all are in use')
                 logger.error(f'please ensure one of them is available and try again')
                 exit(1)
             logger.warning(f'port {port} is already in use, trying {PORTS[next_port]}')
@@ -243,7 +243,7 @@ def get_token() -> str:
     else:
         logger.verbose('token not found, authorising')
         authorize()
-        exit(1)
+        exit(0)
 
 
 def get_user_top_genres() -> dict:
@@ -948,50 +948,50 @@ def parse():
     logger.verbose('parsing args')
     if args.b:
         add_to_blacklist(args.b)
-        exit(1)
+        exit(0)
     if args.br:
         remove_from_blacklist(args.br)
-        exit(1)
+        exit(0)
     if args.bc:
         if args.bc[0] == 'track':
             add_to_blacklist([api.get_current_track(headers)])
         elif args.bc[0] == 'artist':
             add_to_blacklist(api.get_current_artists(headers))
-        exit(1)
+        exit(0)
 
     if args.transfer_playback:
         transfer_playback(args.transfer_playback[0])
-        exit(1)
+        exit(0)
 
     if args.s:
         logger.info('liking current track')
         api.like_track(headers)
-        exit(1)
+        exit(0)
     elif args.sr:
         logger.info('unliking current track')
         api.unlike_track(headers)
-        exit(1)
+        exit(0)
     if args.save_playlist:
         save_playlist()
-        exit(1)
+        exit(0)
     if args.remove_playlists:
         remove_playlists(args.remove_playlists)
-        exit(1)
+        exit(0)
     if args.save_device:
         save_device()
-        exit(1)
+        exit(0)
     if args.remove_devices:
         remove_devices(args.remove_devices)
-        exit(1)
+        exit(0)
     if args.remove_presets:
         remove_presets(args.remove_presets)
-        exit(1)
+        exit(0)
     if args.add_to:
         add_current_track(args.add_to[0])
-        exit(1)
+        exit(0)
     elif args.remove_from:
         remove_current_track(args.remove_from[0])
-        exit(1)
+        exit(0)
 
     if args.print:
         if args.print[0] == 'artists':
@@ -1016,11 +1016,11 @@ def parse():
             print_playlists()
         elif args.print[0] == 'tuning':
             print_tuning_options()
-        exit(1)
+        exit(0)
     if args.track_features:
         print_track_features(api.get_current_track(headers) if
                              args.track_features[0] == 'current' else args.track_features[0])
-        exit(1)
+        exit(0)
 
     if args.play:
         rec.auto_play = True
