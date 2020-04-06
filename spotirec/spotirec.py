@@ -548,16 +548,7 @@ def load_preset(name: str) -> recommendation.Recommendation:
         logger.error(f'could not find preset \"{name}\", check spelling and try again')
         logger.log_file(crash=True)
         exit(1)
-    preset = recommendation.Recommendation()
-    preset.limit = contents['limit']
-    preset.limit_original = contents['limit']
-    preset.based_on = contents['based_on']
-    preset.seed = contents['seed']
-    preset.seed_type = contents['seed_type']
-    preset.seed_info = contents['seed_info']
-    preset.rec_params = contents['rec_params']
-    preset.auto_play = contents['auto_play']
-    preset.playback_device = contents['playback_device']
+    preset = recommendation.Recommendation(preset=contents)
     logger.debug(f'preset: {preset}')
     return preset
 

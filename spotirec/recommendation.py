@@ -10,19 +10,21 @@ class Recommendation:
     LOGGER = None
     TIME = time.localtime()
 
-    def __init__(self, t=TIME):
-        self.limit = 20
-        self.limit_original = self.limit
+    def __init__(self, t=TIME, preset=None):
+        if preset is None:
+            preset = {}
+        self.limit = preset.pop('limit', 20)
+        self.limit_original = preset.pop('limit', self.limit)
         self.created_at = time.ctime(time.time())
-        self.based_on = 'top genres'
-        self.seed = ''
-        self.seed_type = 'genres'
-        self.seed_info = {}
-        self.rec_params = {'limit': str(self.limit)}
+        self.based_on = preset.pop('based_on', 'top genres')
+        self.seed = preset.pop('seed', '')
+        self.seed_type = preset.pop('seed_type', 'genres')
+        self.seed_info = preset.pop('seed_info', {})
+        self.rec_params = preset.pop('rec_params', {'limit': str(self.limit)})
         self.playlist_name = f'Spotirec-{t.tm_mday}-{t.tm_mon}-{t.tm_year}'
         self.playlist_id = ''
-        self.auto_play = False
-        self.playback_device = {}
+        self.auto_play = preset.pop('auto_play', False)
+        self.playback_device = preset.pop('playback_device', {})
 
     def __str__(self):
         return str({'limit': self.limit, 'original limit': self.limit_original,
