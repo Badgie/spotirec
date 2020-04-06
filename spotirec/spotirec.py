@@ -318,7 +318,7 @@ def print_choices(data=None, prompt=True, sort=False) -> str:
         sorted_data = sorted(data.items(), key=lambda kv: kv[1], reverse=True)
         data = [sorted_data[x][0] for x in range(0, len(sorted_data))]
     # Convert data to matrix
-    matrix = [data[x:x+3] for x in range(0, len(data), 3)]
+    matrix = [data[x:x + 3] for x in range(0, len(data), 3)]
     # Format output lines, three seeds per line
     line = '\n'.join([''.join(f'{_index(x, row)}: {_strip(x)}{_jump(x, row)}'
                               for x in row) for row in matrix])
