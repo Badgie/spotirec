@@ -338,8 +338,7 @@ def check_if_valid_genre(genre: str) -> bool:
     :param genre: user input genre
     :return: True if genre exists, False if not
     """
-    if any(g == genre for g in get_user_top_genres()) or any(
-            g == genre for g in api.get_genre_seeds(headers)['genres']):
+    if any(g == genre for g in api.get_genre_seeds(headers)['genres']):
         return True
     logger.debug(f'genre {genre} is invalid')
     return False
