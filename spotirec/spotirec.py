@@ -489,14 +489,9 @@ def generate_img(tracks: list) -> Image:
     # Create an image object the size of the squared square root of the hash string - always 8x8
     img = Image.new('RGB', (int(math.sqrt(len(track_hash))), int(math.sqrt(len(track_hash)))))
     logger.debug(f'image: {img}')
-    pixel_map = []
     # Iterate over hash string and assign to pixel map each digit to the generated color,
     # each letter to light gray
-    for x in track_hash:
-        if re.match(r'[0-9]', x):
-            pixel_map.append(color)
-        else:
-            pixel_map.append([200, 200, 200])
+    pixel_map = [color if re.match(r'[0-9]', x) else [200, 200, 200] for x in track_hash]
     # Add the pixel map to the image object and return as a size suited for the Spotify API
     logger.debug(f'pixel map: {pixel_map}')
     img.putdata([tuple(x) for x in pixel_map])
