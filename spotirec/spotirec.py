@@ -254,18 +254,12 @@ def get_user_top_genres() -> dict:
     logger.verbose('getting top genres')
     data = api.get_top_list('artists', 50, headers)
     logger.debug(f'got {len(data["items"])} artists for genres')
-    genres = {}
     genre_seeds = api.get_genre_seeds(headers)
-    # Loop through each genre of each artist
-    for x in data['items']:
-        for genre in x['genres']:
-            genre = genre.replace(' ', '-')
-            # Check if genre is a valid seed
-            if any(g == genre for g in genre_seeds['genres']):
-                try:
-                    genres[genre] += 1
-                except KeyError:
-                    genres[genre] = 1
+    # Get all genres of each artist
+    artist_genres = [genre.replace(' ', '-') for x in data['items']
+                     for genre in x['genres'] if genre.replace(' ', '-') in genre_seeds['genres']]
+    # Map each genre to its count
+    genres = {genre: artist_genres.count(genre) for genre in artist_genres}
     logger.debug(f'extracted {len(genres)} genre seeds from artists')
     logger.debug(f'genre seeds: {genres}')
     return genres
