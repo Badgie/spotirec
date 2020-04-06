@@ -295,13 +295,24 @@ def print_choices(data=None, prompt=True, sort=False) -> str:
         """
         return r.index(i) + (matrix.index(r) * 3)
 
-    def _strip(item: str) -> str:
+    def _strip(i: str) -> str:
         """
         Ensures string is a certain length
-        :param item: string
+        :param i: item
         :return: formatted string
         """
-        return item if len(item) < 34 else f'{item[0:34]}..'
+        return i if len(i) < 34 else f'{i[0:34]}..'
+
+    def _jump(i: str, r: list) -> str:
+        """
+        Create a whitespace jump if needed, based on item index
+        No jump if item is the last element in its row
+        :param i: item
+        :param r: row
+        :return: whitespace jump
+        """
+        ind = _index(i, r)
+        return '' if r.index(i) == len(r) - 1 else ' ' * (40 - len(_strip(i)) - len(str(ind)))
 
     if sort:
         sorted_data = sorted(data.items(), key=lambda kv: kv[1], reverse=True)
@@ -309,8 +320,7 @@ def print_choices(data=None, prompt=True, sort=False) -> str:
     # Convert data to matrix
     matrix = [data[x:x+3] for x in range(0, len(data), 3)]
     # Format output lines, three seeds per line
-    line = '\n'.join([''.join(f'{_index(x, row)}: {_strip(x)}'
-                              f'{f" " * (40 - len(_strip(x)) - len(str(_index(x, row))))}'
+    line = '\n'.join([''.join(f'{_index(x, row)}: {_strip(x)}{_jump(x, row)}'
                               for x in row) for row in matrix])
     print(line.strip('\n'))
     if prompt:
