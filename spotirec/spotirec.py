@@ -285,23 +285,33 @@ def print_choices(data=None, prompt=True, sort=False) -> str:
     :param sort: whether or not printed data should be sorted
     :return: user input, if seed type is artists or tracks
     """
+
+    def _index(i: str, r: list) -> int:
+        """
+        Calculates absolute index of item in matrix with respect to rows
+        :param i: item
+        :param r: row
+        :return: index
+        """
+        return r.index(i) + (matrix.index(r) * 3)
+
+    def _strip(item: str) -> str:
+        """
+        Ensures string is a certain length
+        :param item: string
+        :return: formatted string
+        """
+        return item if len(item) < 34 else f'{item[0:34]}..'
+
     if sort:
         sorted_data = sorted(data.items(), key=lambda kv: kv[1], reverse=True)
         data = [sorted_data[x][0] for x in range(0, len(sorted_data))]
-    line = ""
+    # Convert data to matrix
+    matrix = [data[x:x+3] for x in range(0, len(data), 3)]
     # Format output lines, three seeds per line
-    for x in range(0, round(len(data)), 3):
-        try:
-            line += f'{x}: {data[x]}'
-            if data[x + 1]:
-                line += f'{" " * (40 - len(data[x]))}{x + 1}: ' \
-                        f'{data[x + 1] if len(data[x + 1]) < 40 else f"{data[x + 1][0:37]}.. "}'
-                if data[x + 2]:
-                    line += \
-                        f'{" " * (40 - len(data[x + 1]))}{x + 2}: ' \
-                        f'{data[x + 2] if len(data[x + 2]) < 40 else f"{data[x + 2][0:37]}.. "}\n'
-        except IndexError:
-            continue
+    line = '\n'.join([''.join(f'{_index(x, row)}: {_strip(x)}'
+                              f'{f" " * (40 - len(_strip(x)) - len(str(_index(x, row))))}'
+                              for x in row) for row in matrix])
     print(line.strip('\n'))
     if prompt:
         try:
