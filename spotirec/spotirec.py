@@ -372,7 +372,7 @@ def check_tune_validity(tune: str):
     logger.verbose('checking tune validity')
     if not re.match(TUNE_RE, tune):
         logger.error(f'tune {tune} does not match the proper format')
-        logger.verbose(str(tune))
+        logger.verbose(tune)
         logger.log_file(crash=True)
         exit(1)
     prefix = tune.split('_', 1)[0]
@@ -382,13 +382,13 @@ def check_tune_validity(tune: str):
     # Check prefix validity
     if prefix not in TUNE_PREFIX:
         logger.error(f'tune prefix \"{tune.split("_", 1)[0]}\" is malformed')
-        logger.verbose(str(TUNE_PREFIX))
+        logger.verbose(TUNE_PREFIX)
         logger.log_file(crash=True)
         exit(1)
     # Check attribute validity
     if key not in list(TUNE_ATTR['int'].keys()) + list(TUNE_ATTR['float'].keys()):
         logger.error(f'tune attribute \"{tune.split("=")[0].split("_", 1)[1]}\" is malformed')
-        logger.verbose(str(list(TUNE_ATTR['int'].keys()) + list(TUNE_ATTR['float'].keys())))
+        logger.verbose(list(TUNE_ATTR['int'].keys()) + list(TUNE_ATTR['float'].keys()))
         logger.log_file(crash=True)
         exit(1)
     # Try parsing value to number
