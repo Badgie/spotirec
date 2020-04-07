@@ -362,8 +362,11 @@ class MockAPI:
         elif method == 'DELETE':
             return MockResponse(200, 'OK', method, headers, '/me/tracks')
         elif method == 'GET':
+            if params['limit'] > 5:
+                params['limit'] = 5
+            tracks = {'items': [self.SAVED_TRACKS['items'][x] for x in range(0, params['limit'])]}
             return MockResponse(200, 'OK', method, headers, '/me/tracks',
-                                content=json_string(self.SAVED_TRACKS))
+                                content=json_string(tracks))
         else:
             return MockResponse(403, 'Forbidden', method, headers, '/me/tracks')
 

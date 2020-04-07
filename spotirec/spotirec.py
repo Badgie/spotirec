@@ -265,6 +265,8 @@ def add_top_genres_seed(seed_count: int):
     """
     logger.verbose(f'adding top {seed_count} genres to seeds')
     sort = sorted(get_user_top_genres().items(), key=lambda kv: kv[1], reverse=True)
+    if seed_count > len(sort):
+        seed_count = len(sort)
     parse_seed_info([sort[x][0] for x in range(0, seed_count)])
 
 

@@ -177,6 +177,20 @@ class TestSpotirec(SpotirecTestCase):
                               4: {'name': 'metalcore', 'type': 'genre'}})
 
     @ordered
+    def test_add_top_genres_seed_out_of_bounds(self):
+        """
+        Testing add_top_genres_seed() more seeds than available
+        """
+        spotirec.add_top_genres_seed(7)
+        self.assertNotEqual(spotirec.rec.seed_info, {})
+        self.assertDictEqual(spotirec.rec.seed_info,
+                             {0: {'name': 'pop', 'type': 'genre'},
+                              1: {'name': 'vapor-death-pop', 'type': 'genre'},
+                              2: {'name': 'metal', 'type': 'genre'},
+                              3: {'name': 'holidays', 'type': 'genre'},
+                              4: {'name': 'metalcore', 'type': 'genre'}})
+
+    @ordered
     def test_print_choices(self):
         """
         Testing print_choices() default
@@ -1735,18 +1749,14 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.parse()
         self.assertEqual(spotirec.rec.based_on, 'recent saved tracks')
         self.assertEqual(spotirec.rec.seed_type, 'tracks')
-        self.assertEqual(len(spotirec.rec.seed_info.keys()), 5)
+        self.assertEqual(len(spotirec.rec.seed_info.keys()), 3)
         self.assertDictEqual(spotirec.rec.seed_info,
                              {0: {'name': 'track0', 'id': 'testid0', 'type': 'track',
                                   'artists': ['frankie0', 'frankie1']},
                               1: {'name': 'track1', 'id': 'testid1', 'type': 'track',
                                   'artists': ['frankie1']},
                               2: {'name': 'track2', 'id': 'testid2', 'type': 'track',
-                                  'artists': ['frankie2', 'frankie1']},
-                              3: {'name': 'track3', 'id': 'testid3', 'type': 'track',
-                                  'artists': ['frankie3', 'frankie1']},
-                              4: {'name': 'track4', 'id': 'testid4', 'type': 'track',
-                                  'artists': ['frankie4', 'frankie3']}})
+                                  'artists': ['frankie2', 'frankie1']}})
 
     @ordered
     def test_args_stc(self):
