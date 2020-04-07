@@ -34,28 +34,28 @@ class Log:
 
     def error(self, msg):
         if self.LEVEL >= ERROR:
-            print('\033[91m' + 'ERROR: ' + '\033[0m' + msg)
+            print('\033[91m' + 'ERROR: ' + '\033[0m' + str(msg))
         self.append_log('ERROR', msg)
 
     def warning(self, msg):
         if self.LEVEL >= WARNING and not self.SUPPRESS_WARNINGS:
-            print('\033[93m' + 'WARNING: ' + '\033[0m' + msg)
+            print('\033[93m' + 'WARNING: ' + '\033[0m' + str(msg))
         self.append_log('WARNING', msg)
 
     def info(self, msg):
         if self.LEVEL >= INFO:
-            print('\033[96m' + 'INFO: ' + '\033[0m' + msg)
+            print('\033[96m' + 'INFO: ' + '\033[0m' + str(msg))
         self.append_log('INFO', msg)
 
     def verbose(self, msg):
         if self.LEVEL >= VERBOSE:
-            print('\033[96m' + 'INFO: ' + '\033[0m' + msg)
+            print('\033[96m' + 'INFO: ' + '\033[0m' + str(msg))
         self.append_log('INFO', msg)
 
     def debug(self, msg):
         if self.LEVEL >= DEBUG:
-            print('\033[94m' + 'DEBUG: ' + '\033[0m' + msg)
+            print('\033[94m' + 'DEBUG: ' + '\033[0m' + str(msg))
         self.append_log('DEBUG', msg)
 
     def append_log(self, level_name, msg):
-        self.LOG += f'[{time.ctime(time.time())}][{level_name}]: {msg}\n'
+        self.LOG += f'[{time.ctime(time.time())}][{level_name}]: {str(msg)}\n'
