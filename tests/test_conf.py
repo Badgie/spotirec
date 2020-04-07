@@ -167,6 +167,24 @@ class TestConf(SpotirecTestCase):
         self.conf.remove_from_blacklist('spotify:track:thisdoesnotexist')
 
     @ordered
+    def test_check_item_in_blacklist_true(self):
+        """
+        Testing check_item_in_blacklist() (true)
+        """
+        test_artist = {'name': 'frankie', 'uri': 'spotify:artist:testuri0frankie'}
+        self.conf.add_to_blacklist(test_artist, test_artist['uri'])
+        self.assertTrue(self.conf.check_item_in_blacklist(test_artist['uri']))
+        self.conf.remove_from_blacklist(test_artist['uri'])
+
+    @ordered
+    def test_check_item_in_blacklist_false(self):
+        """
+        Testing check_item_in_blacklist() (false)
+        """
+        test_uri = 'spotify:artist:testuri0frankie'
+        self.assertFalse(self.conf.check_item_in_blacklist(test_uri))
+
+    @ordered
     def test_get_presets(self):
         """
         Testing get_presets()
