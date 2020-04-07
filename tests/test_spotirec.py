@@ -196,7 +196,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing print_choices() default
         """
-        expected = f'0: metal{" " * 35}1: metalcore{" " * 31}2: vapor-death-pop\n3: pop\n'
+        expected = f'0: metal{" " * 34}1: metalcore{" " * 30}2: vapor-death-pop\n3: pop\n'
         spotirec.print_choices(data=['metal', 'metalcore', 'vapor-death-pop', 'pop'], prompt=False)
         sys.stdout.close()
         sys.stdout = self.stdout_preserve
@@ -209,7 +209,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing print_choices() sorted
         """
-        expected = f'0: vapor-death-pop{" " * 25}1: metalcore{" " * 31}2: metal\n3: pop\n'
+        expected = f'0: vapor-death-pop{" " * 24}1: metalcore{" " * 30}2: metal\n3: pop\n'
         spotirec.print_choices(data={'metal': 3, 'metalcore': 7, 'vapor-death-pop': 23, 'pop': 1},
                                prompt=False, sort=True)
         sys.stdout.close()
@@ -261,7 +261,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         data = {'items': [{'name': 'test0', 'id': 'test0'}, {'name': 'test1', 'id': 'test1'},
                           {'name': 'test2', 'id': 'test2'}, {'name': 'test3', 'id': 'test3'}]}
-        expected = f'0: test0{" " * 35}1: test1{" " * 35}2: test2\n3: test3\n'
+        expected = f'0: test0{" " * 34}1: test1{" " * 34}2: test2\n3: test3\n'
         spotirec.print_artists_or_tracks(data, prompt=False)
         sys.stdout.close()
         sys.stdout = self.stdout_preserve
@@ -1376,8 +1376,8 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing parse() with print arg (artists)
         """
-        expected0 = f'0: frankie0{" " * 32}1: frankie1{" " * 32}2: frankie2\n'
-        expected1 = f'3: frankie3{" " * 32}4: frankie4\n'
+        expected0 = f'0: frankie0{" " * 31}1: frankie1{" " * 31}2: frankie2\n'
+        expected1 = f'3: frankie3{" " * 31}4: frankie4\n'
         spotirec.args = mock.MockArgs(print=['artists'])
         self.assertRaises(SystemExit, spotirec.parse)
         sys.stdout.close()
@@ -1392,8 +1392,8 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing parse() with print arg (tracks)
         """
-        expected0 = f'0: track0{" " * 34}1: track1{" " * 34}2: track2\n'
-        expected1 = f'3: track3{" " * 34}4: track4\n'
+        expected0 = f'0: track0{" " * 33}1: track1{" " * 33}2: track2\n'
+        expected1 = f'3: track3{" " * 33}4: track4\n'
         spotirec.args = mock.MockArgs(print=['tracks'])
         self.assertRaises(SystemExit, spotirec.parse)
         sys.stdout.close()
@@ -1408,8 +1408,8 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing parse() with print arg (genres)
         """
-        expected0 = f'0: pop{" " * 37}1: vapor-death-pop{" " * 25}2: metal\n'
-        expected1 = f'3: holidays{" " * 32}4: metalcore\n'
+        expected0 = f'0: pop{" " * 36}1: vapor-death-pop{" " * 24}2: metal\n'
+        expected1 = f'3: holidays{" " * 31}4: metalcore\n'
         spotirec.args = mock.MockArgs(print=['genres'])
         self.assertRaises(SystemExit, spotirec.parse)
         sys.stdout.close()
@@ -1424,8 +1424,8 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing parse() with print arg (genre seeds)
         """
-        expected0 = f'0: metal{" " * 35}1: metalcore{" " * 31}2: pop\n'
-        expected1 = f'3: vapor-death-pop{" " * 25}4: holidays\n'
+        expected0 = f'0: metal{" " * 34}1: metalcore{" " * 30}2: pop\n'
+        expected1 = f'3: vapor-death-pop{" " * 24}4: holidays\n'
         spotirec.args = mock.MockArgs(print=['genre-seeds'])
         self.assertRaises(SystemExit, spotirec.parse)
         sys.stdout.close()

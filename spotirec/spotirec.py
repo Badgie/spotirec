@@ -199,7 +199,7 @@ def authorize(port=PORTS[0]):
         if ex.errno == 98:
             next_port = PORTS.index(port) + 1
             if next_port > len(PORTS) - 1:
-                logger.error(f'tried all ports ({",".join(str(x) for x in PORTS)}, all are in use')
+                logger.error(f'tried all ports ({",".join(str(x) for x in PORTS)}), all are in use')
                 logger.error(f'please ensure one of them is available and try again')
                 exit(1)
             logger.warning(f'port {port} is already in use, trying {PORTS[next_port]}')
@@ -243,7 +243,7 @@ def get_token() -> str:
     else:
         logger.verbose('token not found, authorising')
         authorize()
-        exit(1)
+        exit(0)
 
 
 def get_user_top_genres() -> dict:
@@ -254,18 +254,12 @@ def get_user_top_genres() -> dict:
     logger.verbose('getting top genres')
     data = api.get_top_list('artists', 50, headers)
     logger.debug(f'got {len(data["items"])} artists for genres')
-    genres = {}
     genre_seeds = api.get_genre_seeds(headers)
-    # Loop through each genre of each artist
-    for x in data['items']:
-        for genre in x['genres']:
-            genre = genre.replace(' ', '-')
-            # Check if genre is a valid seed
-            if any(g == genre for g in genre_seeds['genres']):
-                try:
-                    genres[genre] += 1
-                except KeyError:
-                    genres[genre] = 1
+    # Get all genres of each artist
+    artist_genres = [genre.replace(' ', '-') for x in data['items']
+                     for genre in x['genres'] if genre.replace(' ', '-') in genre_seeds['genres']]
+    # Map each genre to its count
+    genres = {genre: artist_genres.count(genre) for genre in artist_genres}
     logger.debug(f'extracted {len(genres)} genre seeds from artists')
     logger.debug(f'genre seeds: {genres}')
     return genres
@@ -291,23 +285,43 @@ def print_choices(data=None, prompt=True, sort=False) -> str:
     :param sort: whether or not printed data should be sorted
     :return: user input, if seed type is artists or tracks
     """
+
+    def _index(i: str, r: list) -> int:
+        """
+        Calculates absolute index of item in matrix with respect to rows
+        :param i: item
+        :param r: row
+        :return: index
+        """
+        return r.index(i) + (matrix.index(r) * 3)
+
+    def _strip(i: str) -> str:
+        """
+        Ensures string is a certain length
+        :param i: item
+        :return: formatted string
+        """
+        return i if len(i) < 34 else f'{i[0:34]}..'
+
+    def _jump(i: str, r: list) -> str:
+        """
+        Create a whitespace jump if needed, based on item index
+        No jump if item is the last element in its row
+        :param i: item
+        :param r: row
+        :return: whitespace jump
+        """
+        ind = _index(i, r)
+        return '' if r.index(i) == len(r) - 1 else ' ' * (40 - len(_strip(i)) - len(str(ind)))
+
     if sort:
         sorted_data = sorted(data.items(), key=lambda kv: kv[1], reverse=True)
         data = [sorted_data[x][0] for x in range(0, len(sorted_data))]
-    line = ""
+    # Convert data to matrix
+    matrix = [data[x:x + 3] for x in range(0, len(data), 3)]
     # Format output lines, three seeds per line
-    for x in range(0, round(len(data)), 3):
-        try:
-            line += f'{x}: {data[x]}'
-            if data[x + 1]:
-                line += f'{" " * (40 - len(data[x]))}{x + 1}: ' \
-                        f'{data[x + 1] if len(data[x + 1]) < 40 else f"{data[x + 1][0:37]}.. "}'
-                if data[x + 2]:
-                    line += \
-                        f'{" " * (40 - len(data[x + 1]))}{x + 2}: ' \
-                        f'{data[x + 2] if len(data[x + 2]) < 40 else f"{data[x + 2][0:37]}.. "}\n'
-        except IndexError:
-            continue
+    line = '\n'.join([''.join(f'{_index(x, row)}: {_strip(x)}{_jump(x, row)}'
+                              for x in row) for row in matrix])
     print(line.strip('\n'))
     if prompt:
         try:
@@ -344,8 +358,7 @@ def check_if_valid_genre(genre: str) -> bool:
     :param genre: user input genre
     :return: True if genre exists, False if not
     """
-    if any(g == genre for g in get_user_top_genres()) or any(
-            g == genre for g in api.get_genre_seeds(headers)['genres']):
+    if any(g == genre for g in api.get_genre_seeds(headers)['genres']):
         return True
     logger.debug(f'genre {genre} is invalid')
     return False
@@ -486,14 +499,9 @@ def generate_img(tracks: list) -> Image:
     # Create an image object the size of the squared square root of the hash string - always 8x8
     img = Image.new('RGB', (int(math.sqrt(len(track_hash))), int(math.sqrt(len(track_hash)))))
     logger.debug(f'image: {img}')
-    pixel_map = []
     # Iterate over hash string and assign to pixel map each digit to the generated color,
     # each letter to light gray
-    for x in track_hash:
-        if re.match(r'[0-9]', x):
-            pixel_map.append(color)
-        else:
-            pixel_map.append([200, 200, 200])
+    pixel_map = [color if re.match(r'[0-9]', x) else [200, 200, 200] for x in track_hash]
     # Add the pixel map to the image object and return as a size suited for the Spotify API
     logger.debug(f'pixel map: {pixel_map}')
     img.putdata([tuple(x) for x in pixel_map])
@@ -548,16 +556,7 @@ def load_preset(name: str) -> recommendation.Recommendation:
         logger.error(f'could not find preset \"{name}\", check spelling and try again')
         logger.log_file(crash=True)
         exit(1)
-    preset = recommendation.Recommendation()
-    preset.limit = contents['limit']
-    preset.limit_original = contents['limit']
-    preset.based_on = contents['based_on']
-    preset.seed = contents['seed']
-    preset.seed_type = contents['seed_type']
-    preset.seed_info = contents['seed_info']
-    preset.rec_params = contents['rec_params']
-    preset.auto_play = contents['auto_play']
-    preset.playback_device = contents['playback_device']
+    preset = recommendation.Recommendation(preset=contents)
     logger.debug(f'preset: {preset}')
     return preset
 
@@ -957,50 +956,50 @@ def parse():
     logger.verbose('parsing args')
     if args.b:
         add_to_blacklist(args.b)
-        exit(1)
+        exit(0)
     if args.br:
         remove_from_blacklist(args.br)
-        exit(1)
+        exit(0)
     if args.bc:
         if args.bc[0] == 'track':
             add_to_blacklist([api.get_current_track(headers)])
         elif args.bc[0] == 'artist':
             add_to_blacklist(api.get_current_artists(headers))
-        exit(1)
+        exit(0)
 
     if args.transfer_playback:
         transfer_playback(args.transfer_playback[0])
-        exit(1)
+        exit(0)
 
     if args.s:
         logger.info('liking current track')
         api.like_track(headers)
-        exit(1)
+        exit(0)
     elif args.sr:
         logger.info('unliking current track')
         api.unlike_track(headers)
-        exit(1)
+        exit(0)
     if args.save_playlist:
         save_playlist()
-        exit(1)
+        exit(0)
     if args.remove_playlists:
         remove_playlists(args.remove_playlists)
-        exit(1)
+        exit(0)
     if args.save_device:
         save_device()
-        exit(1)
+        exit(0)
     if args.remove_devices:
         remove_devices(args.remove_devices)
-        exit(1)
+        exit(0)
     if args.remove_presets:
         remove_presets(args.remove_presets)
-        exit(1)
+        exit(0)
     if args.add_to:
         add_current_track(args.add_to[0])
-        exit(1)
+        exit(0)
     elif args.remove_from:
         remove_current_track(args.remove_from[0])
-        exit(1)
+        exit(0)
 
     if args.print:
         if args.print[0] == 'artists':
@@ -1025,11 +1024,11 @@ def parse():
             print_playlists()
         elif args.print[0] == 'tuning':
             print_tuning_options()
-        exit(1)
+        exit(0)
     if args.track_features:
         print_track_features(api.get_current_track(headers) if
                              args.track_features[0] == 'current' else args.track_features[0])
-        exit(1)
+        exit(0)
 
     if args.play:
         rec.auto_play = True
