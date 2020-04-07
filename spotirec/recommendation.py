@@ -13,7 +13,7 @@ class Recommendation:
     def __init__(self, t=TIME, preset=None):
         if preset is None:
             preset = {}
-        self.limit = preset.pop('limit', 20)
+        self.limit = preset.pop('limit', 100)
         self.limit_original = preset.pop('limit', self.limit)
         self.created_at = time.ctime(time.time())
         self.based_on = preset.pop('based_on', 'top genres')
