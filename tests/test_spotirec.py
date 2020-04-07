@@ -674,8 +674,8 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing print_presets()
         """
-        expected0 = f'Name{" " * 16}Type{" " * 21}Params{" " * 44}Seeds'
-        expected1 = f'test{" " * 16}top genres{" " * 15}limit=20{" " * 42}'
+        expected0 = f'Name{" " * 16}Type{" " * 21}Auto play{" " * 6}Params{" " * 44}Seeds'
+        expected1 = f'test{" " * 16}top genres{" " * 15}No{" " * 13}limit=20{" " * 42}'
         spotirec.save_preset('test')
         spotirec.print_presets()
         sys.stdout.close()
@@ -1468,7 +1468,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing parse() with print arg (presets)
         """
-        expected = f'Name{" " * 16}Type{" " * 21}Params{" " * 44}Seeds'
+        expected = f'Name{" " * 16}Type{" " * 21}Auto play{" " * 6}Params{" " * 44}Seeds'
         spotirec.args = mock.MockArgs(print=['presets'])
         self.assertRaises(SystemExit, spotirec.parse)
         sys.stdout.close()
