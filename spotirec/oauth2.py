@@ -10,7 +10,7 @@ from urllib import parse
 class SpotifyOAuth:
     OAUTH_AUTH_URL = 'https://accounts.spotify.com/authorize'
     OAUTH_TOKEN_URL = 'https://accounts.spotify.com/api/token'
-    PORT = 8080
+    PORT = 0
     LOGGER = None
     CONF = None
     API = None
@@ -18,7 +18,7 @@ class SpotifyOAuth:
     def __init__(self):
         self.client_id = '466a89a53359403b82df7d714030ec5f'
         self.client_secret = '28147de72c3549e98b1e790f3d080b85'
-        self.redirect = f'http://localhost:{self.PORT}'
+        self.redirect = f'http://localhost'
         self.scopes = ['user-top-read', 'playlist-modify-public', 'playlist-modify-private',
                        'user-read-private', 'user-read-email', 'ugc-image-upload',
                        'user-read-playback-state', 'user-modify-playback-state',
@@ -89,7 +89,7 @@ class SpotifyOAuth:
         """
         body = {'grant_type': 'authorization_code',
                 'code': code,
-                'redirect_uri': self.redirect}
+                'redirect_uri': f'{self.redirect}:{self.PORT}'}
         response = requests.post(self.OAUTH_TOKEN_URL, data=body, headers=self.encode_header())
         self.API.error_handle('token retrieve', 200, 'POST', response=response)
         token = json.loads(response.content.decode('utf-8'))
@@ -105,7 +105,7 @@ class SpotifyOAuth:
         self.LOGGER.verbose('creating authorisation url')
         params = {'client_id': self.client_id,
                   'response_type': 'code',
-                  'redirect_uri': self.redirect,
+                  'redirect_uri': f'{self.redirect}:{self.PORT}',
                   'scope': ' '.join(x for x in self.scopes)}
         self.LOGGER.debug(f'url: {self.OAUTH_AUTH_URL}?{parse.urlencode(params)}')
         return f'{self.OAUTH_AUTH_URL}?{parse.urlencode(params)}'
