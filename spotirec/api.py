@@ -291,3 +291,15 @@ class API:
         data = {'device_ids': [device_id], 'play': start_playback}
         response = requests.put(f'{self.URL_BASE}/me/player', headers=headers, json=data)
         self.error_handle('transfer playback', 204, 'PUT', response=response)
+
+    def get_saved_tracks(self, headers: dict, limit=50) -> json:
+        """
+        Gets a users saved tracks
+        :param headers: request headers
+        :param limit: the amount of tracks to get
+        :return: json object
+        """
+        params = {'limit': limit}
+        response = requests.get(f'{self.URL_BASE}/me/tracks', headers=headers, params=params)
+        self.error_handle('retrieve saved tracks', 200, 'GET', response=response)
+        return json.loads(response.content.decode('utf-8'))

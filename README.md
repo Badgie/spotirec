@@ -82,8 +82,10 @@ $ spotirec
 You can pass arguments to specify the what the recommendations should be based on - these are mutually exclusive
 ```
 $ spotirec -t 
+$ spotirec -st
 $ spotirec -a
 $ spotirec -tc
+$ spotirec -stc
 $ spotirec -ac
 $ spotirec -gc
 $ spotirec -gcs
@@ -91,20 +93,23 @@ $ spotirec -c
 ```
 where
 - `-t` is based off your 5 most played tracks,
+- `-st` is based off your 5 most recently liked tracks,
 - `-a` is based off your 5 most played artists,
 - `-tc` you can define 1-5 of your most played tracks,
+- `-stc` you can define 1-5 of your 50 most recently liked tracks,
 - `-ac` you can define 1-5 of your most played artists,
 - `-gc` you can define 1-5 of your most played valid seed genres,
-- `-gcs` you can define 1-5 preset genre seeds,
+- `-gcs` you can define 1-5 preset genre seeds, and
 - `-c` you can manually input 1-5 genres, artist uris, or track uris
 
-By default, the script will base recommendations off of your top valid seed genres extracted from your top artists. For this method, pass none of the above 7 arguments.
+By default, the script will base recommendations off of your top valid seed genres extracted from your top artists. For this method, pass none of the above 9 arguments.
 
-On all non-custom schemes, e.g.; `-a`, `-t`, and no-arg, you can specify how many seeds should be included in the recommendation. The value must be in the range 1-5, and the default value is 5
+On all non-custom schemes, i.e. `-a`, `-t`, `-st`, and no-arg, you can specify how many seeds should be included in the recommendation. The value must be in the range 1-5, and the default value is 5
 ```
 $ spotirec 3
 $ spotirec -a 2
 $ spotirec -t 4
+$ spotirec -st 1
 ```
 Note that if this option is used with no-arg, it **must** be the very first argument
 

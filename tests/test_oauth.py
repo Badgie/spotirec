@@ -44,7 +44,8 @@ class TestOauth2(SpotirecTestCase):
         self.oauth.OAUTH_TOKEN_URL = '/api/token'
         self.oauth.client_id = 'client_id'
         self.oauth.client_secret = 'client_secret'
-        self.oauth.scopes = 'user-modify-playback-state ugc-image-upload user-library-modify'
+        self.oauth.scopes = ['user-modify-playback-state', 'ugc-image-upload',
+                             'user-library-modify']
         self.logger.set_level(0)
         self.conf.CONFIG_DIR = 'tests/fixtures/'
         self.conf.CONFIG_FILE = 'test.conf'
@@ -236,7 +237,8 @@ class TestOauth2(SpotirecTestCase):
                    'scope=user-modify-playback-state+ugc-image-upload+user-library-modify'
         self.oauth.client_id = 'thisisarealclientid'
         self.oauth.redirect = 'https://this-is-a-real-redirect.uri'
-        self.oauth.scopes = 'user-modify-playback-state ugc-image-upload user-library-modify'
+        self.oauth.scopes = ['user-modify-playback-state', 'ugc-image-upload',
+                             'user-library-modify']
         url = self.oauth.get_authorize_url()
         self.assertEqual(url, expected)
 

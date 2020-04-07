@@ -71,7 +71,8 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.sp_oauth.client_secret = 'client_secret'
         spotirec.sp_oauth.client_id = 'client_id'
         spotirec.sp_oauth.redirect = 'https://real.url'
-        spotirec.sp_oauth.scopes = 'scope'
+        spotirec.sp_oauth.scopes = ['user-modify-playback-state', 'ugc-image-upload',
+                                    'user-library-modify']
         spotirec.api.URL_BASE = ''
         self.test_log = 'tests/fixtures/test-log'
         self.log_file = open(self.test_log, 'w')
@@ -95,7 +96,8 @@ class TestSpotirec(SpotirecTestCase):
         """
         spotirec.request = mock.MockRequest('https://real.url')
         expected = "<a href='/authorize?client_id=client_id&response_type=code&" \
-                   "redirect_uri=https%3A%2F%2Freal.url&scope=scope'>Login to Spotify</a>"
+                   "redirect_uri=https%3A%2F%2Freal.url&scope=user-modify-playback-state+" \
+                   "ugc-image-upload+user-library-modify'>Login to Spotify</a>"
         res = spotirec.index()
         self.assertEqual(res, expected)
 
@@ -296,6 +298,22 @@ class TestSpotirec(SpotirecTestCase):
             self.assertIn(expected, stdout)
 
     @ordered
+    def test_check_tune_validity_improper_format(self):
+        """
+        Testing check_tune_validity() improper format
+        """
+        expected = 'tune max_tempo_160 does not match the proper format'
+        spotirec.logger.set_level(log.INFO)
+        self.assertRaises(SystemExit, spotirec.check_tune_validity, tune='max_tempo_160')
+        sys.stdout.close()
+        sys.stdout = self.stdout_preserve
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
+            crash_file = stdout.split('/')[2].strip('\n')
+            os.remove(f'tests/fixtures/{crash_file}')
+
+    @ordered
     def test_check_tune_validity_fail_prefix(self):
         """
         Testing check_tune_validity() invalid prefix
@@ -332,9 +350,9 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing check_tune_validity() invalid value
         """
-        expected = 'tune value test does not match attribute tempo data type requirements'
+        expected = 'tune value 160,0 does not match attribute tempo data type requirements'
         spotirec.logger.set_level(log.INFO)
-        self.assertRaises(SystemExit, spotirec.check_tune_validity, tune='max_tempo=test')
+        self.assertRaises(SystemExit, spotirec.check_tune_validity, tune='max_tempo=160,0')
         sys.stdout.close()
         sys.stdout = self.stdout_preserve
         with open(self.test_log, 'r') as f:
@@ -1709,6 +1727,62 @@ class TestSpotirec(SpotirecTestCase):
                               2: {'name': 'frankie0', 'id': 'testartist', 'type': 'artist'}})
 
     @ordered
+    def test_args_st(self):
+        """
+        Testing parse() with st arg
+        """
+        spotirec.args = mock.MockArgs(st=3)
+        spotirec.parse()
+        self.assertEqual(spotirec.rec.based_on, 'recent saved tracks')
+        self.assertEqual(spotirec.rec.seed_type, 'tracks')
+        self.assertEqual(len(spotirec.rec.seed_info.keys()), 5)
+        self.assertDictEqual(spotirec.rec.seed_info,
+                             {0: {'name': 'track0', 'id': 'testid0', 'type': 'track',
+                                  'artists': ['frankie0', 'frankie1']},
+                              1: {'name': 'track1', 'id': 'testid1', 'type': 'track',
+                                  'artists': ['frankie1']},
+                              2: {'name': 'track2', 'id': 'testid2', 'type': 'track',
+                                  'artists': ['frankie2', 'frankie1']},
+                              3: {'name': 'track3', 'id': 'testid3', 'type': 'track',
+                                  'artists': ['frankie3', 'frankie1']},
+                              4: {'name': 'track4', 'id': 'testid4', 'type': 'track',
+                                  'artists': ['frankie4', 'frankie3']}})
+
+    @ordered
+    def test_args_stc(self):
+        """
+        Testing parse() with stc arg
+        """
+
+        def mock_input(prompt: str):
+            return '0 4'
+
+        spotirec.input = mock_input
+        spotirec.args = mock.MockArgs(stc=True)
+        spotirec.parse()
+        self.assertEqual(spotirec.rec.based_on, 'custom saved tracks')
+        self.assertEqual(spotirec.rec.seed_type, 'tracks')
+        self.assertEqual(len(spotirec.rec.seed_info.keys()), 2)
+        self.assertDictEqual(spotirec.rec.seed_info,
+                             {0: {'name': 'track0', 'id': 'testid0', 'type': 'track',
+                                  'artists': ['frankie0', 'frankie1']},
+                              1: {'name': 'track4', 'id': 'testid4', 'type': 'track',
+                                  'artists': ['frankie4', 'frankie3']}})
+
+    @ordered
+    def test_args_stc_sigint(self):
+        """
+        Testing parse() with stc arg (sigint)
+        """
+
+        def mock_input(prompt: str):
+            raise KeyboardInterrupt
+
+        spotirec.input = mock_input
+        spotirec.args = mock.MockArgs(stc=True)
+        self.assertRaises(SystemExit, spotirec.parse)
+
+    @ordered
     def test_args_l(self):
         """
         Testing parse() with l arg
@@ -1810,6 +1884,10 @@ class TestSpotirec(SpotirecTestCase):
         self.assertIsNone(args.save_preset)
         self.assertIn('sr', args)
         self.assertFalse(args.sr)
+        self.assertIn('st', args)
+        self.assertIsNone(args.st)
+        self.assertIn('stc', args)
+        self.assertFalse(args.stc)
         self.assertIn('suppress_warnings', args)
         self.assertFalse(args.suppress_warnings)
         self.assertIn('t', args)
@@ -1993,3 +2071,29 @@ class TestSpotirec(SpotirecTestCase):
         self.assertDictEqual(preset['playback_device'], spotirec.rec.playback_device)
         spotirec.get_token = get_token_save
         spotirec.conf.remove_preset('test-preset')
+
+    @ordered
+    def test_check_scope_perms(self):
+        """
+        Testing check_scope_permissions()
+        """
+        # should not cause system exit
+        spotirec.check_scope_permissions()
+
+    @ordered
+    def test_check_scope_perms_error(self):
+        """
+        Testing check_scope_permissions() fail
+        """
+
+        def mock_authorize():
+            self.test = 'success'
+
+        self.test = ''
+        spotirec.sp_oauth.scopes.append('this-is-not-a-scope')
+        auth_save = spotirec.authorize
+        spotirec.authorize = mock_authorize
+        self.assertRaises(SystemExit, spotirec.check_scope_permissions)
+        self.assertEqual(self.test, 'success')
+        spotirec.authorize = auth_save
+        spotirec.sp_oauth.scopes.remove('this-is-not-a-scope')

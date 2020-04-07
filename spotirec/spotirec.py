@@ -40,13 +40,14 @@ TUNE_ATTR = {'int': {'duration_ms': {'min': 0, 'max': sys.maxsize * 2 + 1, 'rec_
 URI_RE = r'spotify:(artist|track):[a-zA-Z0-9]+'
 PLAYLIST_URI_RE = r'spotify:playlist:[a-zA-Z0-9]+'
 TRACK_URI_RE = r'spotify:track:[a-zA-Z0-9]+'
+TUNE_RE = r'\w+_\w+=\d+(.\d+)?'
 
-logger = None
-conf = None
-api = None
-sp_oauth = None
-rec = None
-headers = None
+logger = log.Log()
+conf = sp_conf.Config()
+api = sp_api.API()
+sp_oauth = oauth2.SpotifyOAuth()
+rec = recommendation.Recommendation()
+headers = {}
 args = None
 
 
@@ -84,12 +85,16 @@ spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for de
                              choices=range(1, 6), help='base recommendations on your top artists')
     mutex_group.add_argument('-t', metavar='SEED_SIZE', nargs='?', type=int, const=5,
                              choices=range(1, 6), help='base recommendations on your top tracks')
+    mutex_group.add_argument('-st', metavar='SEED_SIZE', nargs='?', type=int, const=5,
+                             help='base recommendations on top saved tracks')
     mutex_group.add_argument('-ac', action='store_true',
                              help='base recommendations on custom top artists')
     mutex_group.add_argument('-tc', action='store_true',
                              help='base recommendations on custom top tracks')
     mutex_group.add_argument('-gc', action='store_true',
                              help='base recommendations on custom top valid seed genres')
+    mutex_group.add_argument('-stc', action='store_true',
+                             help='base recommendations on custom top saved tracks')
     mutex_group.add_argument('-gcs', action='store_true',
                              help='base recommendations on custom seed genres')
     mutex_group.add_argument('-c', action='store_true',
@@ -167,6 +172,16 @@ def setup_config_dir():
     # Ensure config dir exists
     if not os.path.isdir(CONFIG_PATH):
         os.makedirs(CONFIG_PATH)
+
+
+def check_scope_permissions():
+    oauth = conf.get_oauth()
+    scopes = oauth.get('scope')
+    if any(scope not in scopes for scope in sp_oauth.scopes):
+        logger.error('new functionality that needs new permissions has been added, please '
+                     'navigate to your browser and authorize again')
+        authorize()
+        exit(0)
 
 
 def authorize():
@@ -328,6 +343,11 @@ def check_tune_validity(tune: str):
     :param tune: tune input as string
     """
     logger.verbose('checking tune validity')
+    if not re.match(TUNE_RE, tune):
+        logger.error(f'tune {tune} does not match the proper format')
+        logger.verbose(str(tune))
+        logger.log_file(crash=True)
+        exit(1)
     prefix = tune.split('_', 1)[0]
     key = tune.split('=')[0].split('_', 1)[1]
     value = tune.split('=')[1]
@@ -1011,6 +1031,11 @@ def parse():
         rec.based_on = 'top tracks'
         rec.seed_type = 'tracks'
         parse_seed_info([x for x in api.get_top_list('tracks', args.t, headers)['items']])
+    elif args.st:
+        logger.info(f'basing recommendations off your top {args.st} saved track(s)')
+        rec.based_on = 'recent saved tracks'
+        rec.seed_type = 'tracks'
+        parse_seed_info([x['track'] for x in api.get_saved_tracks(headers, limit=args.st)['items']])
     elif args.gcs:
         rec.based_on = 'custom seed genres'
         print_choices(data=api.get_genre_seeds(headers)['genres'])
@@ -1022,6 +1047,11 @@ def parse():
         rec.based_on = 'custom tracks'
         rec.seed_type = 'tracks'
         print_artists_or_tracks(api.get_top_list('tracks', 50, headers))
+    elif args.stc:
+        rec.based_on = 'custom saved tracks'
+        rec.seed_type = 'tracks'
+        print_artists_or_tracks({'items': [x['track']
+                                           for x in api.get_saved_tracks(headers)['items']]})
     elif args.gc:
         rec.based_on = 'custom top genres'
         print_choices(data=get_user_top_genres(), sort=True)
@@ -1055,10 +1085,9 @@ def parse():
 
 
 def init():
-    global logger, conf, api, sp_oauth, rec, headers
+    global rec, headers
 
     # Logging handler
-    logger = log.Log()
     if args.verbose:
         logger.set_level(log.VERBOSE)
     elif args.quiet:
@@ -1074,19 +1103,18 @@ def init():
     logger.debug(f'suppress warnings: {logger.SUPPRESS_WARNINGS}')
 
     # Config handler
-    conf = sp_conf.Config()
     conf.set_logger(logger)
 
     # API handler
-    api = sp_api.API()
     api.set_logger(logger)
     api.set_conf(conf)
 
     # OAuth handler
-    sp_oauth = oauth2.SpotifyOAuth()
     sp_oauth.set_logger(logger)
     sp_oauth.set_conf(conf)
     sp_oauth.set_api(api)
+
+    check_scope_permissions()
 
     headers = {'Content-Type': 'application/json',
                'Authorization': f'Bearer {get_token()}'}
