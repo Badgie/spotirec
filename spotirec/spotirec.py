@@ -140,13 +140,10 @@ spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for de
 
     # Blacklisting
     blacklist_group = arg_parser.add_argument_group(title='Blacklisting')
-    blacklist_group.add_argument('-b', metavar='URI', nargs='+', type=str,
+    blacklist_group.add_argument('-b', '--blacklist-add', metavar='URI', nargs='+', type=str,
                                  help='blacklist track(s) and/or artist(s)')
-    blacklist_group.add_argument('-br', metavar='URI', nargs='+', type=str,
+    blacklist_group.add_argument('-br', '--blacklist-remove', metavar='URI', nargs='+', type=str,
                                  help='remove track(s) and/or artists(s) from blacklist')
-    blacklist_group.add_argument('-bc', metavar='artist | track', nargs=1,
-                                 choices=['artist', 'track'],
-                                 help='blacklist currently playing artist(s) or track')
 
     # Playback
     playback_group = arg_parser.add_argument_group(title='Playback')
@@ -442,6 +439,21 @@ def parse_seed_info(seeds):
                                f'skipping...')
         else:
             rec.add_seed_info(data_dict=x)
+
+
+def set_blacklist_current(entries: list) -> list:
+    if 'current-track' in entries:
+        logger.verbose('getting current track')
+        entries.remove('current-track')
+        entries.append(api.get_current_track(headers))
+    elif 'current-artists' in entries:
+        logger.verbose('getting current artists')
+        entries.remove('current-artists')
+        entries += [x for x in api.get_current_artists(headers)]
+    else:
+        logger.warning('your argument for current does not match proper syntax, try '
+                       '"current-track" or "current-artists"')
+    return entries
 
 
 def add_to_blacklist(entries: list):
@@ -954,17 +966,15 @@ def parse():
     Parse arguments
     """
     logger.verbose('parsing args')
-    if args.b:
-        add_to_blacklist(args.b)
+    if args.blacklist_add:
+        if any('current' in x for x in args.blacklist_add):
+            args.blacklist_add = set_blacklist_current(args.blacklist_add)
+        add_to_blacklist(args.blacklist_add)
         exit(0)
-    if args.br:
-        remove_from_blacklist(args.br)
-        exit(0)
-    if args.bc:
-        if args.bc[0] == 'track':
-            add_to_blacklist([api.get_current_track(headers)])
-        elif args.bc[0] == 'artist':
-            add_to_blacklist(api.get_current_artists(headers))
+    if args.blacklist_remove:
+        if any('current' in x for x in args.blacklist_remove):
+            args.blacklist_remove = set_blacklist_current(args.blacklist_remove)
+        remove_from_blacklist(args.blacklist_remove)
         exit(0)
 
     if args.transfer_playback:
