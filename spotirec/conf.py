@@ -106,6 +106,15 @@ class Config:
             return {'tracks': ast.literal_eval(c.get('blacklist', 'tracks')),
                     'artists': ast.literal_eval(c.get('blacklist', 'artists'))}
 
+    def check_item_in_blacklist(self, uri):
+        """
+        Checks whether or not a track or artist is blacklisted
+        :param uri: uri of track or artist
+        :return: bool: true if uri is blacklisted, false if not
+        """
+        blacklist = self.get_blacklist()
+        return uri in blacklist[f'{uri.split(":")[1]}s'].keys()
+
     def add_to_blacklist(self, uri_data: json, uri: str):
         """
         Add entry to blacklist
