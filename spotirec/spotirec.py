@@ -155,12 +155,11 @@ spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for de
 
     # Printing
     print_group = arg_parser.add_argument_group(title='Printing')
-    print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
+    print_group.add_argument('--print', metavar='TYPE', nargs='+', type=str,
                              choices=['artists', 'tracks', 'genres', 'genre-seeds',
                                       'devices', 'blacklist', 'presets', 'playlists', 'tuning'],
-                             help='print a list of genre seeds, or your top artists, tracks, or '
-                                  'genres, where TYPE=[artists|tracks|genres|genre-seeds|devices|'
-                                  'blacklist|presets|playlists|tuning]')
+                             help='print various data, where TYPE=[artists|tracks|genres|'
+                                  'genre-seeds|devices|blacklist|presets|playlists|tuning]')
     print_group.add_argument('--version', action='version', version=f'%(prog)s v{VERSION}')
     print_group.add_argument('--track-features', metavar='[URI | current]', nargs=1, type=str,
                              help='print track features of URI or currently playing track')
@@ -1002,27 +1001,32 @@ def parse():
         exit(0)
 
     if args.print:
-        if args.print[0] == 'artists':
-            logger.verbose('top artists:')
+        if 'artists' in args.print:
+            print('\033[4m\033[1m' + 'Top artists' + '\033[0m')
             print_artists_or_tracks(data=api.get_top_list('artists', 50, headers), prompt=False)
-        elif args.print[0] == 'tracks':
-            logger.verbose('top tracks:')
+        if 'tracks' in args.print:
+            print('\033[4m\033[1m' + 'Top tracks' + '\033[0m')
             print_artists_or_tracks(data=api.get_top_list('tracks', 50, headers), prompt=False)
-        elif args.print[0] == 'genres':
-            logger.verbose('top genres:')
+        if 'genres' in args.print:
+            print('\033[4m\033[1m' + 'Top genres' + '\033[0m')
             print_choices(data=get_user_top_genres(), sort=True, prompt=False)
-        elif args.print[0] == 'genre-seeds':
-            logger.verbose('genre seeds:')
+        if 'genre-seeds' in args.print:
+            print('\033[4m\033[1m' + 'Genre seeds' + '\033[0m')
             print_choices(data=api.get_genre_seeds(headers)['genres'], prompt=False)
-        elif args.print[0] == 'blacklist':
+        if 'blacklist' in args.print:
+            print('\033[4m\033[1m' + 'Blacklist' + '\033[0m')
             print_blacklist()
-        elif args.print[0] == 'devices':
+        if 'devices' in args.print:
+            print('\033[4m\033[1m' + 'Devices' + '\033[0m')
             print_saved_devices()
-        elif args.print[0] == 'presets':
+        if 'presets' in args.print:
+            print('\033[4m\033[1m' + 'Presets' + '\033[0m')
             print_presets()
-        elif args.print[0] == 'playlists':
+        if 'playlists' in args.print:
+            print('\033[4m\033[1m' + 'Playlists' + '\033[0m')
             print_playlists()
-        elif args.print[0] == 'tuning':
+        if 'tuning' in args.print:
+            print('\033[4m\033[1m' + 'Tuning options' + '\033[0m')
             print_tuning_options()
         exit(0)
     if args.track_features:
