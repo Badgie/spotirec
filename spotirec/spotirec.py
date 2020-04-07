@@ -575,14 +575,20 @@ def print_presets():
     """
     Format and print preset entries
     """
+
+    def _bool(b: bool) -> str:
+        return 'Yes' if b else 'No'
+
     presets = conf.get_presets()
-    print('\033[1m' + f'Name{" " * 16}Type{" " * 21}Params{" " * 44}Seeds' + '\033[0m')
+    print('\033[1m' + f'Name{" " * 16}Type{" " * 21}Auto play{" " * 6}Params'
+                      f'{" " * 44}Seeds' + '\033[0m')
     for x in presets.items():
         params = ",".join(f"{y[0]}={y[1]}" if "seed" not in y[0] else "" for y in
                           x[1]["rec_params"].items()).strip(',')
         print(
-            f'{x[0]}{" " * (20 - len(x[0]))}{x[1]["based_on"]}{" " * (25 - len(x[1]["based_on"]))}'
-            f'{params}{" " * (50 - len(params))}'
+            f'{x[0]}{" " * (20 - len(x[0]))}{x[1]["based_on"]}'
+            f'{" " * (25 - len(x[1]["based_on"]))}{_bool(x[1]["auto_play"])}'
+            f'{" " * (15 - len(_bool(x[1]["auto_play"])))}{params}{" " * (50 - len(params))}'
             f'{",".join(str(y["name"]) for y in x[1]["seed_info"].values())}')
 
 
