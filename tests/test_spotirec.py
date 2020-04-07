@@ -1225,20 +1225,67 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.conf.remove_device('test')
 
     @ordered
-    def test_args_b(self):
+    def test_set_blacklist_current_track(self):
         """
-        Testing parse() with b arg
+        Testing set_blacklist_current() (current track)
         """
-        spotirec.args = mock.MockArgs(b=['spotify:track:testtrack'])
+        uris = spotirec.set_blacklist_current(['current-track'])
+        self.assertEqual(uris[0], 'spotify:track:testtrack')
+
+    @ordered
+    def test_set_blacklist_current_artists(self):
+        """
+        Testing set_blacklist_current() (current artists)
+        """
+        uris = spotirec.set_blacklist_current(['current-artists'])
+        self.assertEqual(uris[0], 'spotify:artist:testartist')
+        self.assertEqual(uris[1], 'spotify:artist:testartist')
+
+    @ordered
+    def test_set_blacklist_current_error(self):
+        """
+        Testing set_blacklist_current() (error)
+        """
+        uris = spotirec.set_blacklist_current(['this wont work'])
+        self.assertListEqual(uris, ['this wont work'])
+
+    @ordered
+    def test_args_blacklist_add(self):
+        """
+        Testing parse() with blacklist_add arg
+        """
+        spotirec.args = mock.MockArgs(blacklist_add=['spotify:track:testtrack'])
         self.assertRaises(SystemExit, spotirec.parse)
+        blacklist = spotirec.conf.get_blacklist()
+        self.assertIn('spotify:track:testtrack', blacklist['tracks'])
         spotirec.conf.remove_from_blacklist('spotify:track:testtrack')
 
     @ordered
-    def test_args_br(self):
+    def test_args_blacklist_add_current_track(self):
         """
-        Testing parse() with br arg
+        Testing parse() with blacklist_add arg (current-track)
         """
-        spotirec.args = mock.MockArgs(br=['spotify:track:testtrack'])
+        spotirec.args = mock.MockArgs(blacklist_add=['current-track'])
+        self.assertRaises(SystemExit, spotirec.parse)
+        blacklist = spotirec.conf.get_blacklist()
+        self.assertIn('spotify:track:testtrack', blacklist['tracks'])
+
+    @ordered
+    def test_args_blacklist_add_current_artists(self):
+        """
+        Testing parse() with blacklist_add arg (current-artists)
+        """
+        spotirec.args = mock.MockArgs(blacklist_add=['current-artists'])
+        self.assertRaises(SystemExit, spotirec.parse)
+        blacklist = spotirec.conf.get_blacklist()
+        self.assertIn('spotify:artist:testartist', blacklist['artists'])
+
+    @ordered
+    def test_args_blacklist_remove(self):
+        """
+        Testing parse() with blacklist_remove arg
+        """
+        spotirec.args = mock.MockArgs(blacklist_remove=['spotify:track:testtrack'])
         spotirec.conf.add_to_blacklist({'name': 'test', 'uri': 'spotify:track:testtrack'},
                                        'spotify:track:testtrack')
         self.assertRaises(SystemExit, spotirec.parse)
@@ -1246,26 +1293,24 @@ class TestSpotirec(SpotirecTestCase):
         self.assertNotIn('spotify:track:testtrack', blacklist['tracks'])
 
     @ordered
-    def test_args_bc_track(self):
+    def test_args_blacklist_remove_current_track(self):
         """
-        Testing parse() with bc arg (track)
+        Testing parse() with blacklist_remove arg (current-track)
         """
-        spotirec.args = mock.MockArgs(bc=['track'])
+        spotirec.args = mock.MockArgs(blacklist_remove=['current-track'])
         self.assertRaises(SystemExit, spotirec.parse)
         blacklist = spotirec.conf.get_blacklist()
-        self.assertIn('spotify:track:testtrack', blacklist['tracks'].keys())
-        spotirec.conf.remove_from_blacklist('spotify:track:testtrack')
+        self.assertNotIn('spotify:track:testtrack', blacklist['tracks'])
 
     @ordered
-    def test_args_bc_artist(self):
+    def test_args_blacklist_remove_current_artists(self):
         """
-        Testing parse() with bc arg (artist)
+        Testing parse() with blacklist_remove arg (current-artists)
         """
-        spotirec.args = mock.MockArgs(bc=['artist'])
+        spotirec.args = mock.MockArgs(blacklist_remove=['current-artists'])
         self.assertRaises(SystemExit, spotirec.parse)
         blacklist = spotirec.conf.get_blacklist()
-        self.assertIn('spotify:artist:testartist', blacklist['artists'].keys())
-        spotirec.conf.remove_from_blacklist('spotify:artist:testartist')
+        self.assertNotIn('spotify:artist:testartist', blacklist['artists'])
 
     @ordered
     def test_args_transfer_playback(self):
@@ -1880,12 +1925,10 @@ class TestSpotirec(SpotirecTestCase):
         self.assertFalse(args.ac)
         self.assertIn('add_to', args)
         self.assertIsNone(args.add_to)
-        self.assertIn('b', args)
-        self.assertIsNone(args.b)
-        self.assertIn('bc', args)
-        self.assertIsNone(args.bc)
-        self.assertIn('br', args)
-        self.assertIsNone(args.br)
+        self.assertIn('blacklist_add', args)
+        self.assertIsNone(args.blacklist_add)
+        self.assertIn('blacklist_remove', args)
+        self.assertIsNone(args.blacklist_remove)
         self.assertIn('c', args)
         self.assertFalse(args.c)
         self.assertIn('debug', args)
