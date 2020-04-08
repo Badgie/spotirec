@@ -260,6 +260,10 @@ def check_if_show_or_episode(uri: str) -> bool:
     return False
 
 
+def format_identifier(identifier: str) -> str:
+    return identifier.translate({ord(c): '_' for c in '½§"¾¤£€±`^*µ!@#$%^&*()[]{};:,./<>?\\|`~=+ '})
+
+
 def get_user_top_genres() -> dict:
     """
     Extract genres from user's top 50 artists and map them to their amount of occurrences
@@ -546,6 +550,7 @@ def save_preset(name: str):
     Save recommendation object as preset
     :param name: name of preset
     """
+    name = format_identifier(name)
     logger.verbose('saving preset')
     preset = {'limit': rec.limit_original,
               'based_on': rec.based_on,
@@ -639,17 +644,14 @@ def save_device():
 
     def prompt_name() -> str:
         try:
-            try:
-                inp = input('Enter an identifier for your device: ')
-            except KeyboardInterrupt:
-                exit(0)
-            assert inp
-            assert ' ' not in inp
-            return inp
-        except AssertionError:
+            inp = input('Enter an identifier for your device: ')
+        except KeyboardInterrupt:
+            exit(0)
+        if inp:
+            return format_identifier(inp)
+        else:
             logger.error(f'device identifier \"{inp}\" is malformed.')
-            logger.info('please ensure that the identifier contains at least one character, '
-                        'and no whitespaces.')
+            logger.info('please ensure that the identifier contains at least one character')
             return prompt_name()
 
     # Get available devices from API and print
@@ -713,14 +715,11 @@ def save_playlist():
             iden = input('Please input an identifier for your playlist: ')
         except KeyboardInterrupt:
             exit(0)
-        try:
-            assert iden
-            assert ' ' not in iden
-            return iden
-        except AssertionError:
+        if iden:
+            return format_identifier(iden)
+        else:
             logger.error(f'playlist identifier \"{iden}\" is malformed.')
-            logger.info('please ensure that the identifier contains at least one character, '
-                        'and no whitespaces.')
+            logger.info('please ensure that the identifier contains at least one character')
             return input_id()
 
     def input_uri() -> str:
