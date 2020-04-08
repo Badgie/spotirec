@@ -216,8 +216,6 @@ class API:
         if uri_check(current_track):
             return
         track = {'ids': current_track.split(':')[2]}
-        if uri_check(track['ids']):
-            return
         response = requests.delete(f'{self.URL_BASE}/me/tracks', headers=headers, params=track)
         self.error_handle('remove liked track', 200, 'DELETE', response=response)
 
