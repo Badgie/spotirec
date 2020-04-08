@@ -1127,7 +1127,6 @@ class TestSpotirec(SpotirecTestCase):
                         [{'uri': 'spotify:artist:testid5'}]}]}
         spotirec.conf.add_to_blacklist(self.test_track2, 'spotify:track:testid2')
         spotirec.conf.add_to_blacklist(self.test_artist1, 'spotify:artist:testid1')
-        blacklist = spotirec.conf.get_blacklist()
         valid = spotirec.filter_recommendations(test_data)
         # tracks 1, 2, and 4 should be removed
         self.assertNotIn('spotify:track:testid1', valid)
