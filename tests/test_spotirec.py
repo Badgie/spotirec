@@ -155,6 +155,23 @@ class TestSpotirec(SpotirecTestCase):
             f.write('')
 
     @ordered
+    def test_check_if_show_or_episode_false(self):
+        """
+        Testing check_if_show_or_episode() (false)
+        """
+        self.assertFalse(spotirec.check_if_show_or_episode('spotify:track:sjkdhf'))
+
+    @ordered
+    def test_check_if_show_or_episode_true(self):
+        """
+        Testing check_if_show_or_episode() (true)
+        """
+        self.assertTrue(spotirec.check_if_show_or_episode('spotify:show:sjkdhf'))
+        self.assertTrue(spotirec.check_if_show_or_episode('spotify:episode:sjkdhf'))
+        self.assertTrue(spotirec.check_if_show_or_episode('show'))
+        self.assertTrue(spotirec.check_if_show_or_episode('episode'))
+
+    @ordered
     def test_get_user_top_genres(self):
         """
         Testing get_user_top_genres()
@@ -552,6 +569,23 @@ class TestSpotirec(SpotirecTestCase):
         blacklist = spotirec.conf.get_blacklist()
         self.assertNotIn('spotify:track:testid0', blacklist['tracks'].keys())
         self.assertNotIn('spotify:artist:testid0', blacklist['artists'].keys())
+        print(blacklist['tracks'].keys())
+
+    @ordered
+    def test_add_to_blacklist_ep_show(self):
+        """
+        Testing add_to_blacklist() (episode or show)
+        """
+        # should not cause system exit
+        spotirec.add_to_blacklist(['show'])
+
+    @ordered
+    def test_remove_from_blacklist_ep_show(self):
+        """
+        Testing remove_from_blacklist() (episode or show)
+        """
+        # should not cause system exit
+        spotirec.remove_from_blacklist(['show'])
 
     @ordered
     def test_print_blacklist(self):
@@ -569,6 +603,7 @@ class TestSpotirec(SpotirecTestCase):
             self.assertIn('Artists', stdout)
             self.assertIn('test0 by frankie0 - spotify:track:testid0', stdout)
             self.assertIn('frankie0 - spotify:artist:testid0', stdout)
+        spotirec.remove_from_blacklist(['spotify:track:testid0', 'spotify:artist:testid0'])
 
     @ordered
     def test_generate_img(self):
@@ -964,6 +999,15 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.add_current_track('spotify:playlist:testplaylist')
 
     @ordered
+    def test_add_current_track_ep_show(self):
+        """
+        Testing add_current_track() (episode or show)
+        """
+        spotirec.headers['ep_show'] = ''
+        self.assertIsNone(spotirec.add_current_track('spotify:playlist:testplaylist'))
+        del spotirec.headers['ep_show']
+
+    @ordered
     def test_remove_current_track_error(self):
         """
         Testing remove_current_track() invalid playlist
@@ -979,6 +1023,15 @@ class TestSpotirec(SpotirecTestCase):
         """
         # should not cause system exit
         spotirec.remove_current_track('spotify:playlist:testplaylist')
+
+    @ordered
+    def test_remove_current_track_ep_show(self):
+        """
+        Testing remove_current_track() (episode or show)
+        """
+        spotirec.headers['ep_show'] = ''
+        self.assertIsNone(spotirec.remove_current_track('spotify:playlist:testplaylist'))
+        del spotirec.headers['ep_show']
 
     @ordered
     def test_print_track_features_error(self):
@@ -1074,6 +1127,7 @@ class TestSpotirec(SpotirecTestCase):
                         [{'uri': 'spotify:artist:testid5'}]}]}
         spotirec.conf.add_to_blacklist(self.test_track2, 'spotify:track:testid2')
         spotirec.conf.add_to_blacklist(self.test_artist1, 'spotify:artist:testid1')
+        blacklist = spotirec.conf.get_blacklist()
         valid = spotirec.filter_recommendations(test_data)
         # tracks 1, 2, and 4 should be removed
         self.assertNotIn('spotify:track:testid1', valid)

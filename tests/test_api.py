@@ -254,6 +254,16 @@ class TestAPI(SpotirecTestCase):
         self.assertEqual('spotify:track:testtrack', uri)
 
     @ordered
+    def test_get_current_track_ep_show(self):
+        """
+        Testing get_current_track() (episode or show)
+        """
+        self.headers['ep_show'] = ''
+        uri = self.api.get_current_track(self.headers)
+        self.assertEqual('episode', uri)
+        del self.headers['ep_show']
+
+    @ordered
     def test_get_current_artists(self):
         """
         Testing get_current_artists()
@@ -262,20 +272,60 @@ class TestAPI(SpotirecTestCase):
         self.assertListEqual(['spotify:artist:testartist', 'spotify:artist:testartist'], artists)
 
     @ordered
+    def test_get_current_artists_ep_show(self):
+        """
+        Testing get_current_artists() (episode or show)
+        """
+        self.headers['ep_show'] = ''
+        uri = self.api.get_current_artists(self.headers)
+        self.assertListEqual(['episode'], uri)
+        del self.headers['ep_show']
+
+    @ordered
     def test_like_track(self):
         """
         Testing like_track()
         """
+
+        def mock_check(uri) -> bool:
+            return False
+
         # should not raise sysexit
-        self.api.like_track(self.headers)
+        self.api.like_track(self.headers, mock_check)
+
+    @ordered
+    def test_like_track_ep_show(self):
+        """
+        Testing like_track() (episode or show)
+        """
+
+        def mock_check(uri) -> bool:
+            return True
+
+        self.assertIsNone(self.api.like_track(self.headers, mock_check))
 
     @ordered
     def test_unlike_track(self):
         """
         Testing unlike_track()
         """
+
+        def mock_check(uri) -> bool:
+            return False
+
         # should not raise sysexit
-        self.api.unlike_track(self.headers)
+        self.api.unlike_track(self.headers, mock_check)
+
+    @ordered
+    def test_unlike_track_ep_show(self):
+        """
+        Testing unlike_track() (episode or show)
+        """
+
+        def mock_check(uri) -> bool:
+            return True
+
+        self.assertIsNone(self.api.unlike_track(self.headers, mock_check))
 
     @ordered
     def test_update_playlist_details(self):
