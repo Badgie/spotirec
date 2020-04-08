@@ -316,6 +316,24 @@ class TestSpotirec(SpotirecTestCase):
         self.assertFalse(spotirec.check_if_valid_genre('vapor-death-jazz'))
 
     @ordered
+    def test_format_identifier(self):
+        """
+        Testing format_identifier()
+        """
+        # valid identifiers should not be altered
+        self.assertEqual('test', spotirec.format_identifier('test'))
+        self.assertEqual('test-test', spotirec.format_identifier('test-test'))
+        self.assertEqual('test_test', spotirec.format_identifier('test_test'))
+
+        # faulty chars should be replaced with an underscore
+        self.assertEqual('test___test', spotirec.format_identifier('test   test'))
+        self.assertEqual('t_e_s_t_t_e_s_t_t_e_s_t___',
+                         spotirec.format_identifier('t½e§s¾t!t@e£s#t¤t$e%s&t   '))
+        self.assertEqual('____t_e_s_t_t_e_s_t_t_e_s_t',
+                         spotirec.format_identifier('   /t{e(s[t]t)e}s=t?t±e`s|t'))
+        self.assertEqual('_t_e_s_t_t_e_s_t_', spotirec.format_identifier('^t~e*sµt;t,e.s:t€'))
+
+    @ordered
     def test_check_tune_validity_success(self):
         """
         Testing check_tune_validity() success
@@ -810,9 +828,9 @@ class TestSpotirec(SpotirecTestCase):
         self.assertRaises(SystemExit, spotirec.save_device)
 
     @ordered
-    def test_save_device_name_error(self):
+    def test_save_device_name_format(self):
         """
-        Testing save_device() invalid iden
+        Testing save_device() (format iden)
         """
 
         def mock_input_index(prompt: str):
@@ -820,19 +838,35 @@ class TestSpotirec(SpotirecTestCase):
             return 1
 
         def mock_input_name_error(prompt: str):
-            spotirec.input = mock_input_name
-            return 'this will not work'
-
-        def mock_input_name(prompt: str):
-            return 'test'
+            return 'mal¤form(ed )iden^ti#fier$[{'
 
         spotirec.input = mock_input_index
         spotirec.save_device()
         devices = spotirec.conf.get_devices()
-        self.assertIn('test', devices.keys())
-        self.assertDictEqual(devices['test'], {'id': 'testid1', 'name': 'test1',
-                                               'type': 'microwave'})
-        spotirec.conf.remove_device('test')
+        self.assertIn('mal_form_ed__iden_ti_fier___', devices.keys())
+        self.assertDictEqual(devices['mal_form_ed__iden_ti_fier___'],
+                             {'id': 'testid1', 'name': 'test1', 'type': 'microwave'})
+        spotirec.conf.remove_device('mal_form_ed__iden_ti_fier___')
+
+    @ordered
+    def test_save_device_name_error(self):
+        """
+        Testing save_device() (error)
+        """
+
+        def mock_input_index(prompt: str):
+            spotirec.input = mock_input_name_error
+            return 1
+
+        def mock_input_name_error(prompt: str):
+            spotirec.input = mock_input_name_sigint
+            return ''
+
+        def mock_input_name_sigint(prompt: str):
+            raise KeyboardInterrupt
+
+        spotirec.input = mock_input_index
+        self.assertRaises(SystemExit, spotirec.save_device)
 
     @ordered
     def test_remove_devices(self):
@@ -937,7 +971,7 @@ class TestSpotirec(SpotirecTestCase):
 
         def mock_input(prompt: str):
             spotirec.input = mock_input_sigint
-            return 'this will not work'
+            return ''
 
         def mock_input_sigint(prompt: str):
             raise KeyboardInterrupt
