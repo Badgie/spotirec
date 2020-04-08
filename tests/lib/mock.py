@@ -299,7 +299,7 @@ class MockAPI:
             return MockResponse(403, 'Forbidden', method, headers, '/playlists/testplaylistprivate')
 
     @route('/playlists/testplaylisttracks', ['PUT', 'GET'])
-    def playlist_private(self, method, headers, data, json, params):
+    def playlist_with_tracks(self, method, headers, data, json, params):
         if method == 'GET':
             return MockResponse(200, 'OK', method, headers, '/playlists/testplaylisttracks',
                                 content=json_string(self.PLAYLIST_TRACKS))
