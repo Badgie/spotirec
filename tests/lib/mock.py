@@ -146,9 +146,9 @@ class MockAPI:
                          {'name': 'frankie3', 'uri': 'spotify:artist:testid3', 'type': 'artist',
                           'genres': ['vapor-death-jazz', 'invalid-genre', 'siesta']}]}]}
     PLAYLIST_TRUE = {'id': 'testplaylist', 'name': 'testplaylist', 'type': 'playlist', 'uri':
-                     'spotify:playlist:testid', 'tracks': [], 'public': True}
+                     'spotify:playlist:testid', 'tracks': {'items': []}, 'public': True}
     PLAYLIST_FALSE = {'id': 'testplaylist', 'name': 'testplaylist', 'type': 'playlist', 'uri':
-                      'spotify:playlist:testid', 'tracks': [], 'public': False}
+                      'spotify:playlist:testid', 'tracks': {'items': []}, 'public': False}
     GENRES = {'genres': ['metal', 'metalcore', 'pop', 'vapor-death-pop', 'holidays']}
     DEVICES = {'devices': [{'id': 'testid0', 'name': 'test0', 'type': 'fridge'},
                {'id': 'testid1', 'name': 'test1', 'type': 'microwave'}]}
