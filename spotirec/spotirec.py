@@ -756,7 +756,13 @@ def add_current_track(playlist: str):
             logger.log_file(crash=True)
             exit(1)
     logger.info(f'adding currently playing track to playlist')
-    api.add_to_playlist([api.get_current_track(headers)], playlist_id, headers)
+    playlist_tracks = [x['track']['uri']
+                       for x in api.get_playlist(headers, playlist_id)['tracks']['items']]
+    current_track = api.get_current_track(headers)
+    if current_track in playlist_tracks:
+        logger.warning(f'track {current_track} already exists in playlist, skipping...')
+        return
+    api.add_to_playlist([current_track], playlist_id, headers)
 
 
 def remove_current_track(playlist: str):
@@ -776,6 +782,12 @@ def remove_current_track(playlist: str):
             logger.log_file(crash=True)
             exit(1)
     logger.info(f'removing currently playing track to playlist')
+    playlist_tracks = [x['track']['uri']
+                       for x in api.get_playlist(headers, playlist_id)['tracks']['items']]
+    current_track = api.get_current_track(headers)
+    if current_track not in playlist_tracks:
+        logger.warning(f'track {current_track} doesnt exist in playlist, skipping...')
+        return
     api.remove_from_playlist([api.get_current_track(headers)], playlist_id, headers)
 
 
