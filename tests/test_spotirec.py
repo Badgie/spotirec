@@ -36,14 +36,17 @@ class TestSpotirec(SpotirecTestCase):
             {'Content-Type': 'application/json', 'Authorization':
                 'Bearer f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f'}
         cls.test_track0 = {'name': 'test0', 'id': 'testid0', 'type': 'track', 'artists':
-                           [{'name': 'frankie0'}]}
+                           [{'name': 'frankie0'}], 'uri': 'spotify:track:testid0'}
         cls.test_track1 = {'name': 'test1', 'id': 'testid1', 'type': 'track', 'artists':
-                           [{'name': 'frankie1'}]}
+                           [{'name': 'frankie1'}], 'uri': 'spotify:track:testid1'}
         cls.test_track2 = {'name': 'test2', 'id': 'testid2', 'type': 'track', 'artists':
-                           [{'name': 'frankie2'}]}
-        cls.test_artist0 = {'name': 'frankie0', 'id': 'testid0', 'type': 'artist'}
-        cls.test_artist1 = {'name': 'frankie1', 'id': 'testid1', 'type': 'artist'}
-        cls.test_artist2 = {'name': 'frankie2', 'id': 'testid2', 'type': 'artist'}
+                           [{'name': 'frankie2'}], 'uri': 'spotify:track:testid2'}
+        cls.test_artist0 = {'name': 'frankie0', 'id': 'testid0', 'type': 'artist',
+                            'uri': 'spotify:artist:testid0'}
+        cls.test_artist1 = {'name': 'frankie1', 'id': 'testid1', 'type': 'artist',
+                            'uri': 'spotify:artist:testid1'}
+        cls.test_artist2 = {'name': 'frankie2', 'id': 'testid2', 'type': 'artist',
+                            'uri': 'spotify:artist:testid2'}
         cls.test_device0 = {'id': 'testid', 'name': 'test', 'type': 'tester'}
         cls.test_playlist0 = {'name': 'test', 'uri': 'spotify:playlist:testid'}
         cls.stdout_preserve = sys.__stdout__
@@ -409,6 +412,24 @@ class TestSpotirec(SpotirecTestCase):
             self.assertIn(expected, stdout)
 
     @ordered
+    def test_filter_list_duplicates(self):
+        """
+        Testing filter_list_duplicates()
+        """
+        li = [1, 2, 2, 'metal', 'metal']
+        li_dict = [{'skdjf': 3, 'sdkfj': 4, 'uri': 'pe'}, {'skdjf': 3, 'sdkfj': 4, 'uri': 'nis'},
+                   {'skdjf': 3, 'sdkfj': 6, 'uri': 'nis'}]
+        li_mix = [1, 2, 1, 'metal', 'metal', {'skdjf': 3, 'sdkfj': 4, 'uri': 'pe'},
+                  {'skdjf': 3, 'sdkfj': 4, 'uri': 'nis'}, {'skdjf': 3, 'sdkfj': 6, 'uri': 'nis'}]
+        self.assertListEqual([1, 2, 'metal'], spotirec.filter_list_duplicates(li))
+        self.assertListEqual([{'skdjf': 3, 'sdkfj': 4, 'uri': 'pe'},
+                              {'skdjf': 3, 'sdkfj': 4, 'uri': 'nis'}],
+                             spotirec.filter_list_duplicates(li_dict))
+        self.assertListEqual([1, 2, 'metal', {'skdjf': 3, 'sdkfj': 4, 'uri': 'pe'},
+                              {'skdjf': 3, 'sdkfj': 4, 'uri': 'nis'}],
+                             spotirec.filter_list_duplicates(li_mix))
+
+    @ordered
     def test_parse_seed_info_error_str(self):
         """
         Testing parse_seed_info() invalid str length
@@ -449,6 +470,17 @@ class TestSpotirec(SpotirecTestCase):
                     1: {'name': 'vapor-death-pop', 'type': 'genre'}}
         spotirec.rec.seed_type = 'genres'
         spotirec.parse_seed_info('metal vapor-death-pop')
+        self.assertDictEqual(expected, spotirec.rec.seed_info)
+
+    @ordered
+    def test_parse_seed_info_genres_filter(self):
+        """
+        Testing parse_seed_info() genres str (filter duplicates)
+        """
+        expected = {0: {'name': 'metal', 'type': 'genre'},
+                    1: {'name': 'vapor-death-pop', 'type': 'genre'}}
+        spotirec.rec.seed_type = 'genres'
+        spotirec.parse_seed_info('metal vapor-death-pop metal')
         self.assertDictEqual(expected, spotirec.rec.seed_info)
 
     @ordered
