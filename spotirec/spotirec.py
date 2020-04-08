@@ -423,6 +423,8 @@ def parse_seed_info(seeds):
     :param seeds: seed data as a string or a list
     """
     logger.verbose('processing seeds')
+    # ensure only unique seeds
+    seeds = list(set(seeds))
     if len(shlex.split(seeds) if type(seeds) is str else seeds) > 5:
         logger.error('please enter at most 5 seeds')
         logger.log_file(crash=True)
