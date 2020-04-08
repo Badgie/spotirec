@@ -2,7 +2,6 @@
 import webbrowser
 import json
 import argparse
-import shlex
 import os
 import hashlib
 import re
