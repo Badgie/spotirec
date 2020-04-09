@@ -181,7 +181,7 @@ def check_scope_permissions():
         logger.error('new functionality that needs new permissions has been added, please '
                      'navigate to your browser and authorize again')
         authorize()
-        exit(0)
+        sys.exit(0)
 
 
 def authorize(port=PORTS[0]):
@@ -201,7 +201,7 @@ def authorize(port=PORTS[0]):
             if next_port > len(PORTS) - 1:
                 logger.error(f'tried all ports ({",".join(str(x) for x in PORTS)}), all are in use')
                 logger.error(f'please ensure one of them is available and try again')
-                exit(1)
+                sys.exit(1)
             logger.warning(f'port {port} is already in use, trying {PORTS[next_port]}')
             authorize(port=PORTS[next_port])
 
@@ -243,7 +243,7 @@ def get_token() -> str:
     else:
         logger.verbose('token not found, authorising')
         authorize()
-        exit(0)
+        sys.exit(0)
 
 
 def get_user_top_genres() -> dict:
@@ -328,7 +328,7 @@ def print_choices(data=None, prompt=True, sort=False) -> str:
             input_string = input('Enter integer identifiers for 1-5 whitespace separated selections'
                                  ' that you wish to include [default: top 5]:\n') or '0 1 2 3 4'
         except KeyboardInterrupt:
-            exit(0)
+            sys.exit(0)
         # If seed type is genres, simply parse the seed, else return the input for
         # further processing
         if 'genres' in rec.seed_type:
@@ -374,7 +374,7 @@ def check_tune_validity(tune: str):
         logger.error(f'tune {tune} does not match the proper format')
         logger.verbose(str(tune))
         logger.log_file(crash=True)
-        exit(1)
+        sys.exit(1)
     prefix = tune.split('_', 1)[0]
     key = tune.split('=')[0].split('_', 1)[1]
     value = tune.split('=')[1]
@@ -384,13 +384,13 @@ def check_tune_validity(tune: str):
         logger.error(f'tune prefix \"{tune.split("_", 1)[0]}\" is malformed')
         logger.verbose(str(TUNE_PREFIX))
         logger.log_file(crash=True)
-        exit(1)
+        sys.exit(1)
     # Check attribute validity
     if key not in list(TUNE_ATTR['int'].keys()) + list(TUNE_ATTR['float'].keys()):
         logger.error(f'tune attribute \"{tune.split("=")[0].split("_", 1)[1]}\" is malformed')
         logger.verbose(str(list(TUNE_ATTR['int'].keys()) + list(TUNE_ATTR['float'].keys())))
         logger.log_file(crash=True)
-        exit(1)
+        sys.exit(1)
     # Try parsing value to number
     try:
         # Try parsing value to number
@@ -402,7 +402,7 @@ def check_tune_validity(tune: str):
                          f'{TUNE_ATTR[value_type][key]["min"]}, max: '
                          f'{TUNE_ATTR[value_type][key]["max"]})')
             logger.log_file(crash=True)
-            exit(1)
+            sys.exit(1)
         # Warn if value is outside recommended range
         if not TUNE_ATTR[value_type][key]['rec_max'] >= value >= \
                 TUNE_ATTR[value_type][key]['rec_min']:
@@ -414,7 +414,7 @@ def check_tune_validity(tune: str):
     except ValueError:
         logger.error(f'tune value {value} does not match attribute {key} data type requirements')
         logger.log_file(crash=True)
-        exit(1)
+        sys.exit(1)
 
 
 def parse_seed_info(seeds):
@@ -426,7 +426,7 @@ def parse_seed_info(seeds):
     if len(shlex.split(seeds) if type(seeds) is str else seeds) > 5:
         logger.error('please enter at most 5 seeds')
         logger.log_file(crash=True)
-        exit(1)
+        sys.exit(1)
     # Parse each seed in input and add to seed string depending on type
     for x in shlex.split(seeds) if type(seeds) is str else seeds:
         logger.debug(f'seed: {x}')
@@ -555,7 +555,7 @@ def load_preset(name: str) -> recommendation.Recommendation:
     except KeyError:
         logger.error(f'could not find preset \"{name}\", check spelling and try again')
         logger.log_file(crash=True)
-        exit(1)
+        sys.exit(1)
     preset = recommendation.Recommendation(preset=contents)
     logger.debug(f'preset: {preset}')
     return preset
@@ -598,7 +598,7 @@ def get_device(device_name: str) -> dict:
     except KeyError:
         logger.error(f'device {device_name} does not exist in config')
         logger.log_file(crash=True)
-        exit(1)
+        sys.exit(1)
 
 
 def save_device():
@@ -610,7 +610,7 @@ def save_device():
         try:
             ind = input('Select a device by index[0]: ') or 0
         except KeyboardInterrupt:
-            exit(0)
+            sys.exit(0)
         try:
             assert devices[int(ind)] is not None
             return int(ind)
@@ -624,7 +624,7 @@ def save_device():
             try:
                 inp = input('Enter an identifier for your device: ')
             except KeyboardInterrupt:
-                exit(0)
+                sys.exit(0)
             assert inp
             assert ' ' not in inp
             return inp
@@ -694,7 +694,7 @@ def save_playlist():
         try:
             iden = input('Please input an identifier for your playlist: ')
         except KeyboardInterrupt:
-            exit(0)
+            sys.exit(0)
         try:
             assert iden
             assert ' ' not in iden
@@ -709,7 +709,7 @@ def save_playlist():
         try:
             uri = input('Please input the URI for your playlist: ')
         except KeyboardInterrupt:
-            exit(0)
+            sys.exit(0)
         try:
             assert uri
             assert re.match(PLAYLIST_URI_RE, uri)
@@ -754,7 +754,7 @@ def add_current_track(playlist: str):
         except KeyError:
             logger.error(f'playlist {playlist} does not exist in config')
             logger.log_file(crash=True)
-            exit(1)
+            sys.exit(1)
     logger.info(f'adding currently playing track to playlist')
     api.add_to_playlist([api.get_current_track(headers)], playlist_id, headers)
 
@@ -774,7 +774,7 @@ def remove_current_track(playlist: str):
         except KeyError:
             logger.error(f'playlist {playlist} does not exist in config')
             logger.log_file(crash=True)
-            exit(1)
+            sys.exit(1)
     logger.info(f'removing currently playing track to playlist')
     api.remove_from_playlist([api.get_current_track(headers)], playlist_id, headers)
 
@@ -787,7 +787,7 @@ def print_track_features(uri: str):
     if not re.match(TRACK_URI_RE, uri):
         logger.error(f'{uri} is not a valid track URI')
         logger.log_file(crash=True)
-        exit(1)
+        sys.exit(1)
     audio_features = api.get_audio_features(uri.split(':')[2], headers)
     track_info = api.request_data(uri, 'tracks', headers)
     print('\t' + '\033[1m' + f'{track_info["name"]} - '
@@ -840,7 +840,7 @@ def transfer_playback(device_id):
     except KeyError:
         logger.error(f'device {device_id} does not exist in config')
         logger.log_file(crash=True)
-        exit(1)
+        sys.exit(1)
     logger.info(f'transferring playback to device {device_id}')
     logger.debug(f'device: {device}')
     api.transfer_playback(device, headers)
@@ -879,11 +879,11 @@ def print_tuning_options():
     except FileNotFoundError:
         logger.error('could not find tuning options file')
         logger.log_file(crash=True)
-        exit(1)
+        sys.exit(1)
     if len(tuning_opts) == 0:
         logger.error('tuning options file is empty')
         logger.log_file(crash=True)
-        exit(1)
+        sys.exit(1)
     for x in tuning_opts:
         if tuning_opts.index(x) == 0:
             print('\033[1m' + x.strip('\n') + '\033[0m')
@@ -911,7 +911,7 @@ def recommend():
     if len(tracks) == 0:
         logger.error('received zero tracks with your options - adjust and try again')
         logger.log_file(crash=True)
-        exit(1)
+        sys.exit(1)
     if len(tracks) <= rec.limit_original / 2:
         logger.warning(f'only received {len(tracks)} different recommendations, you may receive '
                        f'duplicates of these (this might take a few seconds)')
@@ -956,50 +956,50 @@ def parse():
     logger.verbose('parsing args')
     if args.b:
         add_to_blacklist(args.b)
-        exit(0)
+        sys.exit(0)
     if args.br:
         remove_from_blacklist(args.br)
-        exit(0)
+        sys.exit(0)
     if args.bc:
         if args.bc[0] == 'track':
             add_to_blacklist([api.get_current_track(headers)])
         elif args.bc[0] == 'artist':
             add_to_blacklist(api.get_current_artists(headers))
-        exit(0)
+        sys.exit(0)
 
     if args.transfer_playback:
         transfer_playback(args.transfer_playback[0])
-        exit(0)
+        sys.exit(0)
 
     if args.s:
         logger.info('liking current track')
         api.like_track(headers)
-        exit(0)
+        sys.exit(0)
     elif args.sr:
         logger.info('unliking current track')
         api.unlike_track(headers)
-        exit(0)
+        sys.exit(0)
     if args.save_playlist:
         save_playlist()
-        exit(0)
+        sys.exit(0)
     if args.remove_playlists:
         remove_playlists(args.remove_playlists)
-        exit(0)
+        sys.exit(0)
     if args.save_device:
         save_device()
-        exit(0)
+        sys.exit(0)
     if args.remove_devices:
         remove_devices(args.remove_devices)
-        exit(0)
+        sys.exit(0)
     if args.remove_presets:
         remove_presets(args.remove_presets)
-        exit(0)
+        sys.exit(0)
     if args.add_to:
         add_current_track(args.add_to[0])
-        exit(0)
+        sys.exit(0)
     elif args.remove_from:
         remove_current_track(args.remove_from[0])
-        exit(0)
+        sys.exit(0)
 
     if args.print:
         if args.print[0] == 'artists':
@@ -1024,11 +1024,11 @@ def parse():
             print_playlists()
         elif args.print[0] == 'tuning':
             print_tuning_options()
-        exit(0)
+        sys.exit(0)
     if args.track_features:
         print_track_features(api.get_current_track(headers) if
                              args.track_features[0] == 'current' else args.track_features[0])
-        exit(0)
+        sys.exit(0)
 
     if args.play:
         rec.auto_play = True
@@ -1077,11 +1077,11 @@ def parse():
                                'track uris, and artist uris. \nGenres with several words should '
                                'be connected with dashes, e.g.; vapor-death-pop.\n')
         except KeyboardInterrupt:
-            exit(0)
+            sys.exit(0)
         if not user_input:
             logger.error('please enter 1-5 seeds')
             logger.log_file(crash=True)
-            exit(1)
+            sys.exit(1)
         parse_seed_info(user_input.strip(' '))
     else:
         logger.info(f'basing recommendations off your top {args.n} genres')
