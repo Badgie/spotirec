@@ -121,7 +121,7 @@ You can add a limit as an integer value with the `-l` argument
 ```
 $ spotirec -l 50
 ```
-This option determines how many tracks should be added to your new playlist. The default value is 20, the minimum value is 1, and the max value is 100.
+This option determines how many tracks should be added to your new playlist. The default value is 100, the minimum value is 1, and the max value is 100.
 
 ### Presets
 You can save the settings for a recommendation with the `--save-preset` flag followed by a name
