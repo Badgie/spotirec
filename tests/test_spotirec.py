@@ -675,7 +675,7 @@ class TestSpotirec(SpotirecTestCase):
         Testing print_presets()
         """
         expected0 = f'Name{" " * 16}Type{" " * 21}Params{" " * 44}Seeds'
-        expected1 = f'test{" " * 16}top genres{" " * 15}limit=20{" " * 42}'
+        expected1 = f'test{" " * 16}top genres{" " * 15}limit=100{" " * 41}'
         spotirec.save_preset('test')
         spotirec.print_presets()
         sys.stdout.close()
@@ -1810,7 +1810,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         spotirec.args = mock.MockArgs(tune=['min_tempo=160'], n=1)
         spotirec.parse()
-        self.assertDictEqual(spotirec.rec.rec_params, {'limit': '20', 'min_tempo': '160'})
+        self.assertDictEqual(spotirec.rec.rec_params, {'limit': '100', 'min_tempo': '160'})
 
     @ordered
     def test_setup_config_dir(self):

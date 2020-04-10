@@ -128,7 +128,7 @@ spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for de
         title='Recommendation options',
         description='These may only appear when creating a playlist')
     rec_options_group.add_argument('-l', metavar='LIMIT', nargs=1, type=int, choices=range(1, 101),
-                                   help='amount of tracks to add (default: 20, max: 100)')
+                                   help='amount of tracks to add (default: 100, max: 100)')
     rec_options_group.add_argument('--tune', metavar='ATTR', nargs='+', type=str,
                                    help='specify tunable attribute(s)')
     rec_options_group.add_argument('--play', metavar='DEVICE', nargs=1,
