@@ -321,11 +321,23 @@ def print_choices(data=None, prompt=True, sort=False) -> str:
                               for x in row) for row in matrix])
     print(line.strip('\n'))
     if prompt:
-        try:
-            input_string = input('Enter integer identifiers for 1-5 whitespace separated selections'
-                                 ' that you wish to include [default: top 5]:\n') or '0 1 2 3 4'
-        except KeyboardInterrupt:
-            exit(0)
+
+        def prompt_selection() -> int:
+            try:
+                inp = input('Enter integer identifiers for 1-5 whitespace separated selections'
+                            ' that you wish to include [default: top 5]:\n') or '0 1 2 3 4'
+            except KeyboardInterrupt:
+                exit(0)
+            try:
+                assert inp is not None
+                return inp
+            except AssertionError:
+                logger.error(f'input \"{inp}\" is malformed.')
+                logger.info('please ensure that your input valid, i.e. n0 [ ... n5 ], where '
+                            'n is a valid index.')
+                return prompt_selection()
+
+        input_string = prompt_selection()
         # If seed type is genres, simply parse the seed, else return the input for
         # further processing
         if 'genres' in rec.seed_type:
