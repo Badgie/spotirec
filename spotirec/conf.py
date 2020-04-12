@@ -113,6 +113,10 @@ class Config:
         :param uri: URI of blacklist entry
         :return:
         """
+        # Ensure input is valid
+        if not re.match(self.URI_RE, uri):
+            self.LOGGER.warning(f'uri {uri} is not a valid uri')
+            return
         uri_type = uri.split(':')[1]
         # Convert entry to dict
         data = {'name': uri_data['name'], 'uri': uri}
@@ -136,7 +140,7 @@ class Config:
         """
         # Ensure input is valid
         if not re.match(self.URI_RE, uri):
-            self.LOGGER.error(f'uri {uri} is not a valid uri')
+            self.LOGGER.warning(f'uri {uri} is not a valid uri')
             return
         c = self.open_config()
         uri_type = uri.split(':')[1]

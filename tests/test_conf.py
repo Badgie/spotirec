@@ -145,6 +145,10 @@ class TestConf(SpotirecTestCase):
         self.assertEqual(blacklist['tracks']['spotify:track:testuri0nights'], test_track)
         self.assertEqual(blacklist['artists']['spotify:artist:testuri0frankie'], test_artist)
 
+        # ensure faulty uri returns None
+        res = self.conf.add_to_blacklist({}, 'this-is-not-a-uri')
+        self.assertIsNone(res)
+
     @ordered
     def test_remove_from_blacklist(self):
         """
@@ -161,7 +165,7 @@ class TestConf(SpotirecTestCase):
 
         # ensure faulty uri returns None
         res = self.conf.remove_from_blacklist('this-is-not-a-uri')
-        self.assertEqual(res, None)
+        self.assertIsNone(res)
 
         # coverage lol
         self.conf.remove_from_blacklist('spotify:track:thisdoesnotexist')
