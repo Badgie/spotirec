@@ -322,7 +322,7 @@ def print_choices(data=None, prompt=True, sort=False) -> str:
     print(line.strip('\n'))
     if prompt:
 
-        def prompt_selection() -> int:
+        def prompt_selection() -> str:
             try:
                 inp = input('Enter integer identifiers for 1-5 whitespace separated selections'
                             ' that you wish to include [default: top 5]:\n') or '0 1 2 3 4'
