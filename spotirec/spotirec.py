@@ -129,7 +129,7 @@ spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for de
         title='Recommendation options',
         description='These may only appear when creating a playlist')
     rec_options_group.add_argument('-l', metavar='LIMIT', nargs=1, type=int, choices=range(1, 101),
-                                   help='amount of tracks to add (default: 20, max: 100)')
+                                   help='amount of tracks to add (default: 100, max: 100)')
     rec_options_group.add_argument('--tune', metavar='ATTR', nargs='+', type=str,
                                    help='specify tunable attribute(s)')
     rec_options_group.add_argument('--play', metavar='DEVICE', nargs=1,
@@ -141,13 +141,10 @@ spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for de
 
     # Blacklisting
     blacklist_group = arg_parser.add_argument_group(title='Blacklisting')
-    blacklist_group.add_argument('-b', metavar='URI', nargs='+', type=str,
+    blacklist_group.add_argument('-b', '--blacklist-add', metavar='URI', nargs='+', type=str,
                                  help='blacklist track(s) and/or artist(s)')
-    blacklist_group.add_argument('-br', metavar='URI', nargs='+', type=str,
+    blacklist_group.add_argument('-br', '--blacklist-remove', metavar='URI', nargs='+', type=str,
                                  help='remove track(s) and/or artists(s) from blacklist')
-    blacklist_group.add_argument('-bc', metavar='artist | track', nargs=1,
-                                 choices=['artist', 'track'],
-                                 help='blacklist currently playing artist(s) or track')
 
     # Playback
     playback_group = arg_parser.add_argument_group(title='Playback')
@@ -156,12 +153,11 @@ spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for de
 
     # Printing
     print_group = arg_parser.add_argument_group(title='Printing')
-    print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
+    print_group.add_argument('--print', metavar='TYPE', nargs='+', type=str,
                              choices=['artists', 'tracks', 'genres', 'genre-seeds',
                                       'devices', 'blacklist', 'presets', 'playlists', 'tuning'],
-                             help='print a list of genre seeds, or your top artists, tracks, or '
-                                  'genres, where TYPE=[artists|tracks|genres|genre-seeds|devices|'
-                                  'blacklist|presets|playlists|tuning]')
+                             help='print various data, where TYPE=[artists|tracks|genres|'
+                                  'genre-seeds|devices|blacklist|presets|playlists|tuning]')
     print_group.add_argument('--version', action='version', version=f'%(prog)s v{VERSION}')
     print_group.add_argument('--track-features', metavar='[URI | current]', nargs=1, type=str,
                              help='print track features of URI or currently playing track')
@@ -390,7 +386,7 @@ def check_tune_validity(tune: str):
     logger.verbose('checking tune validity')
     if not re.match(TUNE_RE, tune):
         logger.error(f'tune {tune} does not match the proper format')
-        logger.verbose(str(tune))
+        logger.verbose(tune)
         logger.log_file(crash=True)
         exit(1)
     prefix = tune.split('_', 1)[0]
@@ -400,13 +396,13 @@ def check_tune_validity(tune: str):
     # Check prefix validity
     if prefix not in TUNE_PREFIX:
         logger.error(f'tune prefix \"{tune.split("_", 1)[0]}\" is malformed')
-        logger.verbose(str(TUNE_PREFIX))
+        logger.verbose(TUNE_PREFIX)
         logger.log_file(crash=True)
         exit(1)
     # Check attribute validity
     if key not in list(TUNE_ATTR['int'].keys()) + list(TUNE_ATTR['float'].keys()):
         logger.error(f'tune attribute \"{tune.split("=")[0].split("_", 1)[1]}\" is malformed')
-        logger.verbose(str(list(TUNE_ATTR['int'].keys()) + list(TUNE_ATTR['float'].keys())))
+        logger.verbose(list(TUNE_ATTR['int'].keys()) + list(TUNE_ATTR['float'].keys()))
         logger.log_file(crash=True)
         exit(1)
     # Try parsing value to number
@@ -462,6 +458,21 @@ def parse_seed_info(seeds):
             rec.add_seed_info(data_dict=x)
 
 
+def set_blacklist_current(entries: list) -> list:
+    if 'current-track' in entries:
+        logger.verbose('getting current track')
+        entries.remove('current-track')
+        entries.append(api.get_current_track(headers))
+    elif 'current-artists' in entries:
+        logger.verbose('getting current artists')
+        entries.remove('current-artists')
+        entries += [x for x in api.get_current_artists(headers)]
+    else:
+        logger.warning('your argument for current does not match proper syntax, try '
+                       '"current-track" or "current-artists"')
+    return entries
+
+
 def add_to_blacklist(entries: list):
     """
     Add input uris to blacklist and exit
@@ -472,8 +483,9 @@ def add_to_blacklist(entries: list):
         if check_if_show_or_episode(x):
             continue
         logger.debug(f'entry: {x}')
-        uri_data = api.request_data(x, f'{x.split(":")[1]}s', headers)
-        conf.add_to_blacklist(uri_data, x)
+        if not conf.check_item_in_blacklist(x):
+            uri_data = api.request_data(x, f'{x.split(":")[1]}s', headers)
+            conf.add_to_blacklist(uri_data, x)
 
 
 def remove_from_blacklist(entries: list):
@@ -599,14 +611,20 @@ def print_presets():
     """
     Format and print preset entries
     """
+
+    def _bool(b: bool) -> str:
+        return 'Yes' if b else 'No'
+
     presets = conf.get_presets()
-    print('\033[1m' + f'Name{" " * 16}Type{" " * 21}Params{" " * 44}Seeds' + '\033[0m')
+    print('\033[1m' + f'Name{" " * 16}Type{" " * 21}Auto play{" " * 6}Params'
+                      f'{" " * 44}Seeds' + '\033[0m')
     for x in presets.items():
         params = ",".join(f"{y[0]}={y[1]}" if "seed" not in y[0] else "" for y in
                           x[1]["rec_params"].items()).strip(',')
         print(
-            f'{x[0]}{" " * (20 - len(x[0]))}{x[1]["based_on"]}{" " * (25 - len(x[1]["based_on"]))}'
-            f'{params}{" " * (50 - len(params))}'
+            f'{x[0]}{" " * (20 - len(x[0]))}{x[1]["based_on"]}'
+            f'{" " * (25 - len(x[1]["based_on"]))}{_bool(x[1]["auto_play"])}'
+            f'{" " * (15 - len(_bool(x[1]["auto_play"])))}{params}{" " * (50 - len(params))}'
             f'{",".join(str(y["name"]) for y in x[1]["seed_info"].values())}')
 
 
@@ -773,8 +791,14 @@ def add_current_track(playlist: str):
             logger.log_file(crash=True)
             exit(1)
     logger.info(f'adding currently playing track to playlist')
+
     current_track = api.get_current_track(headers)
     if check_if_show_or_episode(current_track):
+        return
+    playlist_tracks = [x['track']['uri']
+                       for x in api.get_playlist(headers, playlist_id)['tracks']['items']]
+    if current_track in playlist_tracks:
+        logger.warning(f'track {current_track} already exists in playlist, skipping...')
         return
     api.add_to_playlist([current_track], playlist_id, headers)
 
@@ -798,6 +822,11 @@ def remove_current_track(playlist: str):
     logger.info(f'removing currently playing track to playlist')
     current_track = api.get_current_track(headers)
     if check_if_show_or_episode(current_track):
+        return
+    playlist_tracks = [x['track']['uri']
+                       for x in api.get_playlist(headers, playlist_id)['tracks']['items']]
+    if current_track not in playlist_tracks:
+        logger.warning(f'track {current_track} doesnt exist in playlist, skipping...')
         return
     api.remove_from_playlist([current_track], playlist_id, headers)
 
@@ -977,17 +1006,15 @@ def parse():
     Parse arguments
     """
     logger.verbose('parsing args')
-    if args.b:
-        add_to_blacklist(args.b)
+    if args.blacklist_add:
+        if any('current' in x for x in args.blacklist_add):
+            args.blacklist_add = set_blacklist_current(args.blacklist_add)
+        add_to_blacklist(args.blacklist_add)
         exit(0)
-    if args.br:
-        remove_from_blacklist(args.br)
-        exit(0)
-    if args.bc:
-        if args.bc[0] == 'track':
-            add_to_blacklist([api.get_current_track(headers)])
-        elif args.bc[0] == 'artist':
-            add_to_blacklist(api.get_current_artists(headers))
+    if args.blacklist_remove:
+        if any('current' in x for x in args.blacklist_remove):
+            args.blacklist_remove = set_blacklist_current(args.blacklist_remove)
+        remove_from_blacklist(args.blacklist_remove)
         exit(0)
 
     if args.transfer_playback:
@@ -1025,27 +1052,32 @@ def parse():
         exit(0)
 
     if args.print:
-        if args.print[0] == 'artists':
-            logger.verbose('top artists:')
+        if 'artists' in args.print:
+            print('\033[4m\033[1m' + 'Top artists' + '\033[0m')
             print_artists_or_tracks(data=api.get_top_list('artists', 50, headers), prompt=False)
-        elif args.print[0] == 'tracks':
-            logger.verbose('top tracks:')
+        if 'tracks' in args.print:
+            print('\033[4m\033[1m' + 'Top tracks' + '\033[0m')
             print_artists_or_tracks(data=api.get_top_list('tracks', 50, headers), prompt=False)
-        elif args.print[0] == 'genres':
-            logger.verbose('top genres:')
+        if 'genres' in args.print:
+            print('\033[4m\033[1m' + 'Top genres' + '\033[0m')
             print_choices(data=get_user_top_genres(), sort=True, prompt=False)
-        elif args.print[0] == 'genre-seeds':
-            logger.verbose('genre seeds:')
+        if 'genre-seeds' in args.print:
+            print('\033[4m\033[1m' + 'Genre seeds' + '\033[0m')
             print_choices(data=api.get_genre_seeds(headers)['genres'], prompt=False)
-        elif args.print[0] == 'blacklist':
+        if 'blacklist' in args.print:
+            print('\033[4m\033[1m' + 'Blacklist' + '\033[0m')
             print_blacklist()
-        elif args.print[0] == 'devices':
+        if 'devices' in args.print:
+            print('\033[4m\033[1m' + 'Devices' + '\033[0m')
             print_saved_devices()
-        elif args.print[0] == 'presets':
+        if 'presets' in args.print:
+            print('\033[4m\033[1m' + 'Presets' + '\033[0m')
             print_presets()
-        elif args.print[0] == 'playlists':
+        if 'playlists' in args.print:
+            print('\033[4m\033[1m' + 'Playlists' + '\033[0m')
             print_playlists()
-        elif args.print[0] == 'tuning':
+        if 'tuning' in args.print:
+            print('\033[4m\033[1m' + 'Tuning options' + '\033[0m')
             print_tuning_options()
         exit(0)
     if args.track_features:

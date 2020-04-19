@@ -1,11 +1,12 @@
+<p align="center"><img src="img/header/header-600x200.png" alt="spotek"/></p>
+
+
 <p align="center">
   <img alt="GitHub release" src="https://img.shields.io/github/release/badgie/spotirec.svg">
   <img alt="GitHub" src="https://img.shields.io/github/license/badgie/spotirec.svg">
   <img alt="AUR votes" src="https://img.shields.io/aur/votes/spotirec-git.svg?label=AUR%20votes">
   <img alt="GitHub last commit (master)" src="https://img.shields.io/github/last-commit/badgie/spotirec/master.svg?label=last%20update">
 </p>
-
-<p align="center"><img src="spotek-s.png" alt="spotek"/></p>
 
 # Spotirec
 A tool that can create a playlist of recommendations based on the user's top artists or tracks, or genres extracted from top artists with various parameters - a sort of Discover Weekly on demand. Also includes functionality for various other Spotify-related actions, such as saving the currently playing track.
@@ -121,7 +122,7 @@ You can add a limit as an integer value with the `-l` argument
 ```
 $ spotirec -l 50
 ```
-This option determines how many tracks should be added to your new playlist. The default value is 20, the minimum value is 1, and the max value is 100.
+This option determines how many tracks should be added to your new playlist. The default value is 100, the minimum value is 1, and the max value is 100.
 
 ### Presets
 You can save the settings for a recommendation with the `--save-preset` flag followed by a name
@@ -173,18 +174,29 @@ $ spotirec --tune prefix_attribute=value prefix_attribute=value
 Recommendations may be scarce outside the recommended range.
 
 ### Blacklists
-To blacklist tracks or artists, pass the `-b` argument followed by an arbitrary number of whitespace separated Spotify URIs
+To blacklist tracks or artists, pass the `-b` or `--blacklist-add` argument followed by an arbitrary number of whitespace separated Spotify URIs
 ```
 $ spotirec -b spotify:track:id spotify:track:id spotify:artist:id
+$ spotirec --blacklist-add spotify:track:id spotify:track:id
 ```
-To remove entries from your blacklist, pass the `-br` argument followed by an arbitrary number of whitespace separated Spotify URIs
+To remove entries from your blacklist, pass the `-br` or `--blacklist-remove` argument followed by an arbitrary number of whitespace separated Spotify URIs
 ```
 $ spotirec -br spotify:track:id spotify:track:id spotify:artist:id
+$ spotirec --blacklist-remove spotify:track:id spotify:track:id
 ```
-To blacklist the currently playing track, or the artists that created the track, pass the `-bc` argument followed by either 'artist' or 'track'
+To blacklist the currently playing track, or the artists that created the track, pass the either of the aforementioned arguments followed by either 'current-artists' or 'current-track'
 ```
-$ spotirec -bc track
-$ spotirec -bc artist
+# blacklists current track
+$ spotirec -b current-track
+
+# blacklists all performing artists in current track
+$ spotirec --blacklist-add current-artists
+
+# removes current track from blacklist
+$ spotirec -br current-track
+
+# removes all performing artists in current track from blacklist
+$ spotirec --blacklist-remove current-artists
 ```
 If you forgot which tracks and artists you have blacklisted, see [printing](#printing)
 
