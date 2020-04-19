@@ -53,14 +53,14 @@ class TestRecommendation(SpotirecTestCase):
         """
         Testing recommendation defaults
         """
-        self.assertEqual(self.rec.limit, 20)
-        self.assertEqual(self.rec.limit_original, 20)
+        self.assertEqual(self.rec.limit, 100)
+        self.assertEqual(self.rec.limit_original, 100)
         self.assertEqual(self.rec.created_at, self.timestamp)
         self.assertEqual(self.rec.based_on, 'top genres')
         self.assertEqual(self.rec.seed, '')
         self.assertEqual(self.rec.seed_type, 'genres')
         self.assertEqual(self.rec.seed_info, {})
-        self.assertEqual(self.rec.rec_params, {'limit': '20'})
+        self.assertEqual(self.rec.rec_params, {'limit': '100'})
         self.assertEqual(self.rec.playlist_name, 'Spotirec-1-1-1970')
         self.assertEqual(self.rec.playlist_id, '')
         self.assertEqual(self.rec.auto_play, False)
@@ -71,9 +71,9 @@ class TestRecommendation(SpotirecTestCase):
         """
         Testing __str__()
         """
-        s = "{'limit': 20, 'original limit': 20, 'created at': '" + self.timestamp + \
+        s = "{'limit': 100, 'original limit': 100, 'created at': '" + self.timestamp + \
             "', 'based on': 'top genres', 'seed': '', 'seed type': 'genres', 'seed info': {}, " \
-            "'rec params': {'limit': '20'}, 'name': 'Spotirec-1-1-1970', 'id': '', " \
+            "'rec params': {'limit': '100'}, 'name': 'Spotirec-1-1-1970', 'id': '', " \
             "'auto play': False, 'device': {}}"
         self.assertEqual(str(self.rec), s)
 
