@@ -419,7 +419,7 @@ def check_tune_validity(tune: str):
 def filter_list_duplicates(li: list) -> list:
     """
     Removes duplicates from a list
-    :param li: original list
+    :param li: original list of strings or dicts
     :return: list without duplicates
     """
     # extract uris if elements are dicts
