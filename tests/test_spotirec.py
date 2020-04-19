@@ -1397,7 +1397,7 @@ class TestSpotirec(SpotirecTestCase):
     @ordered
     def test_args_add_to(self):
         """
-        Testing parse() with add to arg
+        Testing parse() with add to arg (track doesnt exist)
         """
         spotirec.args = mock.MockArgs(add_to=['test'])
         spotirec.conf.save_playlist({'name': 'testplaylist',
@@ -1406,15 +1406,51 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.conf.remove_playlist('test')
 
     @ordered
+    def test_args_add_to_exists(self):
+        """
+        Testing parse() with remove from arg (track exists)
+        """
+        expected = 'track spotify:track:testtrack already exists in playlist, skipping...'
+        spotirec.args = mock.MockArgs(add_to=['test'])
+        spotirec.conf.save_playlist({'name': 'testplaylist',
+                                     'uri': 'spotify:playlist:testplaylisttracks'}, 'test')
+        spotirec.logger.set_level(log.WARNING)
+        self.assertRaises(SystemExit, spotirec.parse)
+        spotirec.conf.remove_playlist('test')
+        sys.stdout.close()
+        sys.stdout = self.stdout_preserve
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
+
+    @ordered
     def test_args_remove_from(self):
         """
-        Testing parse() with remove from arg
+        Testing parse() with add to arg (track exist)
         """
         spotirec.args = mock.MockArgs(remove_from=['test'])
         spotirec.conf.save_playlist({'name': 'testplaylist',
-                                     'uri': 'spotify:playlist:testplaylist'}, 'test')
+                                     'uri': 'spotify:playlist:testplaylisttracks'}, 'test')
         self.assertRaises(SystemExit, spotirec.parse)
         spotirec.conf.remove_playlist('test')
+
+    @ordered
+    def test_args_remove_from_noexist(self):
+        """
+        Testing parse() with remove from arg (track doesnt exist)
+        """
+        expected = 'track spotify:track:testtrack doesnt exist in playlist, skipping...'
+        spotirec.args = mock.MockArgs(remove_from=['test'])
+        spotirec.conf.save_playlist({'name': 'testplaylist',
+                                     'uri': 'spotify:playlist:testplaylist'}, 'test')
+        spotirec.logger.set_level(log.WARNING)
+        self.assertRaises(SystemExit, spotirec.parse)
+        spotirec.conf.remove_playlist('test')
+        sys.stdout.close()
+        sys.stdout = self.stdout_preserve
+        with open(self.test_log, 'r') as f:
+            stdout = f.read()
+            self.assertIn(expected, stdout)
 
     @ordered
     def test_args_print_artists(self):

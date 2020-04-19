@@ -146,9 +146,12 @@ class MockAPI:
                          {'name': 'frankie3', 'uri': 'spotify:artist:testid3', 'type': 'artist',
                           'genres': ['vapor-death-jazz', 'invalid-genre', 'siesta']}]}]}
     PLAYLIST_TRUE = {'id': 'testplaylist', 'name': 'testplaylist', 'type': 'playlist', 'uri':
-                     'spotify:playlist:testid', 'tracks': [], 'public': True}
+                     'spotify:playlist:testid', 'tracks': {'items': []}, 'public': True}
     PLAYLIST_FALSE = {'id': 'testplaylist', 'name': 'testplaylist', 'type': 'playlist', 'uri':
-                      'spotify:playlist:testid', 'tracks': [], 'public': False}
+                      'spotify:playlist:testid', 'tracks': {'items': []}, 'public': False}
+    PLAYLIST_TRACKS = {'id': 'testplaylist', 'name': 'testplaylist', 'type': 'playlist', 'uri':
+                       'spotify:playlist:testid', 'tracks':
+                       {'items': [{'track': {'uri': 'spotify:track:testtrack'}}]}, 'public': True}
     GENRES = {'genres': ['metal', 'metalcore', 'pop', 'vapor-death-pop', 'holidays']}
     DEVICES = {'devices': [{'id': 'testid0', 'name': 'test0', 'type': 'fridge'},
                {'id': 'testid1', 'name': 'test1', 'type': 'microwave'}]}
@@ -294,6 +297,14 @@ class MockAPI:
                                 content=json_string(self.PLAYLIST_FALSE))
         else:
             return MockResponse(403, 'Forbidden', method, headers, '/playlists/testplaylistprivate')
+
+    @route('/playlists/testplaylisttracks', ['PUT', 'GET'])
+    def playlist_with_tracks(self, method, headers, data, json, params):
+        if method == 'GET':
+            return MockResponse(200, 'OK', method, headers, '/playlists/testplaylisttracks',
+                                content=json_string(self.PLAYLIST_TRACKS))
+        else:
+            return MockResponse(403, 'Forbidden', method, headers, '/playlists/testplaylisttracks')
 
     @route('/playlists/testplaylist/tracks', ['POST', 'PUT', 'DELETE'])
     def playlist_tracks(self, method, headers, data, json, params):
