@@ -464,8 +464,9 @@ def add_to_blacklist(entries: list):
     logger.verbose('adding blacklist entries')
     for x in entries:
         logger.debug(f'entry: {x}')
-        uri_data = api.request_data(x, f'{x.split(":")[1]}s', headers)
-        conf.add_to_blacklist(uri_data, x)
+        if not conf.check_item_in_blacklist(x):
+            uri_data = api.request_data(x, f'{x.split(":")[1]}s', headers)
+            conf.add_to_blacklist(uri_data, x)
 
 
 def remove_from_blacklist(entries: list):
