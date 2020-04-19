@@ -152,12 +152,11 @@ spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for de
 
     # Printing
     print_group = arg_parser.add_argument_group(title='Printing')
-    print_group.add_argument('--print', metavar='TYPE', nargs=1, type=str,
+    print_group.add_argument('--print', metavar='TYPE', nargs='+', type=str,
                              choices=['artists', 'tracks', 'genres', 'genre-seeds',
                                       'devices', 'blacklist', 'presets', 'playlists', 'tuning'],
-                             help='print a list of genre seeds, or your top artists, tracks, or '
-                                  'genres, where TYPE=[artists|tracks|genres|genre-seeds|devices|'
-                                  'blacklist|presets|playlists|tuning]')
+                             help='print various data, where TYPE=[artists|tracks|genres|'
+                                  'genre-seeds|devices|blacklist|presets|playlists|tuning]')
     print_group.add_argument('--version', action='version', version=f'%(prog)s v{VERSION}')
     print_group.add_argument('--track-features', metavar='[URI | current]', nargs=1, type=str,
                              help='print track features of URI or currently playing track')
@@ -589,14 +588,20 @@ def print_presets():
     """
     Format and print preset entries
     """
+
+    def _bool(b: bool) -> str:
+        return 'Yes' if b else 'No'
+
     presets = conf.get_presets()
-    print('\033[1m' + f'Name{" " * 16}Type{" " * 21}Params{" " * 44}Seeds' + '\033[0m')
+    print('\033[1m' + f'Name{" " * 16}Type{" " * 21}Auto play{" " * 6}Params'
+                      f'{" " * 44}Seeds' + '\033[0m')
     for x in presets.items():
         params = ",".join(f"{y[0]}={y[1]}" if "seed" not in y[0] else "" for y in
                           x[1]["rec_params"].items()).strip(',')
         print(
-            f'{x[0]}{" " * (20 - len(x[0]))}{x[1]["based_on"]}{" " * (25 - len(x[1]["based_on"]))}'
-            f'{params}{" " * (50 - len(params))}'
+            f'{x[0]}{" " * (20 - len(x[0]))}{x[1]["based_on"]}'
+            f'{" " * (25 - len(x[1]["based_on"]))}{_bool(x[1]["auto_play"])}'
+            f'{" " * (15 - len(_bool(x[1]["auto_play"])))}{params}{" " * (50 - len(params))}'
             f'{",".join(str(y["name"]) for y in x[1]["seed_info"].values())}')
 
 
@@ -1013,27 +1018,32 @@ def parse():
         exit(0)
 
     if args.print:
-        if args.print[0] == 'artists':
-            logger.verbose('top artists:')
+        if 'artists' in args.print:
+            print('\033[4m\033[1m' + 'Top artists' + '\033[0m')
             print_artists_or_tracks(data=api.get_top_list('artists', 50, headers), prompt=False)
-        elif args.print[0] == 'tracks':
-            logger.verbose('top tracks:')
+        if 'tracks' in args.print:
+            print('\033[4m\033[1m' + 'Top tracks' + '\033[0m')
             print_artists_or_tracks(data=api.get_top_list('tracks', 50, headers), prompt=False)
-        elif args.print[0] == 'genres':
-            logger.verbose('top genres:')
+        if 'genres' in args.print:
+            print('\033[4m\033[1m' + 'Top genres' + '\033[0m')
             print_choices(data=get_user_top_genres(), sort=True, prompt=False)
-        elif args.print[0] == 'genre-seeds':
-            logger.verbose('genre seeds:')
+        if 'genre-seeds' in args.print:
+            print('\033[4m\033[1m' + 'Genre seeds' + '\033[0m')
             print_choices(data=api.get_genre_seeds(headers)['genres'], prompt=False)
-        elif args.print[0] == 'blacklist':
+        if 'blacklist' in args.print:
+            print('\033[4m\033[1m' + 'Blacklist' + '\033[0m')
             print_blacklist()
-        elif args.print[0] == 'devices':
+        if 'devices' in args.print:
+            print('\033[4m\033[1m' + 'Devices' + '\033[0m')
             print_saved_devices()
-        elif args.print[0] == 'presets':
+        if 'presets' in args.print:
+            print('\033[4m\033[1m' + 'Presets' + '\033[0m')
             print_presets()
-        elif args.print[0] == 'playlists':
+        if 'playlists' in args.print:
+            print('\033[4m\033[1m' + 'Playlists' + '\033[0m')
             print_playlists()
-        elif args.print[0] == 'tuning':
+        if 'tuning' in args.print:
+            print('\033[4m\033[1m' + 'Tuning options' + '\033[0m')
             print_tuning_options()
         exit(0)
     if args.track_features:
