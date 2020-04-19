@@ -2,7 +2,6 @@
 import webbrowser
 import json
 import argparse
-import shlex
 import os
 import hashlib
 import re
@@ -431,18 +430,37 @@ def check_tune_validity(tune: str):
         exit(1)
 
 
+def filter_list_duplicates(li: list) -> list:
+    """
+    Removes duplicates from a list
+    :param li: original list of strings or dicts
+    :return: list without duplicates
+    """
+    # extract uris if elements are dicts
+    new_li = [x['uri'] if type(x) is dict else x for x in li]
+    # filter duplicates
+    new_li = sorted(list(set(new_li)), key=new_li.index)
+    for x in li:
+        if type(x) is dict and x['uri'] in new_li:
+            new_li[new_li.index(x['uri'])] = x
+        elif x in new_li:
+            new_li[new_li.index(x)] = x
+    return new_li
+
+
 def parse_seed_info(seeds):
     """
     Adds seed data to recommendation object
     :param seeds: seed data as a string or a list
     """
     logger.verbose('processing seeds')
-    if len(shlex.split(seeds) if type(seeds) is str else seeds) > 5:
+    seeds = filter_list_duplicates(seeds.split() if type(seeds) is str else seeds)
+    if len(seeds) > 5:
         logger.error('please enter at most 5 seeds')
         logger.log_file(crash=True)
         exit(1)
     # Parse each seed in input and add to seed string depending on type
-    for x in shlex.split(seeds) if type(seeds) is str else seeds:
+    for x in seeds:
         logger.debug(f'seed: {x}')
         if rec.seed_type == 'genres':
             rec.add_seed_info(data_string=x)
