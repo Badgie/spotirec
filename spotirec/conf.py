@@ -9,7 +9,7 @@ from pathlib import Path
 class Config:
     CONFIG_DIR = f'{Path.home()}/.config/spotirec'
     CONFIG_FILE = 'spotirec.conf'
-    URI_RE = r'spotify:(artist|track):[a-zA-Z0-9]'
+    URI_RE = r'spotify:(artist|track|show|episode):[a-zA-Z0-9]'
     LOGGER = None
 
     def set_logger(self, logger: log.Log):
@@ -105,6 +105,14 @@ class Config:
             self.save_config(c)
             return {'tracks': ast.literal_eval(c.get('blacklist', 'tracks')),
                     'artists': ast.literal_eval(c.get('blacklist', 'artists'))}
+
+    def check_item_in_blacklist(self, uri):
+        """
+        Checks whether or not a track or artist is blacklisted
+        :param uri: uri of track or artist
+        :return: bool: true if uri is blacklisted, false if not
+        """
+        return uri in self.get_blacklist()[f'{uri.split(":")[1]}s'].keys()
 
     def add_to_blacklist(self, uri_data: json, uri: str):
         """

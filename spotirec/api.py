@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import json
 import requests
+import sys
 from spotirec import conf as sp_conf, log
 
 
@@ -35,7 +36,7 @@ class API:
                 self.LOGGER.info('this may be because this is a new function, and additional '
                                  'authorization is required - try reauthorizing and try again.')
             self.LOGGER.log_file(crash=True)
-            exit(1)
+            sys.exit(1)
 
     def get_top_list(self, list_type: str, limit: int, headers: dict) -> json:
         """
@@ -169,38 +170,53 @@ class API:
         """
         Retrieve data about currently playing track
         :param headers: request headers
-        :return: uri of current track
+        :return: uri of current track if present, else return playing type
         """
         response = requests.get(f'{self.URL_BASE}/me/player', headers=headers)
         self.error_handle('retrieve current track', 200, 'GET', response=response)
-        return json.loads(response.content.decode('utf-8'))['item']['uri']
+        data = json.loads(response.content.decode('utf-8'))
+        try:
+            return data['item']['uri']
+        except (TypeError, KeyError):
+            return data['currently_playing_type']
 
     def get_current_artists(self, headers: dict) -> list:
         """
         Retrieve list of artists from currently playing track
         :param headers: request headers
-        :return: list of artist uris
+        :return: list of artist uris if present, else return playing type
         """
         response = requests.get(f'{self.URL_BASE}/me/player', headers=headers)
         self.error_handle('retrieve current artists', 200, 'GET', response=response)
-        return [str(x['uri'])
-                for x in json.loads(response.content.decode('utf-8'))['item']['artists']]
+        data = json.loads(response.content.decode('utf-8'))
+        try:
+            return [str(x['uri']) for x in data['item']['artists']]
+        except (TypeError, KeyError):
+            return [data['currently_playing_type']]
 
-    def like_track(self, headers: dict):
+    def like_track(self, headers: dict, uri_check):
         """
         Like currently playing track
         :param headers: request headers
+        :param uri_check: function that checks if uri is a show or episode
         """
-        track = {'ids': self.get_current_track(headers).split(':')[2]}
+        current_track = self.get_current_track(headers)
+        if uri_check(current_track):
+            return
+        track = {'ids': current_track.split(':')[2]}
         response = requests.put(f'{self.URL_BASE}/me/tracks', headers=headers, params=track)
         self.error_handle('like track', 200, 'PUT', response=response)
 
-    def unlike_track(self, headers: dict):
+    def unlike_track(self, headers: dict, uri_check):
         """
         Remove currently playing track from liked tracks
         :param headers: request headers
+        :param uri_check: function that checks if uri is a show or episode
         """
-        track = {'ids': self.get_current_track(headers).split(':')[2]}
+        current_track = self.get_current_track(headers)
+        if uri_check(current_track):
+            return
+        track = {'ids': current_track.split(':')[2]}
         response = requests.delete(f'{self.URL_BASE}/me/tracks', headers=headers, params=track)
         self.error_handle('remove liked track', 200, 'DELETE', response=response)
 

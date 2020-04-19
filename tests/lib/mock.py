@@ -146,9 +146,12 @@ class MockAPI:
                          {'name': 'frankie3', 'uri': 'spotify:artist:testid3', 'type': 'artist',
                           'genres': ['vapor-death-jazz', 'invalid-genre', 'siesta']}]}]}
     PLAYLIST_TRUE = {'id': 'testplaylist', 'name': 'testplaylist', 'type': 'playlist', 'uri':
-                     'spotify:playlist:testid', 'tracks': [], 'public': True}
+                     'spotify:playlist:testid', 'tracks': {'items': []}, 'public': True}
     PLAYLIST_FALSE = {'id': 'testplaylist', 'name': 'testplaylist', 'type': 'playlist', 'uri':
-                      'spotify:playlist:testid', 'tracks': [], 'public': False}
+                      'spotify:playlist:testid', 'tracks': {'items': []}, 'public': False}
+    PLAYLIST_TRACKS = {'id': 'testplaylist', 'name': 'testplaylist', 'type': 'playlist', 'uri':
+                       'spotify:playlist:testid', 'tracks':
+                       {'items': [{'track': {'uri': 'spotify:track:testtrack'}}]}, 'public': True}
     GENRES = {'genres': ['metal', 'metalcore', 'pop', 'vapor-death-pop', 'holidays']}
     DEVICES = {'devices': [{'id': 'testid0', 'name': 'test0', 'type': 'fridge'},
                {'id': 'testid1', 'name': 'test1', 'type': 'microwave'}]}
@@ -167,6 +170,9 @@ class MockAPI:
                          'genres': ['pop', 'vapor-death-pop', 'hip-hop']}],
                    'album': {'uri': 'spotify:album:testid0', 'release_date': 'never lol',
                              'name': 'cool album'}, 'popularity': -3}}
+    PLAYER_EP_SHOW = {'timestamp': 0, 'device': {'id': 'testid0', 'name': 'test0',
+                                                 'type': 'fridge'},
+                      'currently_playing_type': 'episode'}
     TOKEN = {'access_token': 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f',
              'token_type': 'Bearer', 'expires_in': 3600,
              'scope': 'user-modify-playback-state ugc-image-upload user-library-modify',
@@ -295,6 +301,14 @@ class MockAPI:
         else:
             return MockResponse(403, 'Forbidden', method, headers, '/playlists/testplaylistprivate')
 
+    @route('/playlists/testplaylisttracks', ['PUT', 'GET'])
+    def playlist_with_tracks(self, method, headers, data, json, params):
+        if method == 'GET':
+            return MockResponse(200, 'OK', method, headers, '/playlists/testplaylisttracks',
+                                content=json_string(self.PLAYLIST_TRACKS))
+        else:
+            return MockResponse(403, 'Forbidden', method, headers, '/playlists/testplaylisttracks')
+
     @route('/playlists/testplaylist/tracks', ['POST', 'PUT', 'DELETE'])
     def playlist_tracks(self, method, headers, data, json, params):
         if method == 'DELETE':
@@ -373,8 +387,9 @@ class MockAPI:
     @route('/me/player', ['GET', 'PUT'])
     def player_status(self, method, headers, data, json, params):
         if method == 'GET':
+            player = self.PLAYER_EP_SHOW if 'ep_show' in headers.keys() else self.PLAYER
             return MockResponse(200, 'OK', method, headers, '/me/player',
-                                content=json_string(self.PLAYER))
+                                content=json_string(player))
         elif method == 'PUT':
             return MockResponse(204, 'No Content', method, headers, '/me/player')
         else:
