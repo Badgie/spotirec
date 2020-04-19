@@ -14,7 +14,7 @@ from PIL import Image
 from bottle import route, run, request
 from pathlib import Path
 
-__version__ = '1.3'
+__version__ = '1.3.1'
 
 PORTS = [8000, 8001, 8002, 8003, 8004, 8005, 8006, 8007, 8008, 8009]
 CONFIG_PATH = f'{Path.home()}/.config/spotirec'
