@@ -1,4 +1,4 @@
-from spotirec import spotirec
+from . import spotirec
 from .spotirec import setup_config_dir, init, recommend
 
 
