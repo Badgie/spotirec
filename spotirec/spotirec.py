@@ -15,7 +15,7 @@ from PIL import Image
 from bottle import route, run, request
 from pathlib import Path
 
-VERSION = '1.2'
+__version__ = '1.3'
 
 PORTS = [8000, 8001, 8002, 8003, 8004, 8005, 8006, 8007, 8008, 8009]
 CONFIG_PATH = f'{Path.home()}/.config/spotirec'
@@ -161,7 +161,7 @@ spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for de
                              help='print a list of genre seeds, or your top artists, tracks, or '
                                   'genres, where TYPE=[artists|tracks|genres|genre-seeds|devices|'
                                   'blacklist|presets|playlists|tuning]')
-    print_group.add_argument('--version', action='version', version=f'%(prog)s v{VERSION}')
+    print_group.add_argument('--version', action='version', version=f'%(prog)s v{__version__}')
     print_group.add_argument('--track-features', metavar='[URI | current]', nargs=1, type=str,
                              help='print track features of URI or currently playing track')
 
