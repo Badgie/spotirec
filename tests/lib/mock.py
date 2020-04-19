@@ -443,6 +443,7 @@ class MockArgs:
         self.a = kwargs.pop('a', None)
         self.ac = kwargs.pop('ac', False)
         self.add_to = kwargs.pop('add_to', None)
+        self.auth = kwargs.pop('auth', False)
         self.blacklist_add = kwargs.pop('blacklist_add', None)
         self.blacklist_remove = kwargs.pop('blacklist_remove', None)
         self.c = kwargs.pop('c', False)
