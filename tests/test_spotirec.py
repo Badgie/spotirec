@@ -675,7 +675,7 @@ class TestSpotirec(SpotirecTestCase):
         Testing print_presets()
         """
         expected0 = f'Name{" " * 16}Type{" " * 21}Auto play{" " * 6}Params{" " * 44}Seeds'
-        expected1 = f'test{" " * 16}top genres{" " * 15}No{" " * 13}limit=20{" " * 42}'
+        expected1 = f'test{" " * 16}top genres{" " * 15}No{" " * 13}limit=100{" " * 41}'
         spotirec.save_preset('test')
         spotirec.print_presets()
         sys.stdout.close()
