@@ -169,7 +169,7 @@ class API:
         """
         Retrieve data about currently playing track
         :param headers: request headers
-        :return: uri of current track
+        :return: uri of current track if present, else return playing type
         """
         response = requests.get(f'{self.URL_BASE}/me/player', headers=headers)
         self.error_handle('retrieve current track', 200, 'GET', response=response)
@@ -183,7 +183,7 @@ class API:
         """
         Retrieve list of artists from currently playing track
         :param headers: request headers
-        :return: list of artist uris
+        :return: list of artist uris if present, else return playing type
         """
         response = requests.get(f'{self.URL_BASE}/me/player', headers=headers)
         self.error_handle('retrieve current artists', 200, 'GET', response=response)
