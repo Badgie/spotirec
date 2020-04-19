@@ -2013,6 +2013,21 @@ class TestSpotirec(SpotirecTestCase):
         self.assertDictEqual(spotirec.rec.rec_params, {'limit': '100', 'min_tempo': '160'})
 
     @ordered
+    def test_args_auth(self):
+        """
+        Testing parse() with auth arg
+        """
+
+        def mock_authorize():
+            return
+
+        auth_preserve = spotirec.authorize
+        spotirec.args = mock.MockArgs(auth=True)
+        spotirec.authorize = mock_authorize
+        self.assertRaises(SystemExit, spotirec.parse)
+        spotirec.authorize = auth_preserve
+
+    @ordered
     def test_setup_config_dir(self):
         """
         Testing setup_config_dir()
@@ -2080,6 +2095,8 @@ class TestSpotirec(SpotirecTestCase):
         self.assertFalse(args.ac)
         self.assertIn('add_to', args)
         self.assertIsNone(args.add_to)
+        self.assertFalse(args.auth)
+        self.assertIn('auth', args)
         self.assertIn('blacklist_add', args)
         self.assertIsNone(args.blacklist_add)
         self.assertIn('blacklist_remove', args)

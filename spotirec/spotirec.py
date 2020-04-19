@@ -162,6 +162,11 @@ spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for de
     print_group.add_argument('--track-features', metavar='[URI | current]', nargs=1, type=str,
                              help='print track features of URI or currently playing track')
 
+    # Misc
+    misc_group = arg_parser.add_argument_group(title='Misc')
+    misc_group.add_argument('--auth', action='store_true',
+                            help='force re-authorization of OAuth token')
+
     return arg_parser
 
 
@@ -173,6 +178,10 @@ def setup_config_dir():
 
 def check_scope_permissions():
     oauth = conf.get_oauth()
+    if len(oauth.keys()) != 6:
+        logger.error('missing oauth config, authorizing...')
+        authorize()
+        sys.exit(0)
     scopes = oauth.get('scope')
     if any(scope not in scopes for scope in sp_oauth.scopes):
         logger.error('new functionality that needs new permissions has been added, please '
@@ -1036,6 +1045,9 @@ def parse():
     Parse arguments
     """
     logger.verbose('parsing args')
+    if args.auth:
+        authorize()
+        sys.exit(0)
     if args.blacklist_add:
         if any('current' in x for x in args.blacklist_add):
             args.blacklist_add = set_blacklist_current(args.blacklist_add)
