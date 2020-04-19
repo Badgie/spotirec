@@ -1,4 +1,5 @@
 import unittest
+import sys
 from tests.lib import compare, runner
 
 # set comparison function
@@ -24,4 +25,4 @@ if __name__ == '__main__':
         if result.expectedFailures:
             print(f'\t{len(result.expectedFailures)} expected')
     if not result.wasSuccessful():
-        exit(1)
+        sys.exit(1)

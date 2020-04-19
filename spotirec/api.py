@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import json
 import requests
+import sys
 from spotirec import conf as sp_conf, log
 
 
@@ -35,7 +36,7 @@ class API:
                 self.LOGGER.info('this may be because this is a new function, and additional '
                                  'authorization is required - try reauthorizing and try again.')
             self.LOGGER.log_file(crash=True)
-            exit(1)
+            sys.exit(1)
 
     def get_top_list(self, list_type: str, limit: int, headers: dict) -> json:
         """
