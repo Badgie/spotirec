@@ -7,7 +7,7 @@ setup(
     author_email='jonaskhansen@gmail.com',
     license='GPL3',
     url='https://github.com/Badgie/spotirec',
-    download_url='https://github.com/Badgie/spotirec/archive/v1.3.tar.gz',
+    download_url='https://github.com/Badgie/spotirec/archive/1.3.1.tar.gz',
     keywords=['spotify', 'recommendation', 'music'],
     packages=['spotirec'],
     include_package_data=True,
