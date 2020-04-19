@@ -106,6 +106,14 @@ class Config:
             return {'tracks': ast.literal_eval(c.get('blacklist', 'tracks')),
                     'artists': ast.literal_eval(c.get('blacklist', 'artists'))}
 
+    def check_item_in_blacklist(self, uri):
+        """
+        Checks whether or not a track or artist is blacklisted
+        :param uri: uri of track or artist
+        :return: bool: true if uri is blacklisted, false if not
+        """
+        return uri in self.get_blacklist()[f'{uri.split(":")[1]}s'].keys()
+
     def add_to_blacklist(self, uri_data: json, uri: str):
         """
         Add entry to blacklist
@@ -113,6 +121,10 @@ class Config:
         :param uri: URI of blacklist entry
         :return:
         """
+        # Ensure input is valid
+        if not re.match(self.URI_RE, uri):
+            self.LOGGER.warning(f'uri {uri} is not a valid uri')
+            return
         uri_type = uri.split(':')[1]
         # Convert entry to dict
         data = {'name': uri_data['name'], 'uri': uri}
@@ -136,7 +148,7 @@ class Config:
         """
         # Ensure input is valid
         if not re.match(self.URI_RE, uri):
-            self.LOGGER.error(f'uri {uri} is not a valid uri')
+            self.LOGGER.warning(f'uri {uri} is not a valid uri')
             return
         c = self.open_config()
         uri_type = uri.split(':')[1]

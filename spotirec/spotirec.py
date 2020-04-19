@@ -128,7 +128,7 @@ spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for de
         title='Recommendation options',
         description='These may only appear when creating a playlist')
     rec_options_group.add_argument('-l', metavar='LIMIT', nargs=1, type=int, choices=range(1, 101),
-                                   help='amount of tracks to add (default: 20, max: 100)')
+                                   help='amount of tracks to add (default: 100, max: 100)')
     rec_options_group.add_argument('--tune', metavar='ATTR', nargs='+', type=str,
                                    help='specify tunable attribute(s)')
     rec_options_group.add_argument('--play', metavar='DEVICE', nargs=1,
@@ -140,13 +140,10 @@ spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for de
 
     # Blacklisting
     blacklist_group = arg_parser.add_argument_group(title='Blacklisting')
-    blacklist_group.add_argument('-b', metavar='URI', nargs='+', type=str,
+    blacklist_group.add_argument('-b', '--blacklist-add', metavar='URI', nargs='+', type=str,
                                  help='blacklist track(s) and/or artist(s)')
-    blacklist_group.add_argument('-br', metavar='URI', nargs='+', type=str,
+    blacklist_group.add_argument('-br', '--blacklist-remove', metavar='URI', nargs='+', type=str,
                                  help='remove track(s) and/or artists(s) from blacklist')
-    blacklist_group.add_argument('-bc', metavar='artist | track', nargs=1,
-                                 choices=['artist', 'track'],
-                                 help='blacklist currently playing artist(s) or track')
 
     # Playback
     playback_group = arg_parser.add_argument_group(title='Playback')
@@ -371,7 +368,7 @@ def check_tune_validity(tune: str):
     logger.verbose('checking tune validity')
     if not re.match(TUNE_RE, tune):
         logger.error(f'tune {tune} does not match the proper format')
-        logger.verbose(str(tune))
+        logger.verbose(tune)
         logger.log_file(crash=True)
         exit(1)
     prefix = tune.split('_', 1)[0]
@@ -381,13 +378,13 @@ def check_tune_validity(tune: str):
     # Check prefix validity
     if prefix not in TUNE_PREFIX:
         logger.error(f'tune prefix \"{tune.split("_", 1)[0]}\" is malformed')
-        logger.verbose(str(TUNE_PREFIX))
+        logger.verbose(TUNE_PREFIX)
         logger.log_file(crash=True)
         exit(1)
     # Check attribute validity
     if key not in list(TUNE_ATTR['int'].keys()) + list(TUNE_ATTR['float'].keys()):
         logger.error(f'tune attribute \"{tune.split("=")[0].split("_", 1)[1]}\" is malformed')
-        logger.verbose(str(list(TUNE_ATTR['int'].keys()) + list(TUNE_ATTR['float'].keys())))
+        logger.verbose(list(TUNE_ATTR['int'].keys()) + list(TUNE_ATTR['float'].keys()))
         logger.log_file(crash=True)
         exit(1)
     # Try parsing value to number
@@ -443,6 +440,21 @@ def parse_seed_info(seeds):
             rec.add_seed_info(data_dict=x)
 
 
+def set_blacklist_current(entries: list) -> list:
+    if 'current-track' in entries:
+        logger.verbose('getting current track')
+        entries.remove('current-track')
+        entries.append(api.get_current_track(headers))
+    elif 'current-artists' in entries:
+        logger.verbose('getting current artists')
+        entries.remove('current-artists')
+        entries += [x for x in api.get_current_artists(headers)]
+    else:
+        logger.warning('your argument for current does not match proper syntax, try '
+                       '"current-track" or "current-artists"')
+    return entries
+
+
 def add_to_blacklist(entries: list):
     """
     Add input uris to blacklist and exit
@@ -451,8 +463,9 @@ def add_to_blacklist(entries: list):
     logger.verbose('adding blacklist entries')
     for x in entries:
         logger.debug(f'entry: {x}')
-        uri_data = api.request_data(x, f'{x.split(":")[1]}s', headers)
-        conf.add_to_blacklist(uri_data, x)
+        if not conf.check_item_in_blacklist(x):
+            uri_data = api.request_data(x, f'{x.split(":")[1]}s', headers)
+            conf.add_to_blacklist(uri_data, x)
 
 
 def remove_from_blacklist(entries: list):
@@ -959,17 +972,15 @@ def parse():
     Parse arguments
     """
     logger.verbose('parsing args')
-    if args.b:
-        add_to_blacklist(args.b)
+    if args.blacklist_add:
+        if any('current' in x for x in args.blacklist_add):
+            args.blacklist_add = set_blacklist_current(args.blacklist_add)
+        add_to_blacklist(args.blacklist_add)
         exit(0)
-    if args.br:
-        remove_from_blacklist(args.br)
-        exit(0)
-    if args.bc:
-        if args.bc[0] == 'track':
-            add_to_blacklist([api.get_current_track(headers)])
-        elif args.bc[0] == 'artist':
-            add_to_blacklist(api.get_current_artists(headers))
+    if args.blacklist_remove:
+        if any('current' in x for x in args.blacklist_remove):
+            args.blacklist_remove = set_blacklist_current(args.blacklist_remove)
+        remove_from_blacklist(args.blacklist_remove)
         exit(0)
 
     if args.transfer_playback:
