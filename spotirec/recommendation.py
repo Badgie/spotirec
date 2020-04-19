@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import time
-from spotirec import log
+from . import log
 
 
 class Recommendation:

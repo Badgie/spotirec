@@ -7,7 +7,7 @@ import hashlib
 import re
 import math
 import base64
-from spotirec import oauth2, api as sp_api, conf as sp_conf, log, recommendation
+from . import oauth2, api as sp_api, conf as sp_conf, log, recommendation
 import sys
 from io import BytesIO
 from PIL import Image

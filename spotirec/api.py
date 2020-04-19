@@ -2,7 +2,7 @@
 import json
 import requests
 import sys
-from spotirec import conf as sp_conf, log
+from . import conf as sp_conf, log
 
 
 class API:
