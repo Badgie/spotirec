@@ -112,8 +112,7 @@ class Config:
         :param uri: uri of track or artist
         :return: bool: true if uri is blacklisted, false if not
         """
-        blacklist = self.get_blacklist()
-        return uri in blacklist[f'{uri.split(":")[1]}s'].keys()
+        return uri in self.get_blacklist()[f'{uri.split(":")[1]}s'].keys()
 
     def add_to_blacklist(self, uri_data: json, uri: str):
         """
