@@ -9,7 +9,7 @@ from pathlib import Path
 class Config:
     CONFIG_DIR = f'{Path.home()}/.config/spotirec'
     CONFIG_FILE = 'spotirec.conf'
-    URI_RE = r'spotify:(artist|track):[a-zA-Z0-9]'
+    URI_RE = r'spotify:(artist|track|show|episode):[a-zA-Z0-9]'
     LOGGER = None
 
     def set_logger(self, logger: log.Log):

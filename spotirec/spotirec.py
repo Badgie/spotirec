@@ -41,6 +41,7 @@ URI_RE = r'spotify:(artist|track):[a-zA-Z0-9]+'
 PLAYLIST_URI_RE = r'spotify:playlist:[a-zA-Z0-9]+'
 TRACK_URI_RE = r'spotify:track:[a-zA-Z0-9]+'
 TUNE_RE = r'\w+_\w+=\d+(.\d+)?'
+SHOW_EPI_RE = r'spotify:(show|episode):[a-zA-Z0-9]+'
 
 logger = log.Log()
 conf = sp_conf.Config()
@@ -240,6 +241,23 @@ def get_token() -> str:
         logger.verbose('token not found, authorising')
         authorize()
         exit(0)
+
+
+def check_if_show_or_episode(uri: str) -> bool:
+    """
+    Checks whether URI is a show or episode
+    :param uri:
+    """
+    uri_type = uri.split(":")[1] if ':' in uri else uri
+    uri_name = uri if ':' in uri else 'currently playing'
+    if re.match(SHOW_EPI_RE, uri) or uri == 'episode' or uri == 'show':
+        logger.warning(f'{uri_type}s can not exist in a playlists ({uri_name})')
+        return True
+    return False
+
+
+def format_identifier(identifier: str) -> str:
+    return identifier.translate({ord(c): '_' for c in '½§"¾¤£€±`^*µ!@#$%^&*()[]{};:,./<>?\\|`~=+ '})
 
 
 def get_user_top_genres() -> dict:
@@ -462,6 +480,8 @@ def add_to_blacklist(entries: list):
     """
     logger.verbose('adding blacklist entries')
     for x in entries:
+        if check_if_show_or_episode(x):
+            continue
         logger.debug(f'entry: {x}')
         if not conf.check_item_in_blacklist(x):
             uri_data = api.request_data(x, f'{x.split(":")[1]}s', headers)
@@ -475,6 +495,8 @@ def remove_from_blacklist(entries: list):
     """
     logger.verbose('removing blacklist entries')
     for x in entries:
+        if check_if_show_or_episode(x):
+            continue
         logger.debug(f'entry: {x}')
         conf.remove_from_blacklist(x)
 
@@ -540,6 +562,7 @@ def save_preset(name: str):
     Save recommendation object as preset
     :param name: name of preset
     """
+    name = format_identifier(name)
     logger.verbose('saving preset')
     preset = {'limit': rec.limit_original,
               'based_on': rec.based_on,
@@ -639,17 +662,14 @@ def save_device():
 
     def prompt_name() -> str:
         try:
-            try:
-                inp = input('Enter an identifier for your device: ')
-            except KeyboardInterrupt:
-                exit(0)
-            assert inp
-            assert ' ' not in inp
-            return inp
-        except AssertionError:
+            inp = input('Enter an identifier for your device: ')
+        except KeyboardInterrupt:
+            exit(0)
+        if inp:
+            return format_identifier(inp)
+        else:
             logger.error(f'device identifier \"{inp}\" is malformed.')
-            logger.info('please ensure that the identifier contains at least one character, '
-                        'and no whitespaces.')
+            logger.info('please ensure that the identifier contains at least one character')
             return prompt_name()
 
     # Get available devices from API and print
@@ -713,14 +733,11 @@ def save_playlist():
             iden = input('Please input an identifier for your playlist: ')
         except KeyboardInterrupt:
             exit(0)
-        try:
-            assert iden
-            assert ' ' not in iden
-            return iden
-        except AssertionError:
+        if iden:
+            return format_identifier(iden)
+        else:
             logger.error(f'playlist identifier \"{iden}\" is malformed.')
-            logger.info('please ensure that the identifier contains at least one character, '
-                        'and no whitespaces.')
+            logger.info('please ensure that the identifier contains at least one character')
             return input_id()
 
     def input_uri() -> str:
@@ -774,9 +791,12 @@ def add_current_track(playlist: str):
             logger.log_file(crash=True)
             exit(1)
     logger.info(f'adding currently playing track to playlist')
+
+    current_track = api.get_current_track(headers)
+    if check_if_show_or_episode(current_track):
+        return
     playlist_tracks = [x['track']['uri']
                        for x in api.get_playlist(headers, playlist_id)['tracks']['items']]
-    current_track = api.get_current_track(headers)
     if current_track in playlist_tracks:
         logger.warning(f'track {current_track} already exists in playlist, skipping...')
         return
@@ -800,13 +820,15 @@ def remove_current_track(playlist: str):
             logger.log_file(crash=True)
             exit(1)
     logger.info(f'removing currently playing track to playlist')
+    current_track = api.get_current_track(headers)
+    if check_if_show_or_episode(current_track):
+        return
     playlist_tracks = [x['track']['uri']
                        for x in api.get_playlist(headers, playlist_id)['tracks']['items']]
-    current_track = api.get_current_track(headers)
     if current_track not in playlist_tracks:
         logger.warning(f'track {current_track} doesnt exist in playlist, skipping...')
         return
-    api.remove_from_playlist([api.get_current_track(headers)], playlist_id, headers)
+    api.remove_from_playlist([current_track], playlist_id, headers)
 
 
 def print_track_features(uri: str):
@@ -1001,11 +1023,11 @@ def parse():
 
     if args.s:
         logger.info('liking current track')
-        api.like_track(headers)
+        api.like_track(headers, check_if_show_or_episode)
         exit(0)
     elif args.sr:
         logger.info('unliking current track')
-        api.unlike_track(headers)
+        api.unlike_track(headers, check_if_show_or_episode)
         exit(0)
     if args.save_playlist:
         save_playlist()
@@ -1115,7 +1137,8 @@ def parse():
             logger.error('please enter 1-5 seeds')
             logger.log_file(crash=True)
             exit(1)
-        parse_seed_info(user_input.strip(' '))
+        seeds = [x for x in user_input.strip(' ').split() if not check_if_show_or_episode(x)]
+        parse_seed_info(seeds)
     else:
         logger.info(f'basing recommendations off your top {args.n} genres')
         add_top_genres_seed(args.n)

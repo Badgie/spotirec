@@ -155,6 +155,23 @@ class TestSpotirec(SpotirecTestCase):
             f.write('')
 
     @ordered
+    def test_check_if_show_or_episode_false(self):
+        """
+        Testing check_if_show_or_episode() (false)
+        """
+        self.assertFalse(spotirec.check_if_show_or_episode('spotify:track:sjkdhf'))
+
+    @ordered
+    def test_check_if_show_or_episode_true(self):
+        """
+        Testing check_if_show_or_episode() (true)
+        """
+        self.assertTrue(spotirec.check_if_show_or_episode('spotify:show:sjkdhf'))
+        self.assertTrue(spotirec.check_if_show_or_episode('spotify:episode:sjkdhf'))
+        self.assertTrue(spotirec.check_if_show_or_episode('show'))
+        self.assertTrue(spotirec.check_if_show_or_episode('episode'))
+
+    @ordered
     def test_get_user_top_genres(self):
         """
         Testing get_user_top_genres()
@@ -297,6 +314,24 @@ class TestSpotirec(SpotirecTestCase):
         Testing check_if_valid_genre() false
         """
         self.assertFalse(spotirec.check_if_valid_genre('vapor-death-jazz'))
+
+    @ordered
+    def test_format_identifier(self):
+        """
+        Testing format_identifier()
+        """
+        # valid identifiers should not be altered
+        self.assertEqual('test', spotirec.format_identifier('test'))
+        self.assertEqual('test-test', spotirec.format_identifier('test-test'))
+        self.assertEqual('test_test', spotirec.format_identifier('test_test'))
+
+        # faulty chars should be replaced with an underscore
+        self.assertEqual('test___test', spotirec.format_identifier('test   test'))
+        self.assertEqual('t_e_s_t_t_e_s_t_t_e_s_t___',
+                         spotirec.format_identifier('t½e§s¾t!t@e£s#t¤t$e%s&t   '))
+        self.assertEqual('____t_e_s_t_t_e_s_t_t_e_s_t',
+                         spotirec.format_identifier('   /t{e(s[t]t)e}s=t?t±e`s|t'))
+        self.assertEqual('_t_e_s_t_t_e_s_t_', spotirec.format_identifier('^t~e*sµt;t,e.s:t€'))
 
     @ordered
     def test_check_tune_validity_success(self):
@@ -552,6 +587,23 @@ class TestSpotirec(SpotirecTestCase):
         blacklist = spotirec.conf.get_blacklist()
         self.assertNotIn('spotify:track:testid0', blacklist['tracks'].keys())
         self.assertNotIn('spotify:artist:testid0', blacklist['artists'].keys())
+        print(blacklist['tracks'].keys())
+
+    @ordered
+    def test_add_to_blacklist_ep_show(self):
+        """
+        Testing add_to_blacklist() (episode or show)
+        """
+        # should not cause system exit
+        spotirec.add_to_blacklist(['show'])
+
+    @ordered
+    def test_remove_from_blacklist_ep_show(self):
+        """
+        Testing remove_from_blacklist() (episode or show)
+        """
+        # should not cause system exit
+        spotirec.remove_from_blacklist(['show'])
 
     @ordered
     def test_print_blacklist(self):
@@ -569,6 +621,7 @@ class TestSpotirec(SpotirecTestCase):
             self.assertIn('Artists', stdout)
             self.assertIn('test0 by frankie0 - spotify:track:testid0', stdout)
             self.assertIn('frankie0 - spotify:artist:testid0', stdout)
+        spotirec.remove_from_blacklist(['spotify:track:testid0', 'spotify:artist:testid0'])
 
     @ordered
     def test_generate_img(self):
@@ -775,9 +828,9 @@ class TestSpotirec(SpotirecTestCase):
         self.assertRaises(SystemExit, spotirec.save_device)
 
     @ordered
-    def test_save_device_name_error(self):
+    def test_save_device_name_format(self):
         """
-        Testing save_device() invalid iden
+        Testing save_device() (format iden)
         """
 
         def mock_input_index(prompt: str):
@@ -785,19 +838,35 @@ class TestSpotirec(SpotirecTestCase):
             return 1
 
         def mock_input_name_error(prompt: str):
-            spotirec.input = mock_input_name
-            return 'this will not work'
-
-        def mock_input_name(prompt: str):
-            return 'test'
+            return 'mal¤form(ed )iden^ti#fier$[{'
 
         spotirec.input = mock_input_index
         spotirec.save_device()
         devices = spotirec.conf.get_devices()
-        self.assertIn('test', devices.keys())
-        self.assertDictEqual(devices['test'], {'id': 'testid1', 'name': 'test1',
-                                               'type': 'microwave'})
-        spotirec.conf.remove_device('test')
+        self.assertIn('mal_form_ed__iden_ti_fier___', devices.keys())
+        self.assertDictEqual(devices['mal_form_ed__iden_ti_fier___'],
+                             {'id': 'testid1', 'name': 'test1', 'type': 'microwave'})
+        spotirec.conf.remove_device('mal_form_ed__iden_ti_fier___')
+
+    @ordered
+    def test_save_device_name_error(self):
+        """
+        Testing save_device() (error)
+        """
+
+        def mock_input_index(prompt: str):
+            spotirec.input = mock_input_name_error
+            return 1
+
+        def mock_input_name_error(prompt: str):
+            spotirec.input = mock_input_name_sigint
+            return ''
+
+        def mock_input_name_sigint(prompt: str):
+            raise KeyboardInterrupt
+
+        spotirec.input = mock_input_index
+        self.assertRaises(SystemExit, spotirec.save_device)
 
     @ordered
     def test_remove_devices(self):
@@ -902,7 +971,7 @@ class TestSpotirec(SpotirecTestCase):
 
         def mock_input(prompt: str):
             spotirec.input = mock_input_sigint
-            return 'this will not work'
+            return ''
 
         def mock_input_sigint(prompt: str):
             raise KeyboardInterrupt
@@ -964,6 +1033,15 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.add_current_track('spotify:playlist:testplaylist')
 
     @ordered
+    def test_add_current_track_ep_show(self):
+        """
+        Testing add_current_track() (episode or show)
+        """
+        spotirec.headers['ep_show'] = ''
+        self.assertIsNone(spotirec.add_current_track('spotify:playlist:testplaylist'))
+        del spotirec.headers['ep_show']
+
+    @ordered
     def test_remove_current_track_error(self):
         """
         Testing remove_current_track() invalid playlist
@@ -979,6 +1057,15 @@ class TestSpotirec(SpotirecTestCase):
         """
         # should not cause system exit
         spotirec.remove_current_track('spotify:playlist:testplaylist')
+
+    @ordered
+    def test_remove_current_track_ep_show(self):
+        """
+        Testing remove_current_track() (episode or show)
+        """
+        spotirec.headers['ep_show'] = ''
+        self.assertIsNone(spotirec.remove_current_track('spotify:playlist:testplaylist'))
+        del spotirec.headers['ep_show']
 
     @ordered
     def test_print_track_features_error(self):

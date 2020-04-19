@@ -170,6 +170,9 @@ class MockAPI:
                          'genres': ['pop', 'vapor-death-pop', 'hip-hop']}],
                    'album': {'uri': 'spotify:album:testid0', 'release_date': 'never lol',
                              'name': 'cool album'}, 'popularity': -3}}
+    PLAYER_EP_SHOW = {'timestamp': 0, 'device': {'id': 'testid0', 'name': 'test0',
+                                                 'type': 'fridge'},
+                      'currently_playing_type': 'episode'}
     TOKEN = {'access_token': 'f6952d6eef555ddd87aca66e56b91530222d6e318414816f3ba7cf5bf694bf0f',
              'token_type': 'Bearer', 'expires_in': 3600,
              'scope': 'user-modify-playback-state ugc-image-upload user-library-modify',
@@ -384,8 +387,9 @@ class MockAPI:
     @route('/me/player', ['GET', 'PUT'])
     def player_status(self, method, headers, data, json, params):
         if method == 'GET':
+            player = self.PLAYER_EP_SHOW if 'ep_show' in headers.keys() else self.PLAYER
             return MockResponse(200, 'OK', method, headers, '/me/player',
-                                content=json_string(self.PLAYER))
+                                content=json_string(player))
         elif method == 'PUT':
             return MockResponse(204, 'No Content', method, headers, '/me/player')
         else:
