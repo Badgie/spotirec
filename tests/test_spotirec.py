@@ -2028,14 +2028,6 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.authorize = auth_preserve
 
     @ordered
-    def test_setup_config_dir(self):
-        """
-        Testing setup_config_dir()
-        """
-        spotirec.setup_config_dir()
-        os.rmdir(spotirec.CONFIG_PATH)
-
-    @ordered
     def test_authorize(self):
         """
         Testing authorize()
