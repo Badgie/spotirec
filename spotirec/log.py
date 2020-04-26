@@ -1,6 +1,7 @@
-from pathlib import Path
 import os
 import time
+from pathlib import Path
+from typing import Any
 
 NOTSET = 0
 ERROR = 10
@@ -32,30 +33,30 @@ class Log:
             file.write(self.LOG)
         self.info(f'saved{" crash" if crash else ""} log to {self.LOG_PATH}/{file_name}')
 
-    def error(self, msg):
+    def error(self, msg: Any):
         if self.LEVEL >= ERROR:
             print('\033[91m' + 'ERROR: ' + '\033[0m' + str(msg))
         self.append_log('ERROR', msg)
 
-    def warning(self, msg):
+    def warning(self, msg: Any):
         if self.LEVEL >= WARNING and not self.SUPPRESS_WARNINGS:
             print('\033[93m' + 'WARNING: ' + '\033[0m' + str(msg))
         self.append_log('WARNING', msg)
 
-    def info(self, msg):
+    def info(self, msg: Any):
         if self.LEVEL >= INFO:
             print('\033[96m' + 'INFO: ' + '\033[0m' + str(msg))
         self.append_log('INFO', msg)
 
-    def verbose(self, msg):
+    def verbose(self, msg: Any):
         if self.LEVEL >= VERBOSE:
             print('\033[96m' + 'INFO: ' + '\033[0m' + str(msg))
         self.append_log('INFO', msg)
 
-    def debug(self, msg):
+    def debug(self, msg: Any):
         if self.LEVEL >= DEBUG:
             print('\033[94m' + 'DEBUG: ' + '\033[0m' + str(msg))
         self.append_log('DEBUG', msg)
 
-    def append_log(self, level_name, msg):
+    def append_log(self, level_name: str, msg: Any):
         self.LOG += f'[{time.ctime(time.time())}][{level_name}]: {str(msg)}\n'

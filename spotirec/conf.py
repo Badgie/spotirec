@@ -1,9 +1,10 @@
 import json
 import re
-import configparser
 import ast
-from . import log
+from configparser import ConfigParser
 from pathlib import Path
+
+from .log import Log
 
 
 class Config:
@@ -12,10 +13,10 @@ class Config:
     URI_RE = r'spotify:(artist|track|show|episode):[a-zA-Z0-9]'
     LOGGER = None
 
-    def set_logger(self, logger: log.Log):
+    def set_logger(self, logger: Log):
         self.LOGGER = logger
 
-    def open_config(self) -> configparser.ConfigParser:
+    def open_config(self) -> ConfigParser:
         """
         Open configuration file as object
         :return: config object
@@ -23,7 +24,7 @@ class Config:
         try:
             # Read config and assert size
             self.LOGGER.verbose('getting config')
-            c = configparser.ConfigParser()
+            c = ConfigParser()
             with open(f'{self.CONFIG_DIR}/{self.CONFIG_FILE}', 'r') as f:
                 c.read_file(f)
             assert len(c.keys()) > 0
@@ -34,7 +35,7 @@ class Config:
             self.convert_or_create_config()
             return self.open_config()
 
-    def save_config(self, c: configparser.ConfigParser):
+    def save_config(self, c: ConfigParser):
         """
         Write config to file
         :param c: config object
@@ -48,7 +49,7 @@ class Config:
         Convert old config files to new. If old files do not exist, simply add the
         necessary sections.
         """
-        c = configparser.ConfigParser()
+        c = ConfigParser()
         old_conf = ['spotirecoauth', 'presets', 'blacklist', 'devices', 'playlists']
         for x in old_conf:
             # Add new section
@@ -106,7 +107,7 @@ class Config:
             return {'tracks': ast.literal_eval(c.get('blacklist', 'tracks')),
                     'artists': ast.literal_eval(c.get('blacklist', 'artists'))}
 
-    def check_item_in_blacklist(self, uri):
+    def check_item_in_blacklist(self, uri: str):
         """
         Checks whether or not a track or artist is blacklisted
         :param uri: uri of track or artist
