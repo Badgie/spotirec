@@ -1,9 +1,10 @@
-from tests.lib import ordered, runner
-from tests.lib.ut_ext import SpotirecTestCase
-from spotirec import log, recommendation
 import os
 import sys
 import time
+
+from tests.lib import ordered, runner
+from tests.lib.ut_ext import SpotirecTestCase
+from spotirec import log, recommendation
 
 
 class TestRecommendation(SpotirecTestCase):

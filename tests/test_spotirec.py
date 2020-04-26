@@ -1,11 +1,13 @@
-from tests.lib import ordered, mock, runner
-from tests.lib.ut_ext import SpotirecTestCase
-from spotirec import oauth2, api, conf, log, recommendation, spotirec
 import os
 import sys
 import time
 import errno
+
 from PIL import Image
+
+from tests.lib import ordered, mock, runner
+from tests.lib.ut_ext import SpotirecTestCase
+from spotirec import oauth2, api, conf, log, recommendation, spotirec
 
 
 class TestSpotirec(SpotirecTestCase):
