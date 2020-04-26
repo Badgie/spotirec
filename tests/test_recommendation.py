@@ -105,9 +105,9 @@ class TestRecommendation(SpotirecTestCase):
         """
         Testing add_seed_info()
         """
-        self.rec.add_seed_info(data_string='metal')
-        self.rec.add_seed_info(data_dict=self.test_track)
-        self.rec.add_seed_info(data_dict=self.test_artist)
+        self.rec.add_seed_info('metal')
+        self.rec.add_seed_info(self.test_track)
+        self.rec.add_seed_info(self.test_artist)
         self.assertEqual(self.rec.seed_info, self.test_seed)
 
     @ordered
@@ -115,9 +115,9 @@ class TestRecommendation(SpotirecTestCase):
         """
         Testing print_selection()
         """
-        self.rec.add_seed_info(data_string='metal')
-        self.rec.add_seed_info(data_dict=self.test_track)
-        self.rec.add_seed_info(data_dict=self.test_artist)
+        self.rec.add_seed_info('metal')
+        self.rec.add_seed_info(self.test_track)
+        self.rec.add_seed_info(self.test_artist)
         self.assertEqual(self.rec.seed_info, self.test_seed)
         self.rec.LOGGER.set_level(50)
         sys.stdout = open('tests/fixtures/select', 'w')
@@ -137,9 +137,9 @@ class TestRecommendation(SpotirecTestCase):
         """
         Testing create_seed() (genres)
         """
-        self.rec.add_seed_info(data_string='metal')
-        self.rec.add_seed_info(data_string='metalcore')
-        self.rec.add_seed_info(data_string='vapor-death-pop')
+        self.rec.add_seed_info('metal')
+        self.rec.add_seed_info('metalcore')
+        self.rec.add_seed_info('vapor-death-pop')
         self.rec.seed_type = 'genres'
         self.rec.create_seed()
         self.assertEqual(self.rec.seed, 'metal,metalcore,vapor-death-pop')
@@ -149,9 +149,9 @@ class TestRecommendation(SpotirecTestCase):
         """
         Testing create_seed() (tracks)
         """
-        self.rec.add_seed_info(data_dict=self.test_track)
-        self.rec.add_seed_info(data_dict=self.test_track)
-        self.rec.add_seed_info(data_dict=self.test_track)
+        self.rec.add_seed_info(self.test_track)
+        self.rec.add_seed_info(self.test_track)
+        self.rec.add_seed_info(self.test_track)
         self.rec.seed_type = 'tracks'
         self.rec.create_seed()
         self.assertEqual(self.rec.seed, 'testid,testid,testid')
@@ -161,9 +161,9 @@ class TestRecommendation(SpotirecTestCase):
         """
         Testing create_seed() (custom)
         """
-        self.rec.add_seed_info(data_string='metal')
-        self.rec.add_seed_info(data_dict=self.test_track)
-        self.rec.add_seed_info(data_dict=self.test_artist)
+        self.rec.add_seed_info('metal')
+        self.rec.add_seed_info(self.test_track)
+        self.rec.add_seed_info(self.test_artist)
         self.rec.seed_type = 'custom'
         self.rec.create_seed()
         self.assertEqual(self.rec.rec_params['seed_tracks'], 'testid')
