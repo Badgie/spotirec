@@ -1,6 +1,7 @@
 import json
 import sys
-from requests import get, put, post, delete, Response
+import requests
+from requests import Response
 from typing import Callable
 
 from .conf import Config
@@ -49,7 +50,7 @@ class API:
         :return: top list as json object
         """
         params = {'limit': limit}
-        response = get(f'{self.URL_BASE}/me/top/{list_type}', headers=headers,
+        response = requests.get(f'{self.URL_BASE}/me/top/{list_type}', headers=headers,
                        params=params)
         self.error_handle(f'top {list_type}', 200, 'GET', response)
         return json.loads(response.content.decode('utf-8'))
@@ -60,7 +61,7 @@ class API:
         :param headers: request headers
         :return: user ID as a string
         """
-        response = get(f'{self.URL_BASE}/me', headers=headers)
+        response = requests.get(f'{self.URL_BASE}/me', headers=headers)
         self.error_handle('user info', 200, 'GET', response)
         return json.loads(response.content.decode('utf-8'))['id']
 
@@ -77,7 +78,7 @@ class API:
         data = {'name': playlist_name,
                 'description': playlist_description}
         self.LOGGER.info('creating playlist')
-        response = post(f'{self.URL_BASE}/users/{self.get_user_id(headers)}/playlists',
+        response = requests.post(f'{self.URL_BASE}/users/{self.get_user_id(headers)}/playlists',
                         json=data, headers=headers)
         self.error_handle('playlist creation', 201, 'POST', response)
         playlist = json.loads(response.content.decode('utf-8'))
@@ -93,7 +94,7 @@ class API:
         :param data: base64 encoded jpeg image
         :param img_headers: request headers
         """
-        response = put(f'{self.URL_BASE}/playlists/{playlist_id}/images',
+        response = requests.put(f'{self.URL_BASE}/playlists/{playlist_id}/images',
                        headers=img_headers, data=data)
         self.error_handle('image upload', 202, 'PUT', response)
 
@@ -106,7 +107,7 @@ class API:
         """
         data = {'uris': tracks}
         self.LOGGER.debug(f'tracks: {tracks}')
-        response = post(f'{self.URL_BASE}/playlists/{playlist_id}/tracks',
+        response = requests.post(f'{self.URL_BASE}/playlists/{playlist_id}/tracks',
                         headers=headers, json=data)
         self.error_handle('adding tracks', 201, 'POST', response)
 
@@ -117,7 +118,7 @@ class API:
         :param headers: request headers
         :return: recommendations as json object
         """
-        response = get(f'{self.URL_BASE}/recommendations', params=rec_params,
+        response = requests.get(f'{self.URL_BASE}/recommendations', params=rec_params,
                        headers=headers)
         self.error_handle('recommendations', 200, 'GET', response)
         return json.loads(response.content.decode('utf-8'))
@@ -130,7 +131,7 @@ class API:
         :param headers: request headers
         :return: data about artist or track as a json obj
         """
-        response = get(f'{self.URL_BASE}/{data_type}/{uri.split(":")[2]}', headers=headers)
+        response = requests.get(f'{self.URL_BASE}/{data_type}/{uri.split(":")[2]}', headers=headers)
         self.error_handle(f'single {data_type}', 200, 'GET', response)
         return json.loads(response.content.decode('utf-8'))
 
@@ -140,7 +141,7 @@ class API:
         :param headers: request headers
         :return: genre seeds as a json obj
         """
-        response = get(f'{self.URL_BASE}/recommendations/available-genre-seeds',
+        response = requests.get(f'{self.URL_BASE}/recommendations/available-genre-seeds',
                        headers=headers)
         self.error_handle('genre seeds', 200, 'GET', response)
         return json.loads(response.content.decode('utf-8'))
@@ -151,7 +152,7 @@ class API:
         :param headers: request headers
         :return: devices as json object
         """
-        response = get(f'{self.URL_BASE}/me/player/devices', headers=headers)
+        response = requests.get(f'{self.URL_BASE}/me/player/devices', headers=headers)
         self.error_handle('playback devices', 200, 'GET', response)
         return json.loads(response.content.decode('utf-8'))
 
@@ -164,7 +165,7 @@ class API:
         """
         body = {'context_uri': context_uri}
         params = {'device_id': device_id}
-        response = put(f'{self.URL_BASE}/me/player/play', json=body, headers=headers,
+        response = requests.put(f'{self.URL_BASE}/me/player/play', json=body, headers=headers,
                        params=params)
         self.error_handle('start playback', 204, 'PUT', response)
 
@@ -174,7 +175,7 @@ class API:
         :param headers: request headers
         :return: uri of current track if present, else return playing type
         """
-        response = get(f'{self.URL_BASE}/me/player', headers=headers)
+        response = requests.get(f'{self.URL_BASE}/me/player', headers=headers)
         self.error_handle('retrieve current track', 200, 'GET', response)
         data = json.loads(response.content.decode('utf-8'))
         try:
@@ -188,7 +189,7 @@ class API:
         :param headers: request headers
         :return: list of artist uris if present, else return playing type
         """
-        response = get(f'{self.URL_BASE}/me/player', headers=headers)
+        response = requests.get(f'{self.URL_BASE}/me/player', headers=headers)
         self.error_handle('retrieve current artists', 200, 'GET', response)
         data = json.loads(response.content.decode('utf-8'))
         try:
@@ -206,7 +207,7 @@ class API:
         if uri_check(current_track):
             return
         track = {'ids': current_track.split(':')[2]}
-        response = put(f'{self.URL_BASE}/me/tracks', headers=headers, params=track)
+        response = requests.put(f'{self.URL_BASE}/me/tracks', headers=headers, params=track)
         self.error_handle('like track', 200, 'PUT', response)
 
     def unlike_track(self, headers: dict, uri_check: Callable[[str], bool]):
@@ -219,7 +220,7 @@ class API:
         if uri_check(current_track):
             return
         track = {'ids': current_track.split(':')[2]}
-        response = delete(f'{self.URL_BASE}/me/tracks', headers=headers, params=track)
+        response = requests.delete(f'{self.URL_BASE}/me/tracks', headers=headers, params=track)
         self.error_handle('remove liked track', 200, 'DELETE', response)
 
     def update_playlist_details(self, name: str, description: str, playlist_id: str, headers: dict):
@@ -231,7 +232,7 @@ class API:
         :param headers: request headers
         """
         data = {'name': name, 'description': description}
-        response = put(f'{self.URL_BASE}/playlists/{playlist_id}', headers=headers,
+        response = requests.put(f'{self.URL_BASE}/playlists/{playlist_id}', headers=headers,
                        json=data)
         self.error_handle('update playlist details', 200, 'PUT', response)
 
@@ -243,7 +244,7 @@ class API:
         :param headers: request headers
         """
         data = {'uris': tracks}
-        response = put(f'{self.URL_BASE}/playlists/{playlist_id}/tracks', headers=headers,
+        response = requests.put(f'{self.URL_BASE}/playlists/{playlist_id}/tracks', headers=headers,
                        json=data)
         self.error_handle('remove tracks from playlist', 201, 'PUT', response)
 
@@ -254,7 +255,7 @@ class API:
         :param playlist_id: ID of the playlist
         :return: playlist object
         """
-        response = get(f'{self.URL_BASE}/playlists/{playlist_id}', headers=headers)
+        response = requests.get(f'{self.URL_BASE}/playlists/{playlist_id}', headers=headers)
         self.error_handle('retrieve playlist', 200, 'GET', response)
         return json.loads(response.content.decode('utf-8'))
 
@@ -267,7 +268,7 @@ class API:
         """
         data = {'tracks': [{'uri': x} for x in tracks]}
         self.LOGGER.debug(f'tracks: {data["tracks"]}')
-        response = delete(f'{self.URL_BASE}/playlists/{playlist_id}/tracks',
+        response = requests.delete(f'{self.URL_BASE}/playlists/{playlist_id}/tracks',
                           headers=headers, json=data)
         self.error_handle('delete track from playlist', 200, 'DELETE', response)
 
@@ -278,7 +279,7 @@ class API:
         :param headers: request headers
         :return: audio features object
         """
-        response = get(f'{self.URL_BASE}/audio-features/{track_id}', headers=headers)
+        response = requests.get(f'{self.URL_BASE}/audio-features/{track_id}', headers=headers)
         self.error_handle('retrieve audio features', 200, 'GET', response)
         return json.loads(response.content.decode('utf-8'))
 
@@ -289,7 +290,7 @@ class API:
         :param headers: request headers
         :return: bool determining if playlist exists
         """
-        response = get(f'{self.URL_BASE}/playlists/{playlist_id}', headers=headers)
+        response = requests.get(f'{self.URL_BASE}/playlists/{playlist_id}', headers=headers)
         self.error_handle('retrieve playlist', 200, 'GET', response)
         # If playlist is public, return true (if playlist has been deleted, this value is false)
         if json.loads(response.content.decode('utf-8'))['public']:
@@ -305,7 +306,7 @@ class API:
         :param start_playback: if music should start playing or not
         """
         data = {'device_ids': [device_id], 'play': start_playback}
-        response = put(f'{self.URL_BASE}/me/player', headers=headers, json=data)
+        response = requests.put(f'{self.URL_BASE}/me/player', headers=headers, json=data)
         self.error_handle('transfer playback', 204, 'PUT', response)
 
     def get_saved_tracks(self, headers: dict, limit: int = 50) -> json:
@@ -316,6 +317,6 @@ class API:
         :return: json object
         """
         params = {'limit': limit}
-        response = get(f'{self.URL_BASE}/me/tracks', headers=headers, params=params)
+        response = requests.get(f'{self.URL_BASE}/me/tracks', headers=headers, params=params)
         self.error_handle('retrieve saved tracks', 200, 'GET', response)
         return json.loads(response.content.decode('utf-8'))
