@@ -42,14 +42,14 @@ class TestOauth2(SpotirecTestCase):
         """
         Setup any necessary data or states before each test is run
         """
-        self.oauth.OAUTH_TOKEN_URL = '/api/token'
+        oauth2.OAUTH_TOKEN_URL = '/api/token'
         self.oauth.client_id = 'client_id'
         self.oauth.client_secret = 'client_secret'
         self.oauth.scopes = ['user-modify-playback-state', 'ugc-image-upload',
                              'user-library-modify']
         self.logger.set_level(0)
-        self.conf.CONFIG_DIR = 'tests/fixtures/'
-        self.conf.CONFIG_FILE = 'test.conf'
+        conf.CONFIG_DIR = 'tests/fixtures/'
+        conf.CONFIG_FILE = 'test.conf'
 
     @ordered
     def test_get_credentials(self):
@@ -109,7 +109,7 @@ class TestOauth2(SpotirecTestCase):
         """
         Testing get_credentials() with empty conf
         """
-        self.conf.CONFIG_FILE = 'empty.conf'
+        conf.CONFIG_FILE = 'empty.conf'
         token = self.oauth.get_credentials()
         self.assertIsNone(token)
         with open('tests/fixtures/empty.conf', 'w') as f:
@@ -120,7 +120,7 @@ class TestOauth2(SpotirecTestCase):
         """
         Testing refresh_token()
         """
-        self.conf.CONFIG_FILE = 'test-refresh.conf'
+        conf.CONFIG_FILE = 'test-refresh.conf'
         expected_expire = round(time.time()) + 3600
         token = self.oauth.refresh_token(
             '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
@@ -151,7 +151,7 @@ class TestOauth2(SpotirecTestCase):
         """
         Testing refresh_token() preserving refresh token
         """
-        self.conf.CONFIG_FILE = 'test-refresh.conf'
+        conf.CONFIG_FILE = 'test-refresh.conf'
         expected_expire = round(time.time()) + 3600
         token = self.oauth.refresh_token('no_refresh')
         self.assertEqual(token['access_token'],
@@ -203,7 +203,7 @@ class TestOauth2(SpotirecTestCase):
         """
         Testing retrieve_access_token()
         """
-        self.conf.CONFIG_FILE = 'test-retrieve.conf'
+        conf.CONFIG_FILE = 'test-retrieve.conf'
         expected_expire = round(time.time()) + 3600
         token = self.oauth.retrieve_access_token('testcode')
         self.assertEqual(token['access_token'],
@@ -266,7 +266,7 @@ class TestOauth2(SpotirecTestCase):
         """
         Testing save_token()
         """
-        self.oauth.CONF.CONFIG_FILE = 'save-test'
+        conf.CONFIG_FILE = 'save-test'
         token = {'access_token': 'test', 'token_type': 'test', 'expires_in': '3600',
                  'scope': 'test-test'}
         expires_at = str(round(time.time()) + 3600)

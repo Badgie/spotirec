@@ -21,15 +21,15 @@ class TestAPI(SpotirecTestCase):
             print(f'file:/{__file__}\n')
         cls.stdout_preserve = sys.__stdout__
         cls.api = sp_api.API()
-        cls.api.URL_BASE = ''
+        sp_api.URL_BASE = ''
         cls.test_log = 'tests/fixtures/test-api'
         sp_api.requests = mock.MockAPI()
         cls.logger = log.Log()
-        cls.logger.LOG_PATH = 'tests/fixtures'
+        log.LOG_PATH = 'tests/fixtures'
         cls.api.set_logger(cls.logger)
         cls.config = conf.Config()
-        cls.config.CONFIG_DIR = 'tests/fixtures'
-        cls.config.CONFIG_FILE = 'test.conf'
+        conf.CONFIG_DIR = 'tests/fixtures'
+        conf.CONFIG_FILE = 'test.conf'
         cls.config.set_logger(cls.logger)
         cls.api.set_conf(cls.config)
         cls.headers = {'Content-Type': 'application/json',
@@ -78,7 +78,7 @@ class TestAPI(SpotirecTestCase):
         """
         response = mock.MockResponse(200, 'success', 'success', {'success': 'yes lol'},
                                      'https://success.test')
-        self.api.error_handle('test', 200, 'TEST', response=response)
+        self.api.error_handle('test', 200, 'TEST', response)
         sys.stdout.close()
         sys.stdout = self.stdout_preserve
         with open(self.test_log, 'r') as f:

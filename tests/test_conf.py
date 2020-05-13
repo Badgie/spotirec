@@ -18,6 +18,8 @@ class TestConf(SpotirecTestCase):
         if runner.verbosity > 0:
             super(TestConf, cls).setUpClass()
             print(f'file:/{__file__}\n')
+        conf.CONFIG_PATH = 'tests/fixtures/'
+        conf.CONFIG_FILE = 'test.conf'
         cls.logger = log.Log()
         cls.conf = conf.Config()
         cls.conf.LOGGER = cls.logger
@@ -36,8 +38,7 @@ class TestConf(SpotirecTestCase):
         Setup any necessary data or states before each test is run
         """
         self.logger.set_level(0)
-        self.conf.CONFIG_DIR = 'tests/fixtures/'
-        self.conf.CONFIG_FILE = 'test.conf'
+        conf.CONFIG_FILE = 'test.conf'
 
     def tearDown(self) -> None:
         """
@@ -61,7 +62,7 @@ class TestConf(SpotirecTestCase):
         """
         c = self.conf.open_config()
         self.assertEqual(c.sections(), self.sections)
-        self.conf.CONFIG_FILE = 'this-does-not-exist.conf'
+        conf.CONFIG_FILE = 'this-does-not-exist.conf'
         c = self.conf.open_config()
         self.assertEqual(c.sections(), self.sections)
         os.remove('tests/fixtures/this-does-not-exist.conf')
@@ -71,7 +72,7 @@ class TestConf(SpotirecTestCase):
         """
         Testing convert_or_create_config()
         """
-        self.conf.CONFIG_FILE = 'test-convert.conf'
+        conf.CONFIG_FILE = 'test-convert.conf'
         self.conf.convert_or_create_config()
         c = self.conf.open_config()
         self.assertEqual(self.sections, c.sections())
@@ -82,7 +83,7 @@ class TestConf(SpotirecTestCase):
         self.assertEqual(c['blacklist']['artists'], '{}')
         self.assertNotEqual(c['devices'], {})
         self.assertNotEqual(c['playlists'], {})
-        self.conf.CONFIG_FILE = 'test.conf'
+        conf.CONFIG_FILE = 'test.conf'
         os.remove('tests/fixtures/test-convert.conf')
 
     @ordered
@@ -114,7 +115,7 @@ class TestConf(SpotirecTestCase):
         self.assertEqual(oauth['expires_at'], '15848754832')
         self.assertEqual(oauth['refresh_token'],
                          '737dd1bca21d67a7c158ed425276b04581e3c2b1f209e25a7cff37d8cb333f0f')
-        self.conf.CONFIG_FILE = 'empty.conf'
+        conf.CONFIG_FILE = 'empty.conf'
         oauth = self.conf.get_oauth()
         self.assertEqual(oauth, {})
 
@@ -126,7 +127,7 @@ class TestConf(SpotirecTestCase):
         blacklist = self.conf.get_blacklist()
         self.assertEqual(blacklist['tracks'], {})
         self.assertEqual(blacklist['artists'], {})
-        self.conf.CONFIG_FILE = 'empty.conf'
+        conf.CONFIG_FILE = 'empty.conf'
         blacklist = self.conf.get_blacklist()
         self.assertEqual(blacklist['tracks'], {})
         self.assertEqual(blacklist['artists'], {})
@@ -198,7 +199,7 @@ class TestConf(SpotirecTestCase):
         self.assertEqual(presets, {})
 
         # ensure empty section is added if it does not exist
-        self.conf.CONFIG_FILE = 'empty.conf'
+        conf.CONFIG_FILE = 'empty.conf'
         presets = self.conf.get_presets()
         self.assertEqual(presets, {})
 
@@ -222,7 +223,7 @@ class TestConf(SpotirecTestCase):
         self.assertEqual(preset, presets['test'])
 
         # ensure preset is still added even if section does not exist
-        self.conf.CONFIG_FILE = 'empty.conf'
+        conf.CONFIG_FILE = 'empty.conf'
         self.conf.save_preset(preset, 'test')
         presets = self.conf.get_presets()
         self.assertEqual(preset, presets['test'])
@@ -248,7 +249,7 @@ class TestConf(SpotirecTestCase):
         self.assertEqual(devices, {})
 
         # ensure empty section is added if it does not exist
-        self.conf.CONFIG_FILE = 'empty.conf'
+        conf.CONFIG_FILE = 'empty.conf'
         devices = self.conf.get_devices()
         self.assertEqual(devices, {})
 
@@ -264,7 +265,7 @@ class TestConf(SpotirecTestCase):
         self.assertEqual(device, devices['test'])
 
         # ensure device is still added even if section does not exist
-        self.conf.CONFIG_FILE = 'empty.conf'
+        conf.CONFIG_FILE = 'empty.conf'
         self.conf.save_device(device, 'test')
         devices = self.conf.get_devices()
         self.assertEqual(device, devices['test'])
@@ -290,7 +291,7 @@ class TestConf(SpotirecTestCase):
         self.assertEqual(playlists, {})
 
         # ensure empty section is added if it does not exist
-        self.conf.CONFIG_FILE = 'empty.conf'
+        conf.CONFIG_FILE = 'empty.conf'
         playlists = self.conf.get_playlists()
         self.assertEqual(playlists, {})
 
@@ -305,7 +306,7 @@ class TestConf(SpotirecTestCase):
         self.assertEqual(playlist, playlists['test'])
 
         # ensure device is still added even if section does not exist
-        self.conf.CONFIG_FILE = 'empty.conf'
+        conf.CONFIG_FILE = 'empty.conf'
         self.conf.save_playlist(playlist, 'test')
         playlists = self.conf.get_playlists()
         self.assertEqual(playlist, playlists['test'])
