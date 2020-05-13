@@ -2,7 +2,6 @@
 import webbrowser
 import json
 import argparse
-import os
 import hashlib
 import re
 import math
@@ -168,12 +167,6 @@ spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for de
                             help='force re-authorization of OAuth token')
 
     return arg_parser
-
-
-def setup_config_dir():
-    # Ensure config dir exists
-    if not os.path.isdir(CONFIG_PATH):
-        os.makedirs(CONFIG_PATH)
 
 
 def check_scope_permissions():

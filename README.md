@@ -1,5 +1,4 @@
-    <img alt="Unit tests" src="https://github.com/Badgie/spotirec/workflows/Unit%20Tests/badge.svg">
-<p align="center"><img src="img/header/header-600x200.png" alt="spotek"/></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Badgie/spotirec/master/img/header/header-600x200.png" alt="spotek"/></p>
 
 
 <p align="center">
