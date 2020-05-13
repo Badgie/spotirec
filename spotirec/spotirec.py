@@ -199,7 +199,7 @@ def authorize(port=PORTS[0]):
             next_port = PORTS.index(port) + 1
             if next_port > len(PORTS) - 1:
                 logger.error(f'tried all ports ({",".join(str(x) for x in PORTS)}), all are in use')
-                logger.error(f'please ensure one of them is available and try again')
+                logger.error('please ensure one of them is available and try again')
                 sys.exit(1)
             logger.warning(f'port {port} is already in use, trying {PORTS[next_port]}')
             authorize(port=PORTS[next_port])
@@ -790,7 +790,7 @@ def save_playlist():
     playlist_uri = input_uri()
     playlist = {'name': api.get_playlist(headers, playlist_uri.split(':')[2])["name"],
                 'uri': playlist_uri}
-    logger.verbose(f'saving playlist')
+    logger.verbose('saving playlist')
     logger.debug(f'playlist: {playlist}')
     conf.save_playlist(playlist, playlist_id)
 
@@ -822,7 +822,7 @@ def add_current_track(playlist: str):
             logger.error(f'playlist {playlist} does not exist in config')
             logger.log_file(crash=True)
             sys.exit(1)
-    logger.info(f'adding currently playing track to playlist')
+    logger.info('adding currently playing track to playlist')
 
     current_track = api.get_current_track(headers)
     if check_if_show_or_episode(current_track):
@@ -851,7 +851,7 @@ def remove_current_track(playlist: str):
             logger.error(f'playlist {playlist} does not exist in config')
             logger.log_file(crash=True)
             sys.exit(1)
-    logger.info(f'removing currently playing track to playlist')
+    logger.info('removing currently playing track to playlist')
     current_track = api.get_current_track(headers)
     if check_if_show_or_episode(current_track):
         return

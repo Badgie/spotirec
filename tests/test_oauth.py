@@ -111,7 +111,7 @@ class TestOauth2(SpotirecTestCase):
         self.conf.CONFIG_FILE = 'empty.conf'
         token = self.oauth.get_credentials()
         self.assertIsNone(token)
-        with open(f'tests/fixtures/empty.conf', 'w') as f:
+        with open('tests/fixtures/empty.conf', 'w') as f:
             f.write('')
 
     @ordered

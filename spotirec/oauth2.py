@@ -18,7 +18,7 @@ class SpotifyOAuth:
     def __init__(self):
         self.client_id = '466a89a53359403b82df7d714030ec5f'
         self.client_secret = '28147de72c3549e98b1e790f3d080b85'
-        self.redirect = f'http://localhost'
+        self.redirect = 'http://localhost'
         self.scopes = ['user-top-read', 'playlist-modify-public', 'playlist-modify-private',
                        'user-read-private', 'user-read-email', 'ugc-image-upload',
                        'user-read-playback-state', 'user-modify-playback-state',
