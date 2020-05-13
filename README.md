@@ -1,4 +1,4 @@
-<p align="center"><img src="img/header/header-600x200.png" alt="spotek"/></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Badgie/spotirec/master/img/header/header-600x200.png" alt="spotek"/></p>
 
 
 <p align="center">
