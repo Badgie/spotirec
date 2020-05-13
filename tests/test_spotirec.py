@@ -1309,7 +1309,6 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.args = mock.MockArgs(play=['test'], n=1)
         spotirec.conf.save_device({'id': 'testid1', 'name': 'test1', 'type': 'microwave'}, 'test')
         spotirec.parse()
-        req = spotirec.api.requests
         # should not cause system exit
         spotirec.recommend()
         spotirec.conf.remove_playlist('spotirec-default')
