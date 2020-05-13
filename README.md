@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-    <img alt="Unit tests" src="https://github.com/Badgie/spotirec/workflows/Unit%20Test/badge.svg">
+    <img alt="Unit tests" src="https://github.com/Badgie/spotirec/workflows/Unit%20Tests/badge.svg">
 </p>
 
 
