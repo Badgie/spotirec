@@ -1,3 +1,4 @@
+    <img alt="Unit tests" src="https://github.com/Badgie/spotirec/workflows/Unit%20Tests/badge.svg">
 <p align="center"><img src="img/header/header-600x200.png" alt="spotek"/></p>
 
 
@@ -10,6 +11,7 @@
 
 <p align="center">
     <img alt="Unit tests" src="https://github.com/Badgie/spotirec/workflows/Unit%20Tests/badge.svg">
+    <img alt="Unit tests" src="https://github.com/Badgie/spotirec/workflows/Lint/badge.svg">
 </p>
 
 
