@@ -3,8 +3,11 @@ import json
 import time
 import requests
 import base64
-from . import api as sp_api, conf as sp_conf, log
 from urllib import parse
+
+from .api import API as _API
+from .conf import Config
+from .log import Log
 
 
 class SpotifyOAuth:
@@ -121,7 +124,7 @@ class SpotifyOAuth:
         except IndexError:
             pass
 
-    def save_token(self, token: json, refresh_token=None):
+    def save_token(self, token: json, refresh_token: str = None):
         """
         Add 'expires at' field and reapplies refresh token to token, and save to config
         :param token: credentials as a config object
@@ -136,11 +139,11 @@ class SpotifyOAuth:
             c['spotirecoauth'][x[0]] = str(x[1])
         self.CONF.save_config(c)
 
-    def set_logger(self, logger: log.Log):
+    def set_logger(self, logger: Log):
         self.LOGGER = logger
 
-    def set_conf(self, conf: sp_conf.Config):
+    def set_conf(self, conf: Config):
         self.CONF = conf
 
-    def set_api(self, api: sp_api.API):
+    def set_api(self, api: _API):
         self.API = api

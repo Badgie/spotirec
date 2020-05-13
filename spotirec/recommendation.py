@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import time
-from . import log
+from typing import Union, Mapping, Iterable
+
+from .log import Log
 
 
 class Recommendation:
@@ -10,7 +12,7 @@ class Recommendation:
     LOGGER = None
     TIME = time.localtime()
 
-    def __init__(self, t=TIME, preset=None):
+    def __init__(self, t=TIME, preset: dict = None):
         if preset is None:
             preset = {}
         self.limit = preset.pop('limit', 100)
@@ -49,7 +51,7 @@ class Recommendation:
         self.LOGGER.debug(f'description: {desc}{seeds}')
         return f'{desc}{seeds}'
 
-    def update_limit(self, limit: int, init=False):
+    def update_limit(self, limit: int, init: bool = False):
         """
         Update playlist limit as object field and in request parameters.
         :param limit: user-defined playlist limit
@@ -74,22 +76,21 @@ class Recommendation:
             except KeyError:
                 self.LOGGER.info(f'\t{x["type"].capitalize()}: {x["name"]}')
 
-    def add_seed_info(self, data_dict=None, data_string=None):
+    def add_seed_info(self, data: Union[Mapping[str, Union[dict, str, Iterable[dict]]], str]):
         """
         Add info about a single seed to the object fields.
-        :param data_dict: seed info as a dict if seed is artist or track
-        :param data_string: seed info as a string if seed is genre
+        :param data: seed info as a string or dict
         """
-        if data_string:
-            self.seed_info[len(self.seed_info)] = {'name': data_string,
+        if type(data) is str:
+            self.seed_info[len(self.seed_info)] = {'name': data,
                                                    'type': 'genre'}
         else:
-            self.seed_info[len(self.seed_info)] = {'name': data_dict['name'],
-                                                   'id': data_dict['id'],
-                                                   'type': data_dict['type']}
+            self.seed_info[len(self.seed_info)] = {'name': data['name'],
+                                                   'id': data['id'],
+                                                   'type': data['type']}
             try:
                 self.seed_info[len(self.seed_info) - 1]['artists'] = [x['name']
-                                                                      for x in data_dict['artists']]
+                                                                      for x in data['artists']]
             except KeyError:
                 pass
             self.LOGGER.debug(f'data: {self.seed_info[len(self.seed_info)-1]}')
@@ -117,5 +118,5 @@ class Recommendation:
         self.rec_params[f'seed_{self.seed_type}'] = self.seed
         self.LOGGER.debug(f'seeds: {self.seed}')
 
-    def set_logger(self, logger: log.Log):
+    def set_logger(self, logger: Log):
         self.LOGGER = logger

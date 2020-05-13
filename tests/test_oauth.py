@@ -1,8 +1,9 @@
+import os
+import time
+
 from tests.lib import ordered, mock, runner
 from tests.lib.ut_ext import SpotirecTestCase
 from spotirec import oauth2, api, conf, log
-import os
-import time
 
 
 class TestOauth2(SpotirecTestCase):

@@ -1,8 +1,11 @@
-#!/usr/bin/env python
 import json
-import requests
 import sys
-from . import conf as sp_conf, log
+import requests
+from requests import Response
+from typing import Callable
+
+from .conf import Config
+from .log import Log
 
 
 class API:
@@ -10,14 +13,14 @@ class API:
     LOGGER = None
     CONF = None
 
-    def set_logger(self, logger: log.Log):
+    def set_logger(self, logger: Log):
         self.LOGGER = logger
 
-    def set_conf(self, conf: sp_conf.Config):
+    def set_conf(self, conf: Config):
         self.CONF = conf
 
     def error_handle(self, request_domain: str, expected_code: int, request_type: str,
-                     response=None):
+                     response: Response):
         """
         Dispatch error message depending on request type
         :param request_domain: domain of the request, e.g. 'recommendation'
@@ -49,7 +52,7 @@ class API:
         params = {'limit': limit}
         response = requests.get(f'{self.URL_BASE}/me/top/{list_type}', headers=headers,
                                 params=params)
-        self.error_handle(f'top {list_type}', 200, 'GET', response=response)
+        self.error_handle(f'top {list_type}', 200, 'GET', response)
         return json.loads(response.content.decode('utf-8'))
 
     def get_user_id(self, headers: dict) -> str:
@@ -59,11 +62,11 @@ class API:
         :return: user ID as a string
         """
         response = requests.get(f'{self.URL_BASE}/me', headers=headers)
-        self.error_handle('user info', 200, 'GET', response=response)
+        self.error_handle('user info', 200, 'GET', response)
         return json.loads(response.content.decode('utf-8'))['id']
 
     def create_playlist(self, playlist_name: str, playlist_description: str, headers: dict,
-                        cache_id=False) -> str:
+                        cache_id: bool = False) -> str:
         """
         Creates playlist on user's account.
         :param cache_id: whether playlist id should be saved as default or not
@@ -77,7 +80,7 @@ class API:
         self.LOGGER.info('creating playlist')
         response = requests.post(f'{self.URL_BASE}/users/{self.get_user_id(headers)}/playlists',
                                  json=data, headers=headers)
-        self.error_handle('playlist creation', 201, 'POST', response=response)
+        self.error_handle('playlist creation', 201, 'POST', response)
         playlist = json.loads(response.content.decode('utf-8'))
         if cache_id:
             self.CONF.save_playlist({'name': playlist['name'], 'uri': playlist['uri']},
@@ -93,7 +96,7 @@ class API:
         """
         response = requests.put(f'{self.URL_BASE}/playlists/{playlist_id}/images',
                                 headers=img_headers, data=data)
-        self.error_handle('image upload', 202, 'PUT', response=response)
+        self.error_handle('image upload', 202, 'PUT', response)
 
     def add_to_playlist(self, tracks: list, playlist_id: str, headers: dict):
         """
@@ -106,7 +109,7 @@ class API:
         self.LOGGER.debug(f'tracks: {tracks}')
         response = requests.post(f'{self.URL_BASE}/playlists/{playlist_id}/tracks',
                                  headers=headers, json=data)
-        self.error_handle('adding tracks', 201, 'POST', response=response)
+        self.error_handle('adding tracks', 201, 'POST', response)
 
     def get_recommendations(self, rec_params: dict, headers: dict) -> json:
         """
@@ -117,7 +120,7 @@ class API:
         """
         response = requests.get(f'{self.URL_BASE}/recommendations', params=rec_params,
                                 headers=headers)
-        self.error_handle('recommendations', 200, 'GET', response=response)
+        self.error_handle('recommendations', 200, 'GET', response)
         return json.loads(response.content.decode('utf-8'))
 
     def request_data(self, uri: str, data_type: str, headers: dict) -> json:
@@ -129,7 +132,7 @@ class API:
         :return: data about artist or track as a json obj
         """
         response = requests.get(f'{self.URL_BASE}/{data_type}/{uri.split(":")[2]}', headers=headers)
-        self.error_handle(f'single {data_type}', 200, 'GET', response=response)
+        self.error_handle(f'single {data_type}', 200, 'GET', response)
         return json.loads(response.content.decode('utf-8'))
 
     def get_genre_seeds(self, headers: dict) -> json:
@@ -140,7 +143,7 @@ class API:
         """
         response = requests.get(f'{self.URL_BASE}/recommendations/available-genre-seeds',
                                 headers=headers)
-        self.error_handle('genre seeds', 200, 'GET', response=response)
+        self.error_handle('genre seeds', 200, 'GET', response)
         return json.loads(response.content.decode('utf-8'))
 
     def get_available_devices(self, headers: dict) -> json:
@@ -150,7 +153,7 @@ class API:
         :return: devices as json object
         """
         response = requests.get(f'{self.URL_BASE}/me/player/devices', headers=headers)
-        self.error_handle('playback devices', 200, 'GET', response=response)
+        self.error_handle('playback devices', 200, 'GET', response)
         return json.loads(response.content.decode('utf-8'))
 
     def play(self, device_id: str, context_uri: str, headers: dict):
@@ -164,7 +167,7 @@ class API:
         params = {'device_id': device_id}
         response = requests.put(f'{self.URL_BASE}/me/player/play', json=body, headers=headers,
                                 params=params)
-        self.error_handle('start playback', 204, 'PUT', response=response)
+        self.error_handle('start playback', 204, 'PUT', response)
 
     def get_current_track(self, headers: dict) -> str:
         """
@@ -173,7 +176,7 @@ class API:
         :return: uri of current track if present, else return playing type
         """
         response = requests.get(f'{self.URL_BASE}/me/player', headers=headers)
-        self.error_handle('retrieve current track', 200, 'GET', response=response)
+        self.error_handle('retrieve current track', 200, 'GET', response)
         data = json.loads(response.content.decode('utf-8'))
         try:
             return data['item']['uri']
@@ -187,14 +190,14 @@ class API:
         :return: list of artist uris if present, else return playing type
         """
         response = requests.get(f'{self.URL_BASE}/me/player', headers=headers)
-        self.error_handle('retrieve current artists', 200, 'GET', response=response)
+        self.error_handle('retrieve current artists', 200, 'GET', response)
         data = json.loads(response.content.decode('utf-8'))
         try:
             return [str(x['uri']) for x in data['item']['artists']]
         except (TypeError, KeyError):
             return [data['currently_playing_type']]
 
-    def like_track(self, headers: dict, uri_check):
+    def like_track(self, headers: dict, uri_check: Callable[[str], bool]):
         """
         Like currently playing track
         :param headers: request headers
@@ -205,9 +208,9 @@ class API:
             return
         track = {'ids': current_track.split(':')[2]}
         response = requests.put(f'{self.URL_BASE}/me/tracks', headers=headers, params=track)
-        self.error_handle('like track', 200, 'PUT', response=response)
+        self.error_handle('like track', 200, 'PUT', response)
 
-    def unlike_track(self, headers: dict, uri_check):
+    def unlike_track(self, headers: dict, uri_check: Callable[[str], bool]):
         """
         Remove currently playing track from liked tracks
         :param headers: request headers
@@ -218,7 +221,7 @@ class API:
             return
         track = {'ids': current_track.split(':')[2]}
         response = requests.delete(f'{self.URL_BASE}/me/tracks', headers=headers, params=track)
-        self.error_handle('remove liked track', 200, 'DELETE', response=response)
+        self.error_handle('remove liked track', 200, 'DELETE', response)
 
     def update_playlist_details(self, name: str, description: str, playlist_id: str, headers: dict):
         """
@@ -227,12 +230,11 @@ class API:
         :param name: new name of the playlist
         :param description: new description of the playlist
         :param headers: request headers
-        :return:
         """
         data = {'name': name, 'description': description}
         response = requests.put(f'{self.URL_BASE}/playlists/{playlist_id}', headers=headers,
                                 json=data)
-        self.error_handle('update playlist details', 200, 'PUT', response=response)
+        self.error_handle('update playlist details', 200, 'PUT', response)
 
     def replace_playlist_tracks(self, playlist_id: str, tracks: list, headers: dict):
         """
@@ -240,12 +242,11 @@ class API:
         :param tracks: list of track uris
         :param playlist_id: id of the playlist
         :param headers: request headers
-        :return:
         """
         data = {'uris': tracks}
         response = requests.put(f'{self.URL_BASE}/playlists/{playlist_id}/tracks', headers=headers,
                                 json=data)
-        self.error_handle('remove tracks from playlist', 201, 'PUT', response=response)
+        self.error_handle('remove tracks from playlist', 201, 'PUT', response)
 
     def get_playlist(self, headers: dict, playlist_id: str):
         """
@@ -255,7 +256,7 @@ class API:
         :return: playlist object
         """
         response = requests.get(f'{self.URL_BASE}/playlists/{playlist_id}', headers=headers)
-        self.error_handle('retrieve playlist', 200, 'GET', response=response)
+        self.error_handle('retrieve playlist', 200, 'GET', response)
         return json.loads(response.content.decode('utf-8'))
 
     def remove_from_playlist(self, tracks: list, playlist_id: str, headers: dict):
@@ -269,7 +270,7 @@ class API:
         self.LOGGER.debug(f'tracks: {data["tracks"]}')
         response = requests.delete(f'{self.URL_BASE}/playlists/{playlist_id}/tracks',
                                    headers=headers, json=data)
-        self.error_handle('delete track from playlist', 200, 'DELETE', response=response)
+        self.error_handle('delete track from playlist', 200, 'DELETE', response)
 
     def get_audio_features(self, track_id: str, headers: dict) -> json:
         """
@@ -279,7 +280,7 @@ class API:
         :return: audio features object
         """
         response = requests.get(f'{self.URL_BASE}/audio-features/{track_id}', headers=headers)
-        self.error_handle('retrieve audio features', 200, 'GET', response=response)
+        self.error_handle('retrieve audio features', 200, 'GET', response)
         return json.loads(response.content.decode('utf-8'))
 
     def check_if_playlist_exists(self, playlist_id: str, headers: dict) -> bool:
@@ -290,14 +291,14 @@ class API:
         :return: bool determining if playlist exists
         """
         response = requests.get(f'{self.URL_BASE}/playlists/{playlist_id}', headers=headers)
-        self.error_handle('retrieve playlist', 200, 'GET', response=response)
+        self.error_handle('retrieve playlist', 200, 'GET', response)
         # If playlist is public, return true (if playlist has been deleted, this value is false)
         if json.loads(response.content.decode('utf-8'))['public']:
             return True
         else:
             return False
 
-    def transfer_playback(self, device_id: str, headers: dict, start_playback=True):
+    def transfer_playback(self, device_id: str, headers: dict, start_playback: bool = True):
         """
         Transfer playback to device
         :param device_id: id to transfer playback to
@@ -306,9 +307,9 @@ class API:
         """
         data = {'device_ids': [device_id], 'play': start_playback}
         response = requests.put(f'{self.URL_BASE}/me/player', headers=headers, json=data)
-        self.error_handle('transfer playback', 204, 'PUT', response=response)
+        self.error_handle('transfer playback', 204, 'PUT', response)
 
-    def get_saved_tracks(self, headers: dict, limit=50) -> json:
+    def get_saved_tracks(self, headers: dict, limit: int = 50) -> json:
         """
         Gets a users saved tracks
         :param headers: request headers
@@ -317,5 +318,5 @@ class API:
         """
         params = {'limit': limit}
         response = requests.get(f'{self.URL_BASE}/me/tracks', headers=headers, params=params)
-        self.error_handle('retrieve saved tracks', 200, 'GET', response=response)
+        self.error_handle('retrieve saved tracks', 200, 'GET', response)
         return json.loads(response.content.decode('utf-8'))

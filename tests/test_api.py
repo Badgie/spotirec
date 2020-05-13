@@ -1,8 +1,9 @@
+import os
+import sys
+
 from tests.lib import ordered, mock, runner
 from tests.lib.ut_ext import SpotirecTestCase
 from spotirec import api as sp_api, conf, log
-import os
-import sys
 
 
 class TestAPI(SpotirecTestCase):

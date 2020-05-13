@@ -1,7 +1,8 @@
+import os
+
 from tests.lib import ordered, runner
 from tests.lib.ut_ext import SpotirecTestCase
 from spotirec import conf, log
-import os
 
 
 class TestConf(SpotirecTestCase):

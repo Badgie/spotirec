@@ -1,8 +1,9 @@
+import os
+import sys
+
 from tests.lib import ordered, runner
 from tests.lib.ut_ext import SpotirecTestCase
 from spotirec import log
-import os
-import sys
 
 
 class TestLog(SpotirecTestCase):

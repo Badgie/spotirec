@@ -6,12 +6,19 @@ import hashlib
 import re
 import math
 import base64
-from . import oauth2, api as sp_api, conf as sp_conf, log, recommendation
 import sys
+from typing import Union
 from io import BytesIO
+from pathlib import Path
+
 from PIL import Image
 from bottle import route, run, request
-from pathlib import Path
+
+from .oauth2 import SpotifyOAuth
+from .api import API
+from .conf import Config
+from .log import Log, VERBOSE, WARNING, DEBUG, LOG_LEVELS
+from .recommendation import Recommendation
 
 __version__ = '1.3.1'
 
@@ -41,11 +48,11 @@ TRACK_URI_RE = r'spotify:track:[a-zA-Z0-9]+'
 TUNE_RE = r'\w+_\w+=\d+(.\d+)?'
 SHOW_EPI_RE = r'spotify:(show|episode):[a-zA-Z0-9]+'
 
-logger = log.Log()
-conf = sp_conf.Config()
-api = sp_api.API()
-sp_oauth = oauth2.SpotifyOAuth()
-rec = recommendation.Recommendation()
+logger = Log()
+conf = Config()
+api = API()
+sp_oauth = SpotifyOAuth()
+rec = Recommendation()
 headers = {}
 args = None
 
@@ -187,6 +194,7 @@ def authorize(port=PORTS[0]):
     """
     Open redirect URL in browser, and host http server on localhost.
     Function index() will be routed on said http server.
+    :param port: port to host on as int
     """
     logger.verbose('hosting localhost server')
     sp_oauth.PORT = port
@@ -248,7 +256,7 @@ def get_token() -> str:
 def check_if_show_or_episode(uri: str) -> bool:
     """
     Checks whether URI is a show or episode
-    :param uri:
+    :param uri: uri as str
     """
     uri_type = uri.split(":")[1] if ':' in uri else uri
     uri_name = uri if ':' in uri else 'currently playing'
@@ -259,6 +267,11 @@ def check_if_show_or_episode(uri: str) -> bool:
 
 
 def format_identifier(identifier: str) -> str:
+    """
+    Remove invalid characters from identifier string
+    :param identifier:
+    :return: formatted identifier
+    """
     return identifier.translate({ord(c): '_' for c in '½§"¾¤£€±`^*µ!@#$%^&*()[]{};:,./<>?\\|`~=+ '})
 
 
@@ -284,6 +297,7 @@ def get_user_top_genres() -> dict:
 def add_top_genres_seed(seed_count: int):
     """
     Add top 5 genres to recommendation object seed info.
+    :param seed_count:
     """
     logger.verbose(f'adding top {seed_count} genres to seeds')
     sort = sorted(get_user_top_genres().items(), key=lambda kv: kv[1], reverse=True)
@@ -292,11 +306,11 @@ def add_top_genres_seed(seed_count: int):
     parse_seed_info([sort[x][0] for x in range(0, seed_count)])
 
 
-def print_choices(data=None, prompt=True, sort=False) -> str:
+def print_choices(data: Union[list, dict], prompt: bool = True, sort: bool = False) -> str:
     """
     Used for custom seed creation. All valid choices are printed to terminal and user is prompted
     to select. If the seed type is genres, seeds are simply added to the recommendations object.
-    :param data: valid choices as a list of names
+    :param data: valid choices as a list of names or dict of objects
     :param prompt: whether or not to prompt user for input
     :param sort: whether or not printed data should be sorted
     :return: user input, if seed type is artists or tracks
@@ -364,7 +378,7 @@ def print_choices(data=None, prompt=True, sort=False) -> str:
             return input_string.strip(' ')
 
 
-def print_artists_or_tracks(data: json, prompt=True):
+def print_artists_or_tracks(data: json, prompt: bool = True):
     """
     Construct dict only containing artist or track names and IDs and prompt for selection.
     Seeds are added to recommendation object. If prompt is False, choices will simply be printed.
@@ -453,6 +467,7 @@ def filter_list_duplicates(li: list) -> list:
     # extract uris if elements are dicts
     new_li = [x['uri'] if type(x) is dict else x for x in li]
     # filter duplicates
+    # not doing list(set(li)) because li may contain dicts
     new_li = sorted(list(set(new_li)), key=new_li.index)
     for x in li:
         if type(x) is dict and x['uri'] in new_li:
@@ -462,7 +477,7 @@ def filter_list_duplicates(li: list) -> list:
     return new_li
 
 
-def parse_seed_info(seeds):
+def parse_seed_info(seeds: Union[str, list, tuple]):
     """
     Adds seed data to recommendation object
     :param seeds: seed data as a string or a list
@@ -477,17 +492,17 @@ def parse_seed_info(seeds):
     for x in seeds:
         logger.debug(f'seed: {x}')
         if rec.seed_type == 'genres':
-            rec.add_seed_info(data_string=x)
+            rec.add_seed_info(x)
         elif rec.seed_type == 'custom':
             if check_if_valid_genre(x):
-                rec.add_seed_info(data_string=x)
+                rec.add_seed_info(x)
             elif re.match(URI_RE, x):
-                rec.add_seed_info(data_dict=api.request_data(x, f'{x.split(":")[1]}s', headers))
+                rec.add_seed_info(api.request_data(x, f'{x.split(":")[1]}s', headers))
             else:
                 logger.warning(f'input \"{x}\" does not match a genre or a valid URI syntax, '
                                f'skipping...')
         else:
-            rec.add_seed_info(data_dict=x)
+            rec.add_seed_info(x)
 
 
 def set_blacklist_current(entries: list) -> list:
@@ -608,7 +623,7 @@ def save_preset(name: str):
     conf.save_preset(preset, name)
 
 
-def load_preset(name: str) -> recommendation.Recommendation:
+def load_preset(name: str) -> Recommendation:
     """
     Load preset recommendation object from config
     :param name: name of preset
@@ -623,7 +638,7 @@ def load_preset(name: str) -> recommendation.Recommendation:
         logger.error(f'could not find preset \"{name}\", check spelling and try again')
         logger.log_file(crash=True)
         sys.exit(1)
-    preset = recommendation.Recommendation(preset=contents)
+    preset = Recommendation(preset=contents)
     logger.debug(f'preset: {preset}')
     return preset
 
@@ -914,7 +929,7 @@ def millis_to_stamp(x: int):
     return f'{f"{hours}h " if hours != 0 else ""}{f"{mins}m " if mins != 0 else ""}{sec}s'
 
 
-def transfer_playback(device_id):
+def transfer_playback(device_id: str):
     """
     Transfers playback to different device
     :param device_id: device to transfer playback to
@@ -1193,17 +1208,17 @@ def init():
 
     # Logging handler
     if args.verbose:
-        logger.set_level(log.VERBOSE)
+        logger.set_level(VERBOSE)
     elif args.quiet:
-        logger.set_level(log.WARNING)
+        logger.set_level(WARNING)
     elif args.debug:
-        logger.set_level(log.DEBUG)
+        logger.set_level(DEBUG)
 
     if args.suppress_warnings:
         logger.suppress_warnings(True)
 
     logger.verbose('initialising')
-    logger.debug(f'log level: {logger.LEVEL} ({log.LOG_LEVELS[logger.LEVEL]})')
+    logger.debug(f'log level: {logger.LEVEL} ({LOG_LEVELS[logger.LEVEL]})')
     logger.debug(f'suppress warnings: {logger.SUPPRESS_WARNINGS}')
 
     # Config handler
@@ -1228,7 +1243,7 @@ def init():
         rec = load_preset(args.load_preset[0])
         rec.set_logger(logger)
     else:
-        rec = recommendation.Recommendation()
+        rec = Recommendation()
         rec.set_logger(logger)
         parse()
 
