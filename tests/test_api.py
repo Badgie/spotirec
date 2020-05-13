@@ -19,17 +19,17 @@ class TestAPI(SpotirecTestCase):
         if runner.verbosity > 0:
             super(TestAPI, cls).setUpClass()
             print(f'file:/{__file__}\n')
-        cls.stdout_preserve = sys.__stdout__
-        cls.api = sp_api.API()
-        sp_api.URL_BASE = ''
-        cls.test_log = 'tests/fixtures/test-api'
-        sp_api.requests = mock.MockAPI()
-        cls.logger = log.Log()
-        log.LOG_PATH = 'tests/fixtures'
-        cls.api.set_logger(cls.logger)
-        cls.config = conf.Config()
         conf.CONFIG_DIR = 'tests/fixtures'
         conf.CONFIG_FILE = 'test.conf'
+        sp_api.URL_BASE = ''
+        log.LOG_PATH = 'tests/fixtures'
+        sp_api.requests = mock.MockAPI()
+        cls.stdout_preserve = sys.__stdout__
+        cls.api = sp_api.API()
+        cls.test_log = 'tests/fixtures/test-api'
+        cls.logger = log.Log()
+        cls.api.set_logger(cls.logger)
+        cls.config = conf.Config()
         cls.config.set_logger(cls.logger)
         cls.api.set_conf(cls.config)
         cls.headers = {'Content-Type': 'application/json',
