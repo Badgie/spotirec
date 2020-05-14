@@ -35,7 +35,7 @@ class TestLog(SpotirecTestCase):
         """
         Setup any necessary data or states before each test is run
         """
-        self.logger.LOG_PATH = 'tests/fixtures/logs'
+        log.LOG_PATH = 'tests/fixtures/logs'
         self.logger.set_level(50)
         self.log_file = open(self.test_log, 'w')
         sys.stdout = self.log_file
@@ -77,11 +77,11 @@ class TestLog(SpotirecTestCase):
         sys.stdout = self.stdout_preserve
         with open(self.test_log, 'r') as f:
             file = f.read().split('/')[3].strip('\n')
-            with open(f'{self.logger.LOG_PATH}/{file}') as f1:
+            with open(f'{log.LOG_PATH}/{file}') as f1:
                 stdout = f1.read()
                 self.assertIn('test_log', stdout)
-        os.remove(f'{self.logger.LOG_PATH}/{file}')
-        os.rmdir(self.logger.LOG_PATH)
+        os.remove(f'{log.LOG_PATH}/{file}')
+        os.rmdir(log.LOG_PATH)
 
     @ordered
     def test_log_file_crash(self):
@@ -94,11 +94,11 @@ class TestLog(SpotirecTestCase):
         sys.stdout = self.stdout_preserve
         with open(self.test_log, 'r') as f:
             file = f.read().split('/')[3].strip('\n')
-            with open(f'{self.logger.LOG_PATH}/{file}') as f1:
+            with open(f'{log.LOG_PATH}/{file}') as f1:
                 stdout = f1.read()
                 self.assertIn('test_log', stdout)
-        os.remove(f'{self.logger.LOG_PATH}/{file}')
-        os.rmdir(self.logger.LOG_PATH)
+        os.remove(f'{log.LOG_PATH}/{file}')
+        os.rmdir(log.LOG_PATH)
 
     @ordered
     def test_error(self):

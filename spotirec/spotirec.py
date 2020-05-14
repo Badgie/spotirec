@@ -9,7 +9,6 @@ import base64
 import sys
 from typing import Union
 from io import BytesIO
-from pathlib import Path
 
 from PIL import Image
 from bottle import route, run, request
@@ -19,34 +18,10 @@ from .api import API
 from .conf import Config
 from .log import Log, VERBOSE, WARNING, DEBUG, LOG_LEVELS
 from .recommendation import Recommendation
+from .static import PORTS, TUNE_PREFIX, TUNE_ATTR, PLAYLIST_URI_RE, TRACK_URI_RE, TUNE_RE, \
+    SHOW_EPI_RE, VALID_URI_RE as URI_RE
 
 __version__ = '1.3.1'
-
-PORTS = [8000, 8001, 8002, 8003, 8004, 8005, 8006, 8007, 8008, 8009]
-CONFIG_PATH = f'{Path.home()}/.config/spotirec'
-TUNING_FILE = f'{Path.home()}/.config/spotirec/tuning-opts'
-
-TUNE_PREFIX = ['max', 'min', 'target']
-TUNE_ATTR = {'int': {'duration_ms': {'min': 0, 'max': sys.maxsize * 2 + 1, 'rec_min': 0,
-                                     'rec_max': 3600000},
-                     'key': {'min': 0, 'max': 11, 'rec_min': 0, 'rec_max': 11},
-                     'mode': {'min': 0, 'max': 1, 'rec_min': 0, 'rec_max': 1},
-                     'time_signature': {'min': 0, 'max': 500, 'rec_min': 0, 'rec_max': 500},
-                     'popularity': {'min': 0, 'max': 100, 'rec_min': 0, 'rec_max': 100}},
-             'float': {'acousticness': {'min': 0.0, 'max': 1.0, 'rec_min': 0.0, 'rec_max': 1.0},
-                       'danceability': {'min': 0.0, 'max': 1.0, 'rec_min': 0.1, 'rec_max': 0.9},
-                       'energy': {'min': 0.0, 'max': 1.0, 'rec_min': 0.0, 'rec_max': 1.0},
-                       'instrumentalness': {'min': 0.0, 'max': 1.0, 'rec_min': 0.0, 'rec_max': 1.0},
-                       'liveness': {'min': 0.0, 'max': 1.0, 'rec_min': 0.0, 'rec_max': 0.4},
-                       'loudness': {'min': -60, 'max': 0, 'rec_min': -20, 'rec_max': 0},
-                       'speechiness': {'min': 0.0, 'max': 1.0, 'rec_min': 0.0, 'rec_max': 0.3},
-                       'valence': {'min': 0.0, 'max': 1.0, 'rec_min': 0.0, 'rec_max': 1.0},
-                       'tempo': {'min': 0.0, 'max': 220.0, 'rec_min': 60.0, 'rec_max': 210.0}}}
-URI_RE = r'spotify:(artist|track):[a-zA-Z0-9]+'
-PLAYLIST_URI_RE = r'spotify:playlist:[a-zA-Z0-9]+'
-TRACK_URI_RE = r'spotify:track:[a-zA-Z0-9]+'
-TUNE_RE = r'\w+_\w+=\d+(.\d+)?'
-SHOW_EPI_RE = r'spotify:(show|episode):[a-zA-Z0-9]+'
 
 logger = Log()
 conf = Config()
@@ -972,23 +947,19 @@ def print_tuning_options():
     """
     Prints available tuning options
     """
-    try:
-        with open(TUNING_FILE, 'r') as file:
-            tuning_opts = file.readlines()
-    except FileNotFoundError:
-        logger.error('could not find tuning options file')
-        logger.log_file(crash=True)
-        sys.exit(1)
-    if len(tuning_opts) == 0:
-        logger.error('tuning options file is empty')
-        logger.log_file(crash=True)
-        sys.exit(1)
-    for x in tuning_opts:
-        if tuning_opts.index(x) == 0:
-            print('\033[1m' + x.strip('\n') + '\033[0m')
-        else:
-            print(x.strip('\n'))
-    print('note that recommendations may be scarce outside the recommended ranges. If the '
+    print('\033[1m' + f'Attribute{" " * 11}Data type{" " * 3}Range{" " * 15}Recommended range'
+                      f'{" " * 3}Function' + '\033[0m')
+    for data_type, attrs in TUNE_ATTR.items():
+        for attr, fields in attrs.items():
+            real_range = f'{fields["min"]}-{fields["max"]}' if fields['has_range'] \
+                else fields['range_sub']
+            rec_range = f'{fields["rec_min"]}-{fields["rec_max"]}' if fields['has_rec_range'] \
+                else fields['rec_range_sub']
+            print(f'{attr}{" " * (20 - len(attr))}{data_type}{" " * (12 - len(data_type))}'
+                  f'{real_range}{" " * (20 - len(real_range))}'
+                  f'{rec_range}{" " * (20 - len(rec_range))}{fields["desc"]}')
+    print(f'\nAvailable prefixes: {", ".join(x for x in TUNE_PREFIX)}')
+    print('\nnote that recommendations may be scarce outside the recommended ranges - if the '
           'recommended range is not available, they may only be scarce at extreme values.')
 
 

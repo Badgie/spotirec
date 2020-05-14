@@ -23,6 +23,12 @@ class TestSpotirec(SpotirecTestCase):
         if runner.verbosity > 0:
             super(TestSpotirec, cls).setUpClass()
             print(f'file:/{__file__}\n')
+        api.URL_BASE = ''
+        log.LOG_PATH = 'tests/fixtures'
+        conf.CONFIG_PATH = 'tests/fixtures'
+        conf.CONFIG_FILE = 'test.conf'
+        oauth2.OAUTH_TOKEN_URL = '/api/token'
+        oauth2.OAUTH_AUTH_URL = '/authorize'
         spotirec.logger = log.Log()
         spotirec.conf = conf.Config()
         spotirec.conf.set_logger(spotirec.logger)
@@ -65,21 +71,16 @@ class TestSpotirec(SpotirecTestCase):
         """
         Setup any necessary data or states before each test is run
         """
-        spotirec.CONFIG_PATH = 'tests/fixtures/.config'
+        conf.CONFIG_PATH = 'tests/fixtures'
+        conf.CONFIG_FILE = 'test.conf'
         spotirec.logger.set_level(0)
         spotirec.rec = recommendation.Recommendation()
         spotirec.rec.set_logger(spotirec.logger)
-        spotirec.logger.LOG_PATH = 'tests/fixtures'
-        spotirec.conf.CONFIG_DIR = 'tests/fixtures'
-        spotirec.conf.CONFIG_FILE = 'test.conf'
-        spotirec.sp_oauth.OAUTH_TOKEN_URL = '/api/token'
-        spotirec.sp_oauth.OAUTH_AUTH_URL = '/authorize'
         spotirec.sp_oauth.client_secret = 'client_secret'
         spotirec.sp_oauth.client_id = 'client_id'
         spotirec.sp_oauth.redirect = 'https://real.url'
         spotirec.sp_oauth.scopes = ['user-modify-playback-state', 'ugc-image-upload',
                                     'user-library-modify']
-        spotirec.api.URL_BASE = ''
         self.test_log = 'tests/fixtures/test-log'
         self.log_file = open(self.test_log, 'w')
         sys.stdout = self.log_file
@@ -112,7 +113,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing index() with url code
         """
-        spotirec.conf.CONFIG_FILE = 'test-index.conf'
+        conf.CONFIG_FILE = 'test-index.conf'
         spotirec.request = mock.MockRequest('https://real.url?code=testcode')
         expected = '<span>Successfully retrieved OAuth token. You may close this tab and start ' \
                    'using Spotirec.</span>'
@@ -146,15 +147,16 @@ class TestSpotirec(SpotirecTestCase):
         Testing get_token() fail
         """
 
-        def mock_authorize():
-            self.test = 'success'
+        def mock_authorize(port: int = 8000):
+            nonlocal test
+            test = 'success'
 
-        self.test = ''
+        test = ''
         auth_save = spotirec.authorize
         spotirec.authorize = mock_authorize
-        spotirec.conf.CONFIG_FILE = 'empty.conf'
+        conf.CONFIG_FILE = 'empty.conf'
         self.assertRaises(SystemExit, spotirec.get_token)
-        self.assertEqual(self.test, 'success')
+        self.assertEqual(test, 'success')
         spotirec.authorize = auth_save
         with open('tests/fixtures/empty.conf', 'w') as f:
             f.write('')
@@ -1210,47 +1212,14 @@ class TestSpotirec(SpotirecTestCase):
         spotirec.conf.remove_from_blacklist('spotify:artist:testid1')
 
     @ordered
-    def test_print_tuning_options_no_file(self):
-        """
-        Testing print_tuning_options() no file
-        """
-        expected = 'could not find tuning options file'
-        spotirec.TUNING_FILE = 'this-does-not-exist'
-        spotirec.logger.set_level(log.INFO)
-        self.assertRaises(SystemExit, spotirec.print_tuning_options)
-        sys.stdout.close()
-        sys.stdout = self.stdout_preserve
-        with open(self.test_log, 'r') as f:
-            stdout = f.read()
-            self.assertIn(expected, stdout)
-            crash_file = stdout.split('/')[2].strip('\n')
-            os.remove(f'tests/fixtures/{crash_file}')
-
-    @ordered
-    def test_print_tuning_options_empty(self):
-        """
-        Testing print_tuning_options() empty file
-        """
-        expected = 'tuning options file is empty'
-        spotirec.TUNING_FILE = 'tests/fixtures/tuning-opts-empty'
-        spotirec.logger.set_level(log.INFO)
-        self.assertRaises(SystemExit, spotirec.print_tuning_options)
-        sys.stdout.close()
-        sys.stdout = self.stdout_preserve
-        with open(self.test_log, 'r') as f:
-            stdout = f.read()
-            self.assertIn(expected, stdout)
-            crash_file = stdout.split('/')[2].strip('\n')
-            os.remove(f'tests/fixtures/{crash_file}')
-
-    @ordered
     def test_print_tuning_options_success(self):
         """
         Testing print_tuning_options()
         """
-        expected0 = 'Attribute           Data type   Range   Recommended range   Function'
-        expected1 = 'note that recommendations may be scarce outside the recommended ranges. ' \
-                    'If the recommended range is not available, they may only be scarce at ' \
+        expected0 = 'Attribute           Data type   Range               Recommended range   ' \
+                    'Function'
+        expected1 = 'note that recommendations may be scarce outside the recommended ranges - ' \
+                    'if the recommended range is not available, they may only be scarce at ' \
                     'extreme values.'
         spotirec.TUNING_FILE = 'tuning-opts'
         spotirec.print_tuning_options()
@@ -1698,9 +1667,10 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing parse() with print arg (tuning)
         """
-        expected0 = 'Attribute           Data type   Range   Recommended range   Function'
-        expected1 = 'note that recommendations may be scarce outside the recommended ranges. ' \
-                    'If the recommended range is not available, they may only be scarce at ' \
+        expected0 = 'Attribute           Data type   Range               Recommended range   ' \
+                    'Function'
+        expected1 = 'note that recommendations may be scarce outside the recommended ranges - ' \
+                    'if the recommended range is not available, they may only be scarce at ' \
                     'extreme values.'
         spotirec.args = mock.MockArgs(print=['tuning'])
         self.assertRaises(SystemExit, spotirec.parse)

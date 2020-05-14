@@ -2,15 +2,12 @@ import json
 import re
 import ast
 from configparser import ConfigParser
-from pathlib import Path
 
 from .log import Log
+from .static import CONFIG_PATH, CONFIG_FILE, FULL_URI_RE as URI_RE
 
 
 class Config:
-    CONFIG_DIR = f'{Path.home()}/.config/spotirec'
-    CONFIG_FILE = 'spotirec.conf'
-    URI_RE = r'spotify:(artist|track|show|episode):[a-zA-Z0-9]'
     LOGGER = None
 
     def set_logger(self, logger: Log):
@@ -25,7 +22,7 @@ class Config:
             # Read config and assert size
             self.LOGGER.verbose('getting config')
             c = ConfigParser()
-            with open(f'{self.CONFIG_DIR}/{self.CONFIG_FILE}', 'r') as f:
+            with open(f'{CONFIG_PATH}/{CONFIG_FILE}', 'r') as f:
                 c.read_file(f)
             assert len(c.keys()) > 0
             return c
@@ -41,7 +38,7 @@ class Config:
         :param c: config object
         """
         self.LOGGER.verbose('writing config')
-        with open(f'{self.CONFIG_DIR}/{self.CONFIG_FILE}', 'w') as f:
+        with open(f'{CONFIG_PATH}/{CONFIG_FILE}', 'w') as f:
             c.write(f)
 
     def convert_or_create_config(self):
@@ -55,7 +52,7 @@ class Config:
             # Add new section
             c.add_section(x)
             try:
-                with open(f'{self.CONFIG_DIR}/{x}', 'r') as f:
+                with open(f'{CONFIG_PATH}/{x}', 'r') as f:
                     # Set each configuration to section
                     for y in json.loads(f.read()).items():
                         c.set(x, y[0], str(y[1]))
@@ -123,7 +120,7 @@ class Config:
         :return:
         """
         # Ensure input is valid
-        if not re.match(self.URI_RE, uri):
+        if not re.match(URI_RE, uri):
             self.LOGGER.warning(f'uri {uri} is not a valid uri')
             return
         uri_type = uri.split(':')[1]
@@ -148,7 +145,7 @@ class Config:
         :return:
         """
         # Ensure input is valid
-        if not re.match(self.URI_RE, uri):
+        if not re.match(URI_RE, uri):
             self.LOGGER.warning(f'uri {uri} is not a valid uri')
             return
         c = self.open_config()

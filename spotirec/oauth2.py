@@ -8,11 +8,10 @@ from urllib import parse
 from .api import API as _API
 from .conf import Config
 from .log import Log
+from .static import OAUTH_AUTH_URL, OAUTH_TOKEN_URL
 
 
 class SpotifyOAuth:
-    OAUTH_AUTH_URL = 'https://accounts.spotify.com/authorize'
-    OAUTH_TOKEN_URL = 'https://accounts.spotify.com/api/token'
     PORT = 0
     LOGGER = None
     CONF = None
@@ -62,7 +61,7 @@ class SpotifyOAuth:
         self.LOGGER.verbose('refreshing token')
         body = {'grant_type': 'refresh_token',
                 'refresh_token': refresh_token}
-        response = requests.post(self.OAUTH_TOKEN_URL, data=body, headers=self.encode_header())
+        response = requests.post(OAUTH_TOKEN_URL, data=body, headers=self.encode_header())
         self.API.error_handle('token refresh', 200, 'POST', response=response)
         token = json.loads(response.content.decode('utf-8'))
         try:
@@ -93,7 +92,7 @@ class SpotifyOAuth:
         body = {'grant_type': 'authorization_code',
                 'code': code,
                 'redirect_uri': f'{self.redirect}:{self.PORT}'}
-        response = requests.post(self.OAUTH_TOKEN_URL, data=body, headers=self.encode_header())
+        response = requests.post(OAUTH_TOKEN_URL, data=body, headers=self.encode_header())
         self.API.error_handle('token retrieve', 200, 'POST', response=response)
         token = json.loads(response.content.decode('utf-8'))
         self.LOGGER.debug(f'token: {token}')
@@ -110,8 +109,8 @@ class SpotifyOAuth:
                   'response_type': 'code',
                   'redirect_uri': f'{self.redirect}:{self.PORT}',
                   'scope': ' '.join(x for x in self.scopes)}
-        self.LOGGER.debug(f'url: {self.OAUTH_AUTH_URL}?{parse.urlencode(params)}')
-        return f'{self.OAUTH_AUTH_URL}?{parse.urlencode(params)}'
+        self.LOGGER.debug(f'url: {OAUTH_AUTH_URL}?{parse.urlencode(params)}')
+        return f'{OAUTH_AUTH_URL}?{parse.urlencode(params)}'
 
     def parse_response_code(self, url: str) -> str:
         """
