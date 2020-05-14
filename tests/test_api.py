@@ -19,7 +19,7 @@ class TestAPI(SpotirecTestCase):
         if runner.verbosity > 0:
             super(TestAPI, cls).setUpClass()
             print(f'file:/{__file__}\n')
-        conf.CONFIG_DIR = 'tests/fixtures'
+        conf.CONFIG_PATH = 'tests/fixtures'
         conf.CONFIG_FILE = 'test.conf'
         sp_api.URL_BASE = ''
         log.LOG_PATH = 'tests/fixtures'
