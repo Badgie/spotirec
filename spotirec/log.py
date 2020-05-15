@@ -28,7 +28,8 @@ class Log:
         if not os.path.isdir(self.LOG_PATH):
             os.makedirs(self.LOG_PATH)
         t = time.localtime()
-        file_name = f'spotirec_{t.tm_mday}-{t.tm_mon}-{t.tm_year}.{"crash." if crash else ""}log'
+        file_name = f'spotirec_{t.tm_mday}-{t.tm_mon}-{t.tm_year}_{round(time.time())}.' \
+                    f'{"crash." if crash else ""}log'
         with open(f'{self.LOG_PATH}/{file_name}', 'w') as file:
             file.write(self.LOG)
         self.info(f'saved{" crash" if crash else ""} log to {self.LOG_PATH}/{file_name}')
