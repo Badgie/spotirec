@@ -343,7 +343,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing check_tune_validity() success
         """
-        expected = 'tune attribute tempo with prefix min and value 160.0 is valid'
+        expected = 'Tune attribute tempo with prefix min and value 160.0 is valid'
         spotirec.logger.set_level(log.DEBUG)
         spotirec.check_tune_validity('min_tempo=160')
         sys.stdout.close()
@@ -357,7 +357,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing check_tune_validity() improper format
         """
-        expected = 'tune max_tempo_160 does not match the proper format'
+        expected = 'Tune max_tempo_160 does not match the proper format'
         spotirec.logger.set_level(log.INFO)
         self.assertRaises(SystemExit, spotirec.check_tune_validity, tune='max_tempo_160')
         sys.stdout.close()
@@ -373,7 +373,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing check_tune_validity() invalid prefix
         """
-        expected = 'tune prefix \"mox\" is malformed'
+        expected = 'Tune prefix \"mox\" is malformed'
         spotirec.logger.set_level(log.INFO)
         self.assertRaises(SystemExit, spotirec.check_tune_validity, tune='mox_tempo=160')
         sys.stdout.close()
@@ -389,7 +389,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing check_tune_validity() invalid attribute
         """
-        expected = 'tune attribute \"tampo\" is malformed'
+        expected = 'Tune attribute \"tampo\" is malformed'
         spotirec.logger.set_level(log.INFO)
         self.assertRaises(SystemExit, spotirec.check_tune_validity, tune='max_tampo=160')
         sys.stdout.close()
@@ -405,7 +405,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing check_tune_validity() invalid value
         """
-        expected = 'tune value 160,0 does not match attribute tempo data type requirements'
+        expected = 'Tune value 160,0 does not match attribute tempo data type requirements'
         spotirec.logger.set_level(log.INFO)
         self.assertRaises(SystemExit, spotirec.check_tune_validity, tune='max_tempo=160,0')
         sys.stdout.close()
@@ -421,7 +421,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing check_tune_validity() invalid value range
         """
-        expected = 'value 300.0 for attribute tempo is outside the accepted range ' \
+        expected = 'Value 300.0 for attribute tempo is outside the accepted range ' \
                    '(min: 0.0, max: 220.0)'
         spotirec.logger.set_level(log.INFO)
         self.assertRaises(SystemExit, spotirec.check_tune_validity, tune='max_tempo=300')
@@ -438,7 +438,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing check_tune_validity() outside recommended range
         """
-        expected = 'value 215.0 for attribute tempo is outside the recommended range ' \
+        expected = 'Value 215.0 for attribute tempo is outside the recommended range ' \
                    '(min: 60.0, max: 210.0), recommendations may be scarce'
         spotirec.logger.set_level(log.WARNING)
         spotirec.check_tune_validity('max_tempo=215')
@@ -471,7 +471,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing parse_seed_info() invalid str length
         """
-        expected = 'please enter at most 5 seeds'
+        expected = 'Please enter at most 5 seeds'
         spotirec.logger.set_level(log.INFO)
         self.assertRaises(SystemExit, spotirec.parse_seed_info, seeds='0 1 2 3 4 5')
         sys.stdout.close()
@@ -487,7 +487,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing parse_seed_info() invalid list length
         """
-        expected = 'please enter at most 5 seeds'
+        expected = 'Please enter at most 5 seeds'
         spotirec.logger.set_level(log.INFO)
         self.assertRaises(SystemExit, spotirec.parse_seed_info, seeds=[0, 1, 2, 3, 4, 5])
         sys.stdout.close()
@@ -581,7 +581,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing parse_seed_info() custom uri warning
         """
-        expected = 'input \"vapor-death-jazz\" does not match a genre or a valid URI syntax, ' \
+        expected = 'Input \"vapor-death-jazz\" does not match a genre or a valid URI syntax, ' \
                    'skipping...'
         spotirec.logger.set_level(log.WARNING)
         spotirec.rec.seed_type = 'custom'
@@ -1214,7 +1214,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing print_tuning_options() no file
         """
-        expected = 'could not find tuning options file'
+        expected = 'Could not find tuning options file'
         spotirec.TUNING_FILE = 'this-does-not-exist'
         spotirec.logger.set_level(log.INFO)
         self.assertRaises(SystemExit, spotirec.print_tuning_options)
@@ -1231,7 +1231,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing print_tuning_options() empty file
         """
-        expected = 'tuning options file is empty'
+        expected = 'Tuning options file is empty'
         spotirec.TUNING_FILE = 'tests/fixtures/tuning-opts-empty'
         spotirec.logger.set_level(log.INFO)
         self.assertRaises(SystemExit, spotirec.print_tuning_options)
@@ -1249,7 +1249,7 @@ class TestSpotirec(SpotirecTestCase):
         Testing print_tuning_options()
         """
         expected0 = 'Attribute           Data type   Range   Recommended range   Function'
-        expected1 = 'note that recommendations may be scarce outside the recommended ranges. ' \
+        expected1 = 'Note that recommendations may be scarce outside the recommended ranges. ' \
                     'If the recommended range is not available, they may only be scarce at ' \
                     'extreme values.'
         spotirec.TUNING_FILE = 'tuning-opts'
@@ -1294,7 +1294,7 @@ class TestSpotirec(SpotirecTestCase):
         def mock_filter(data):
             return []
 
-        expected = 'received zero tracks with your options - adjust and try again'
+        expected = 'Received zero tracks with your options - adjust and try again'
         filter_func = spotirec.filter_recommendations
         spotirec.logger.set_level(log.INFO)
         spotirec.filter_recommendations = mock_filter
@@ -1531,7 +1531,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing parse() with remove from arg (track exists)
         """
-        expected = 'track spotify:track:testtrack already exists in playlist, skipping...'
+        expected = 'Track spotify:track:testtrack already exists in playlist, skipping...'
         spotirec.args = mock.MockArgs(add_to=['test'])
         spotirec.conf.save_playlist({'name': 'testplaylist',
                                      'uri': 'spotify:playlist:testplaylisttracks'}, 'test')
@@ -1560,7 +1560,7 @@ class TestSpotirec(SpotirecTestCase):
         """
         Testing parse() with remove from arg (track doesnt exist)
         """
-        expected = 'track spotify:track:testtrack doesnt exist in playlist, skipping...'
+        expected = 'Track spotify:track:testtrack doesnt exist in playlist, skipping...'
         spotirec.args = mock.MockArgs(remove_from=['test'])
         spotirec.conf.save_playlist({'name': 'testplaylist',
                                      'uri': 'spotify:playlist:testplaylist'}, 'test')
@@ -1699,7 +1699,7 @@ class TestSpotirec(SpotirecTestCase):
         Testing parse() with print arg (tuning)
         """
         expected0 = 'Attribute           Data type   Range   Recommended range   Function'
-        expected1 = 'note that recommendations may be scarce outside the recommended ranges. ' \
+        expected1 = 'Note that recommendations may be scarce outside the recommended ranges. ' \
                     'If the recommended range is not available, they may only be scarce at ' \
                     'extreme values.'
         spotirec.args = mock.MockArgs(print=['tuning'])
