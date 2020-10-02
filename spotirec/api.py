@@ -32,11 +32,11 @@ class API:
             self.LOGGER.error(
                 f'{request_type} request for {request_domain} failed with status code '
                 f'{response.status_code} (expected {expected_code}). Reason: {response.reason}')
-            self.LOGGER.debug(f'request: {response.request}')
-            self.LOGGER.debug(f'headers: {response.headers}')
-            self.LOGGER.debug(f'url: {response.url}')
+            self.LOGGER.debug(f'Request: {response.request}')
+            self.LOGGER.debug(f'Headers: {response.headers}')
+            self.LOGGER.debug(f'URL: {response.url}')
             if response.status_code == 401:
-                self.LOGGER.info('this may be because this is a new function, and additional '
+                self.LOGGER.info('This may be because this is a new function, and additional '
                                  'authorization is required - try reauthorizing and try again.')
             self.LOGGER.log_file(crash=True)
             sys.exit(1)
@@ -77,7 +77,7 @@ class API:
         """
         data = {'name': playlist_name,
                 'description': playlist_description}
-        self.LOGGER.info('creating playlist')
+        self.LOGGER.info('Creating playlist')
         response = requests.post(f'{self.URL_BASE}/users/{self.get_user_id(headers)}/playlists',
                                  json=data, headers=headers)
         self.error_handle('playlist creation', 201, 'POST', response)
@@ -106,7 +106,7 @@ class API:
         :param headers: request headers
         """
         data = {'uris': tracks}
-        self.LOGGER.debug(f'tracks: {tracks}')
+        self.LOGGER.debug(f'Tracks: {tracks}')
         response = requests.post(f'{self.URL_BASE}/playlists/{playlist_id}/tracks',
                                  headers=headers, json=data)
         self.error_handle('adding tracks', 201, 'POST', response)
