@@ -179,12 +179,12 @@ spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for de
 def check_scope_permissions():
     oauth = conf.get_oauth()
     if len(oauth.keys()) != 6:
-        logger.error('missing oauth config, authorizing...')
+        logger.error('Missing oauth config, authorizing...')
         authorize()
         sys.exit(0)
     scopes = oauth.get('scope')
     if any(scope not in scopes for scope in sp_oauth.scopes):
-        logger.error('new functionality that needs new permissions has been added, please '
+        logger.error('New functionality that needs new permissions has been added, please '
                      'navigate to your browser and authorize again')
         authorize()
         sys.exit(0)
@@ -196,20 +196,20 @@ def authorize(port=PORTS[0]):
     Function index() will be routed on said http server.
     :param port: port to host on as int
     """
-    logger.verbose('hosting localhost server')
+    logger.verbose('Hosting localhost server')
     sp_oauth.PORT = port
     webbrowser.open(f'{sp_oauth.redirect}:{port}')
     try:
-        logger.info(f'running authorization on {sp_oauth.redirect}:{port}')
+        logger.info(f'Running authorization on {sp_oauth.redirect}:{port}')
         run(host='', port=port, quiet=True)
     except OSError as ex:
         if ex.errno == 98:
             next_port = PORTS.index(port) + 1
             if next_port > len(PORTS) - 1:
-                logger.error(f'tried all ports ({",".join(str(x) for x in PORTS)}), all are in use')
-                logger.error('please ensure one of them is available and try again')
+                logger.error(f'Tried all ports ({",".join(str(x) for x in PORTS)}), all are in use')
+                logger.error('Please ensure one of them is available and try again')
                 sys.exit(1)
-            logger.warning(f'port {port} is already in use, trying {PORTS[next_port]}')
+            logger.warning(f'Port {port} is already in use, trying {PORTS[next_port]}')
             authorize(port=PORTS[next_port])
 
 
@@ -224,16 +224,16 @@ def index() -> str:
     access_token = ""
     code = sp_oauth.parse_response_code(request.url)
     if code:
-        logger.verbose('code found, retrieving oauth token')
-        logger.debug(f'code: {code}')
+        logger.verbose('Code found, retrieving oauth token')
+        logger.debug(f'Code: {code}')
         access_token = sp_oauth.retrieve_access_token(code)['access_token']
     if access_token:
-        logger.verbose('successfully retrieved oauth token')
-        logger.debug(f'token: {access_token}')
+        logger.verbose('Successfully retrieved oauth token')
+        logger.debug(f'Token: {access_token}')
         return "<span>Successfully retrieved OAuth token. You may close this tab and start " \
                "using Spotirec.</span>"
     else:
-        logger.verbose('code not found, requesting permissions')
+        logger.verbose('Code not found, requesting permissions')
         return f"<a href='{sp_oauth.get_authorize_url()}'>Login to Spotify</a>"
 
 
@@ -242,13 +242,13 @@ def get_token() -> str:
     Retrieve access token from OAuth handler. Try to authorize and exit if credentials don't exist.
     :return: access token, if present
     """
-    logger.verbose('getting token')
+    logger.verbose('Getting token')
     creds = sp_oauth.get_credentials()
     if creds:
-        logger.verbose('token found')
+        logger.verbose('Token found')
         return creds.get('access_token')
     else:
-        logger.verbose('token not found, authorising')
+        logger.verbose('Token not found, authorising')
         authorize()
         sys.exit(0)
 
@@ -280,17 +280,17 @@ def get_user_top_genres() -> dict:
     Extract genres from user's top 50 artists and map them to their amount of occurrences
     :return: dict of genres and their count of occurrences
     """
-    logger.verbose('getting top genres')
+    logger.verbose('Getting top genres')
     data = api.get_top_list('artists', 50, headers)
-    logger.debug(f'got {len(data["items"])} artists for genres')
+    logger.debug(f'Got {len(data["items"])} artists for genres')
     genre_seeds = api.get_genre_seeds(headers)
     # Get all genres of each artist
     artist_genres = [genre.replace(' ', '-') for x in data['items']
                      for genre in x['genres'] if genre.replace(' ', '-') in genre_seeds['genres']]
     # Map each genre to its count
     genres = {genre: artist_genres.count(genre) for genre in artist_genres}
-    logger.debug(f'extracted {len(genres)} genre seeds from artists')
-    logger.debug(f'genre seeds: {genres}')
+    logger.debug(f'Extracted {len(genres)} genre seeds from artists')
+    logger.debug(f'Genre seeds: {genres}')
     return genres
 
 
@@ -299,7 +299,7 @@ def add_top_genres_seed(seed_count: int):
     Add top 5 genres to recommendation object seed info.
     :param seed_count:
     """
-    logger.verbose(f'adding top {seed_count} genres to seeds')
+    logger.verbose(f'Adding top {seed_count} genres to seeds')
     sort = sorted(get_user_top_genres().items(), key=lambda kv: kv[1], reverse=True)
     if seed_count > len(sort):
         seed_count = len(sort)
@@ -362,8 +362,8 @@ def print_choices(data: Union[list, dict], prompt: bool = True, sort: bool = Fal
             except KeyboardInterrupt:
                 sys.exit(0)
             if not inp:
-                logger.error(f'input \"{inp}\" is malformed.')
-                logger.info('please ensure that your input valid, i.e. n0 [ ... n5 ], where '
+                logger.error(f'Input \"{inp}\" is malformed.')
+                logger.info('Please ensure that your input valid, i.e. n0 [ ... n5 ], where '
                             'n is a valid index.')
                 return prompt_selection()
             return inp
@@ -401,7 +401,7 @@ def check_if_valid_genre(genre: str) -> bool:
     """
     if any(g == genre for g in api.get_genre_seeds(headers)['genres']):
         return True
-    logger.debug(f'genre {genre} is invalid')
+    logger.debug(f'Genre {genre} is invalid')
     return False
 
 
@@ -410,25 +410,25 @@ def check_tune_validity(tune: str):
     Check validity of tune input - exit program if not valid
     :param tune: tune input as string
     """
-    logger.verbose('checking tune validity')
+    logger.verbose('Checking tune validity')
     if not re.match(TUNE_RE, tune):
-        logger.error(f'tune {tune} does not match the proper format')
+        logger.error(f'Tune {tune} does not match the proper format')
         logger.verbose(tune)
         logger.log_file(crash=True)
         sys.exit(1)
     prefix = tune.split('_', 1)[0]
     key = tune.split('=')[0].split('_', 1)[1]
     value = tune.split('=')[1]
-    logger.debug(f'prefix: {prefix}, attribute: {key}, value: {value}')
+    logger.debug(f'Prefix: {prefix}, attribute: {key}, value: {value}')
     # Check prefix validity
     if prefix not in TUNE_PREFIX:
-        logger.error(f'tune prefix \"{tune.split("_", 1)[0]}\" is malformed')
+        logger.error(f'Tune prefix \"{tune.split("_", 1)[0]}\" is malformed')
         logger.verbose(TUNE_PREFIX)
         logger.log_file(crash=True)
         sys.exit(1)
     # Check attribute validity
     if key not in list(TUNE_ATTR['int'].keys()) + list(TUNE_ATTR['float'].keys()):
-        logger.error(f'tune attribute \"{tune.split("=")[0].split("_", 1)[1]}\" is malformed')
+        logger.error(f'Tune attribute \"{tune.split("=")[0].split("_", 1)[1]}\" is malformed')
         logger.verbose(list(TUNE_ATTR['int'].keys()) + list(TUNE_ATTR['float'].keys()))
         logger.log_file(crash=True)
         sys.exit(1)
@@ -439,7 +439,7 @@ def check_tune_validity(tune: str):
         value_type = 'int' if key in TUNE_ATTR['int'].keys() else 'float'
         # Ensure value is within accepted range
         if not TUNE_ATTR[value_type][key]['max'] >= value >= TUNE_ATTR[value_type][key]['min']:
-            logger.error(f'value {value} for attribute {key} is outside the accepted range (min: '
+            logger.error(f'Value {value} for attribute {key} is outside the accepted range (min: '
                          f'{TUNE_ATTR[value_type][key]["min"]}, max: '
                          f'{TUNE_ATTR[value_type][key]["max"]})')
             logger.log_file(crash=True)
@@ -447,13 +447,13 @@ def check_tune_validity(tune: str):
         # Warn if value is outside recommended range
         if not TUNE_ATTR[value_type][key]['rec_max'] >= value >= \
                 TUNE_ATTR[value_type][key]['rec_min']:
-            logger.warning(f'value {value} for attribute {key} is outside the recommended range '
+            logger.warning(f'Value {value} for attribute {key} is outside the recommended range '
                            f'(min: {TUNE_ATTR[value_type][key]["rec_min"]}, max: '
                            f'{TUNE_ATTR[value_type][key]["rec_max"]}), recommendations may be '
                            f'scarce')
-        logger.debug(f'tune attribute {key} with prefix {prefix} and value {value} is valid')
+        logger.debug(f'Tune attribute {key} with prefix {prefix} and value {value} is valid')
     except ValueError:
-        logger.error(f'tune value {value} does not match attribute {key} data type requirements')
+        logger.error(f'Tune value {value} does not match attribute {key} data type requirements')
         logger.log_file(crash=True)
         sys.exit(1)
 
@@ -482,15 +482,15 @@ def parse_seed_info(seeds: Union[str, list, tuple]):
     Adds seed data to recommendation object
     :param seeds: seed data as a string or a list
     """
-    logger.verbose('processing seeds')
+    logger.verbose('Processing seeds')
     seeds = filter_list_duplicates(seeds.split() if type(seeds) is str else seeds)
     if len(seeds) > 5:
-        logger.error('please enter at most 5 seeds')
+        logger.error('Please enter at most 5 seeds')
         logger.log_file(crash=True)
         sys.exit(1)
     # Parse each seed in input and add to seed string depending on type
     for x in seeds:
-        logger.debug(f'seed: {x}')
+        logger.debug(f'Seed: {x}')
         if rec.seed_type == 'genres':
             rec.add_seed_info(x)
         elif rec.seed_type == 'custom':
@@ -499,7 +499,7 @@ def parse_seed_info(seeds: Union[str, list, tuple]):
             elif re.match(URI_RE, x):
                 rec.add_seed_info(api.request_data(x, f'{x.split(":")[1]}s', headers))
             else:
-                logger.warning(f'input \"{x}\" does not match a genre or a valid URI syntax, '
+                logger.warning(f'Input \"{x}\" does not match a genre or a valid URI syntax, '
                                f'skipping...')
         else:
             rec.add_seed_info(x)
@@ -507,15 +507,15 @@ def parse_seed_info(seeds: Union[str, list, tuple]):
 
 def set_blacklist_current(entries: list) -> list:
     if 'current-track' in entries:
-        logger.verbose('getting current track')
+        logger.verbose('Getting current track')
         entries.remove('current-track')
         entries.append(api.get_current_track(headers))
     elif 'current-artists' in entries:
-        logger.verbose('getting current artists')
+        logger.verbose('Getting current artists')
         entries.remove('current-artists')
         entries += [x for x in api.get_current_artists(headers)]
     else:
-        logger.warning('your argument for current does not match proper syntax, try '
+        logger.warning('Your argument for current does not match proper syntax, try '
                        '"current-track" or "current-artists"')
     return entries
 
@@ -525,11 +525,11 @@ def add_to_blacklist(entries: list):
     Add input uris to blacklist and exit
     :param entries: list of input uris
     """
-    logger.verbose('adding blacklist entries')
+    logger.verbose('Adding blacklist entries')
     for x in entries:
         if check_if_show_or_episode(x):
             continue
-        logger.debug(f'entry: {x}')
+        logger.debug(f'Entry: {x}')
         if not conf.check_item_in_blacklist(x):
             uri_data = api.request_data(x, f'{x.split(":")[1]}s', headers)
             conf.add_to_blacklist(uri_data, x)
@@ -540,11 +540,11 @@ def remove_from_blacklist(entries: list):
     Remove track(s) and/or artist(s) from blacklist.
     :param entries: list of uris
     """
-    logger.verbose('removing blacklist entries')
+    logger.verbose('Removing blacklist entries')
     for x in entries:
         if check_if_show_or_episode(x):
             continue
-        logger.debug(f'entry: {x}')
+        logger.debug(f'Entry: {x}')
         conf.remove_from_blacklist(x)
 
 
@@ -568,23 +568,23 @@ def generate_img(tracks: list) -> Image:
     :param tracks: list of track uris
     :return: a 320x320 image generated from playlist hash
     """
-    logger.verbose('generating image')
+    logger.verbose('Generating image')
     # Hash tracks to a playlist-unique string
     track_hash = hashlib.sha256(''.join(str(x) for x in tracks).encode('utf-8')).hexdigest()
-    logger.debug(f'hash: {track_hash}')
+    logger.debug(f'Hash: {track_hash}')
     # Use the first six chars of the hash to generate a color
     # The hex value of three pairs of chars are converted to integers, yielding a list on the
     # form [r, g, b]
     color = [int(track_hash[i:i + 2], 16) for i in (0, 2, 4)]
-    logger.debug(f'color: {color}')
+    logger.debug(f'Color: {color}')
     # Create an image object the size of the squared square root of the hash string - always 8x8
     img = Image.new('RGB', (int(math.sqrt(len(track_hash))), int(math.sqrt(len(track_hash)))))
-    logger.debug(f'image: {img}')
+    logger.debug(f'Image: {img}')
     # Iterate over hash string and assign to pixel map each digit to the generated color,
     # each letter to light gray
     pixel_map = [color if re.match(r'[0-9]', x) else [200, 200, 200] for x in track_hash]
     # Add the pixel map to the image object and return as a size suited for the Spotify API
-    logger.debug(f'pixel map: {pixel_map}')
+    logger.debug(f'Pixel map: {pixel_map}')
     img.putdata([tuple(x) for x in pixel_map])
     return img.resize((320, 320), Image.AFFINE)
 
@@ -600,7 +600,7 @@ def add_image_to_playlist(tracks: list):
     img_buffer = BytesIO()
     generate_img(tracks).save(img_buffer, format='JPEG')
     img_str = base64.b64encode(img_buffer.getvalue())
-    logger.verbose('uploading image')
+    logger.verbose('Uploading image')
     api.upload_image(rec.playlist_id, img_str, img_headers)
 
 
@@ -610,7 +610,7 @@ def save_preset(name: str):
     :param name: name of preset
     """
     name = format_identifier(name)
-    logger.verbose('saving preset')
+    logger.verbose('Saving preset')
     preset = {'limit': rec.limit_original,
               'based_on': rec.based_on,
               'seed': rec.seed,
@@ -619,7 +619,7 @@ def save_preset(name: str):
               'rec_params': rec.rec_params,
               'auto_play': rec.auto_play,
               'playback_device': rec.playback_device}
-    logger.debug(f'preset: {preset}')
+    logger.debug(f'Preset: {preset}')
     conf.save_preset(preset, name)
 
 
@@ -629,17 +629,17 @@ def load_preset(name: str) -> Recommendation:
     :param name: name of preset
     :return: recommendation object with settings from preset
     """
-    logger.info(f'using preset \"{name}\"')
+    logger.info(f'Using preset \"{name}\"')
     presets = conf.get_presets()
     try:
-        logger.verbose('getting preset')
+        logger.verbose('Getting preset')
         contents = presets[name]
     except KeyError:
-        logger.error(f'could not find preset \"{name}\", check spelling and try again')
+        logger.error(f'Could not find preset \"{name}\", check spelling and try again')
         logger.log_file(crash=True)
         sys.exit(1)
     preset = Recommendation(preset=contents)
-    logger.debug(f'preset: {preset}')
+    logger.debug(f'Preset: {preset}')
     return preset
 
 
@@ -648,9 +648,9 @@ def remove_presets(presets: list):
     Remove preset(s) from user config
     :param presets: list of devices
     """
-    logger.verbose('removing presets')
+    logger.verbose('Removing presets')
     for x in presets:
-        logger.debug(f'preset: {x}')
+        logger.debug(f'Preset: {x}')
         conf.remove_preset(x)
 
 
@@ -684,7 +684,7 @@ def get_device(device_name: str) -> dict:
     try:
         return devices[device_name]
     except KeyError:
-        logger.error(f'device {device_name} does not exist in config')
+        logger.error(f'Device {device_name} does not exist in config')
         logger.log_file(crash=True)
         sys.exit(1)
 
@@ -703,8 +703,8 @@ def save_device():
             assert devices[int(ind)] is not None
             return int(ind)
         except (ValueError, AssertionError, IndexError):
-            logger.error(f'input \"{ind}\" is malformed.')
-            logger.info('please ensure that your input is an integer and is a valid index.')
+            logger.error(f'Input \"{ind}\" is malformed.')
+            logger.info('Please ensure that your input is an integer and is a valid index.')
             return prompt_device_index()
 
     def prompt_name() -> str:
@@ -715,8 +715,8 @@ def save_device():
         if inp:
             return format_identifier(inp)
         else:
-            logger.error(f'device identifier \"{inp}\" is malformed.')
-            logger.info('please ensure that the identifier contains at least one character')
+            logger.error(f'Device identifier \"{inp}\" is malformed.')
+            logger.info('Please ensure that the identifier contains at least one character')
             return prompt_name()
 
     # Get available devices from API and print
@@ -725,15 +725,15 @@ def save_device():
     print('\033[1m' + f'Name{" " * 19}Type' + '\033[0m')
     for x in devices:
         print(f'{devices.index(x)}. {x["name"]}{" " * (20 - len(x["name"]))}{x["type"]}')
-    logger.info('please note that a player needs to be active to be shown in the above list, i.e. '
+    logger.info('Please note that a player needs to be active to be shown in the above list, i.e. '
                 'if you want to save your phone as a device, the app needs to be launched on '
                 'your phone')
     # Prompt device selection and identifier, and save to config
     device = devices[prompt_device_index()]
     device_dict = {'id': device['id'], 'name': device['name'], 'type': device['type']}
     name = prompt_name()
-    logger.verbose('saving device')
-    logger.debug(f'device: {device_dict}')
+    logger.verbose('Saving device')
+    logger.debug(f'Device: {device_dict}')
     conf.save_device(device_dict, name)
 
 
@@ -742,9 +742,9 @@ def remove_devices(devices: list):
     Remove device(s) from user config
     :param devices: list of device(s)
     """
-    logger.verbose('removing devices')
+    logger.verbose('Removing devices')
     for x in devices:
-        logger.debug(f'device: {x}')
+        logger.debug(f'Device: {x}')
         conf.remove_device(x)
 
 
@@ -783,8 +783,8 @@ def save_playlist():
         if iden:
             return format_identifier(iden)
         else:
-            logger.error(f'playlist identifier \"{iden}\" is malformed.')
-            logger.info('please ensure that the identifier contains at least one character')
+            logger.error(f'Playlist identifier \"{iden}\" is malformed.')
+            logger.info('Please ensure that the identifier contains at least one character')
             return input_id()
 
     def input_uri() -> str:
@@ -797,7 +797,7 @@ def save_playlist():
             assert re.match(PLAYLIST_URI_RE, uri)
             return uri
         except AssertionError:
-            logger.error(f'playlist uri \"{uri}\" is malformed.')
+            logger.error(f'Playlist uri \"{uri}\" is malformed.')
             return input_uri()
 
     # Prompt device identifier and URI, and save to config
@@ -805,8 +805,8 @@ def save_playlist():
     playlist_uri = input_uri()
     playlist = {'name': api.get_playlist(headers, playlist_uri.split(':')[2])["name"],
                 'uri': playlist_uri}
-    logger.verbose('saving playlist')
-    logger.debug(f'playlist: {playlist}')
+    logger.verbose('Saving playlist')
+    logger.debug(f'Playlist: {playlist}')
     conf.save_playlist(playlist, playlist_id)
 
 
@@ -815,9 +815,9 @@ def remove_playlists(playlists: list):
     Remove playlist(s) from user config
     :param playlists: list of playlist(s)
     """
-    logger.verbose('removing playlists')
+    logger.verbose('Removing playlists')
     for x in playlists:
-        logger.debug(f'playlist: {x}')
+        logger.debug(f'Playlist: {x}')
         conf.remove_playlist(x)
 
 
@@ -834,10 +834,10 @@ def add_current_track(playlist: str):
         try:
             playlist_id = playlists[playlist]['uri'].split(':')[2]
         except KeyError:
-            logger.error(f'playlist {playlist} does not exist in config')
+            logger.error(f'Playlist {playlist} does not exist in config')
             logger.log_file(crash=True)
             sys.exit(1)
-    logger.info('adding currently playing track to playlist')
+    logger.info('Adding currently playing track to playlist')
 
     current_track = api.get_current_track(headers)
     if check_if_show_or_episode(current_track):
@@ -845,7 +845,7 @@ def add_current_track(playlist: str):
     playlist_tracks = [x['track']['uri']
                        for x in api.get_playlist(headers, playlist_id)['tracks']['items']]
     if current_track in playlist_tracks:
-        logger.warning(f'track {current_track} already exists in playlist, skipping...')
+        logger.warning(f'Track {current_track} already exists in playlist, skipping...')
         return
     api.add_to_playlist([current_track], playlist_id, headers)
 
@@ -863,17 +863,17 @@ def remove_current_track(playlist: str):
         try:
             playlist_id = playlists[playlist]['uri'].split(':')[2]
         except KeyError:
-            logger.error(f'playlist {playlist} does not exist in config')
+            logger.error(f'Playlist {playlist} does not exist in config')
             logger.log_file(crash=True)
             sys.exit(1)
-    logger.info('removing currently playing track to playlist')
+    logger.info('Removing currently playing track to playlist')
     current_track = api.get_current_track(headers)
     if check_if_show_or_episode(current_track):
         return
     playlist_tracks = [x['track']['uri']
                        for x in api.get_playlist(headers, playlist_id)['tracks']['items']]
     if current_track not in playlist_tracks:
-        logger.warning(f'track {current_track} doesnt exist in playlist, skipping...')
+        logger.warning(f'Track {current_track} doesnt exist in playlist, skipping...')
         return
     api.remove_from_playlist([current_track], playlist_id, headers)
 
@@ -937,11 +937,11 @@ def transfer_playback(device_id: str):
     try:
         device = conf.get_devices()[device_id]['id']
     except KeyError:
-        logger.error(f'device {device_id} does not exist in config')
+        logger.error(f'Device {device_id} does not exist in config')
         logger.log_file(crash=True)
         sys.exit(1)
-    logger.info(f'transferring playback to device {device_id}')
-    logger.debug(f'device: {device}')
+    logger.info(f'Transferring playback to device {device_id}')
+    logger.debug(f'Device: {device}')
     api.transfer_playback(device, headers)
 
 
@@ -951,7 +951,7 @@ def filter_recommendations(data: json) -> list:
     :param data: recommendations as json object.
     :return: list of eligible track URIs
     """
-    logger.verbose('filtering tracks')
+    logger.verbose('Filtering tracks')
     valid_tracks = []
     blacklist = conf.get_blacklist()
     for x in data['tracks']:
@@ -963,8 +963,8 @@ def filter_recommendations(data: json) -> list:
             continue
         else:
             valid_tracks.append(x['uri'])
-    logger.debug(f'tracks filtered: {len(data["tracks"]) - len(valid_tracks)}')
-    logger.debug(f'tracks left after filter: {len(valid_tracks)}')
+    logger.debug(f'Tracks filtered: {len(data["tracks"]) - len(valid_tracks)}')
+    logger.debug(f'Tracks left after filter: {len(valid_tracks)}')
     return valid_tracks
 
 
@@ -976,11 +976,11 @@ def print_tuning_options():
         with open(TUNING_FILE, 'r') as file:
             tuning_opts = file.readlines()
     except FileNotFoundError:
-        logger.error('could not find tuning options file')
+        logger.error('Could not find tuning options file')
         logger.log_file(crash=True)
         sys.exit(1)
     if len(tuning_opts) == 0:
-        logger.error('tuning options file is empty')
+        logger.error('Tuning options file is empty')
         logger.log_file(crash=True)
         sys.exit(1)
     for x in tuning_opts:
@@ -988,7 +988,7 @@ def print_tuning_options():
             print('\033[1m' + x.strip('\n') + '\033[0m')
         else:
             print(x.strip('\n'))
-    print('note that recommendations may be scarce outside the recommended ranges. If the '
+    print('Note that recommendations may be scarce outside the recommended ranges. If the '
           'recommended range is not available, they may only be scarce at extreme values.')
 
 
@@ -998,7 +998,7 @@ def recommend():
     were removed by the blacklist filter. Playlist is created and tracks are added. Seed info
     is printed to terminal.
     """
-    logger.info('getting recommendations')
+    logger.info('Getting recommendations')
     # Create seed from user preferences
     rec.create_seed()
     # Save as preset if requested
@@ -1008,11 +1008,11 @@ def recommend():
     tracks = filter_recommendations(api.get_recommendations(rec.rec_params, headers))
     # If no tracks are left, notify an error and exit
     if len(tracks) == 0:
-        logger.error('received zero tracks with your options - adjust and try again')
+        logger.error('Received zero tracks with your options - adjust and try again')
         logger.log_file(crash=True)
         sys.exit(1)
     if len(tracks) <= rec.limit_original / 2:
-        logger.warning(f'only received {len(tracks)} different recommendations, you may receive '
+        logger.warning(f'Only received {len(tracks)} different recommendations, you may receive '
                        f'duplicates of these (this might take a few seconds)')
     # Filter recommendations until length of track list matches limit preference
     while len(tracks) < rec.limit_original:
@@ -1026,7 +1026,7 @@ def recommend():
 
     # Create playlist and add tracks
     if args.preserve:
-        logger.info('preserving playlist and creating new default')
+        logger.info('Preserving playlist and creating new default')
         create_new_playlist()
     else:
         try:
@@ -1036,7 +1036,7 @@ def recommend():
             api.update_playlist_details(rec.playlist_name, rec.playlist_description(),
                                         rec.playlist_id, headers=headers)
         except (KeyError, AssertionError):
-            logger.info('playlist has either been deleted, or made private, creating new '
+            logger.info('Playlist has either been deleted, or made private, creating new '
                         'default...')
             create_new_playlist()
     # Generate and upload dank-ass image
@@ -1052,7 +1052,7 @@ def parse():
     """
     Parse arguments
     """
-    logger.verbose('parsing args')
+    logger.verbose('Parsing args')
     if args.auth:
         authorize()
         sys.exit(0)
@@ -1072,11 +1072,11 @@ def parse():
         sys.exit(0)
 
     if args.s:
-        logger.info('liking current track')
+        logger.info('Liking current track')
         api.like_track(headers, check_if_show_or_episode)
         sys.exit(0)
     elif args.sr:
-        logger.info('unliking current track')
+        logger.info('Unliking current track')
         api.unlike_track(headers, check_if_show_or_episode)
         sys.exit(0)
     if args.save_playlist:
@@ -1140,17 +1140,17 @@ def parse():
         rec.playback_device = get_device(args.play[0])
 
     if args.a:
-        logger.info(f'basing recommendations off your top {args.a} artist(s)')
+        logger.info(f'Basing recommendations off your top {args.a} artist(s)')
         rec.based_on = 'top artists'
         rec.seed_type = 'artists'
         parse_seed_info([x for x in api.get_top_list('artists', args.a, headers)['items']])
     elif args.t:
-        logger.info(f'basing recommendations off your top {args.t} track(s)')
+        logger.info(f'Basing recommendations off your top {args.t} track(s)')
         rec.based_on = 'top tracks'
         rec.seed_type = 'tracks'
         parse_seed_info([x for x in api.get_top_list('tracks', args.t, headers)['items']])
     elif args.st:
-        logger.info(f'basing recommendations off your top {args.st} saved track(s)')
+        logger.info(f'Basing recommendations off your top {args.st} saved track(s)')
         rec.based_on = 'recent saved tracks'
         rec.seed_type = 'tracks'
         parse_seed_info([x['track'] for x in api.get_saved_tracks(headers, limit=args.st)['items']])
@@ -1184,18 +1184,18 @@ def parse():
         except KeyboardInterrupt:
             sys.exit(0)
         if not user_input:
-            logger.error('please enter 1-5 seeds')
+            logger.error('Please enter 1-5 seeds')
             logger.log_file(crash=True)
             sys.exit(1)
         seeds = [x for x in user_input.strip(' ').split() if not check_if_show_or_episode(x)]
         parse_seed_info(seeds)
     else:
-        logger.info(f'basing recommendations off your top {args.n} genres')
+        logger.info(f'Basing recommendations off your top {args.n} genres')
         add_top_genres_seed(args.n)
 
     if args.l:
         rec.update_limit(args.l[0], init=True)
-    logger.info(f'the playlist will contain {rec.limit} tracks')
+    logger.info(f'The playlist will contain {rec.limit} tracks')
 
     if args.tune:
         for x in args.tune:
@@ -1217,9 +1217,9 @@ def init():
     if args.suppress_warnings:
         logger.suppress_warnings(True)
 
-    logger.verbose('initialising')
-    logger.debug(f'log level: {logger.LEVEL} ({LOG_LEVELS[logger.LEVEL]})')
-    logger.debug(f'suppress warnings: {logger.SUPPRESS_WARNINGS}')
+    logger.verbose('Initialising')
+    logger.debug(f'Log level: {logger.LEVEL} ({LOG_LEVELS[logger.LEVEL]})')
+    logger.debug(f'Suppress warnings: {logger.SUPPRESS_WARNINGS}')
 
     # Config handler
     conf.set_logger(logger)
@@ -1247,4 +1247,4 @@ def init():
         rec.set_logger(logger)
         parse()
 
-    logger.debug(f'args: {args}')
+    logger.debug(f'Args: {args}')

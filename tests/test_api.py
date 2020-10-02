@@ -110,7 +110,7 @@ class TestAPI(SpotirecTestCase):
         """
         response = mock.MockResponse(401, 'error', 'error', {'success': 'no lol'},
                                      'https://error.test')
-        expected = 'this may be because this is a new function, and additional authorization ' \
+        expected = 'This may be because this is a new function, and additional authorization ' \
                    'is required - try reauthorizing and try again.'
         self.assertRaises(SystemExit, self.api.error_handle, request_domain='test',
                           expected_code=200, request_type='TEST', response=response)
