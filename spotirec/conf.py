@@ -11,6 +11,7 @@ class Config:
     CONFIG_DIR = f'{Path.home()}/.config/spotirec'
     CONFIG_FILE = 'spotirec.conf'
     URI_RE = r'spotify:(artist|track|show|episode):[a-zA-Z0-9]'
+    CONF_SECTIONS = ['spotirecoauth', 'presets', 'blacklist', 'devices', 'playlists']
     LOGGER = None
 
     def set_logger(self, logger: Log):
@@ -21,17 +22,31 @@ class Config:
         Open configuration file as object
         :return: config object
         """
+        c = ConfigParser()
+
         try:
-            # Read config and assert size
+            # Try reading config
             self.LOGGER.verbose('getting config')
-            c = ConfigParser()
             with open(f'{self.CONFIG_DIR}/{self.CONFIG_FILE}', 'r') as f:
                 c.read_file(f)
-            assert len(c.keys()) > 0
+
+            # If config is empty, generate new
+            if len(c.sections()) == 0:
+                self.LOGGER.info('Config file empty, adding sections')
+                self.convert_or_create_config()
+
+            # Ensure all sections are present in config
+            for x in self.CONF_SECTIONS:
+                if x not in c.sections():
+                    c.add_section(x)
+                    if x == 'blacklist':
+                        c.set(x, 'tracks', str({}))
+                        c.set(x, 'artists', str({}))
+
             return c
-        except (FileNotFoundError, AssertionError):
+        except FileNotFoundError:
             self.LOGGER.info('config file not found, generating...')
-            # If config does not exist or is empty, convert old or create new and do recursive call
+            # If config does not exist, create new and do recursive call
             self.convert_or_create_config()
             return self.open_config()
 
@@ -50,8 +65,7 @@ class Config:
         necessary sections.
         """
         c = ConfigParser()
-        old_conf = ['spotirecoauth', 'presets', 'blacklist', 'devices', 'playlists']
-        for x in old_conf:
+        for x in self.CONF_SECTIONS:
             # Add new section
             c.add_section(x)
             try:
@@ -64,7 +78,7 @@ class Config:
                 if x == 'blacklist':
                     c.set(x, 'tracks', str({}))
                     c.set(x, 'artists', str({}))
-                pass
+                continue
         self.LOGGER.info('done')
         self.LOGGER.info('if you have the old style config files you may safely delete these, '
                          'or save them as backup')
