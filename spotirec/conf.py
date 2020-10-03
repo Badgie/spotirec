@@ -39,6 +39,9 @@ class Config:
             for x in self.CONF_SECTIONS:
                 if x not in c.sections():
                     c.add_section(x)
+                    if x == 'blacklist':
+                        c.set(x, 'tracks', str({}))
+                        c.set(x, 'artists', str({}))
 
             return c
         except FileNotFoundError:
