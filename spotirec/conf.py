@@ -1,7 +1,8 @@
 import json
 import re
 import ast
-from configparser import ConfigParser
+from typing import Union
+from configparser import ConfigParser, SectionProxy
 from pathlib import Path
 
 from .log import Log
@@ -70,7 +71,7 @@ class Config:
                          'or save them as backup')
         self.save_config(c)
 
-    def get_oauth(self) -> dict:
+    def get_oauth(self) -> SectionProxy:  # dict structure
         """
         Retrieve OAuth section from config
         :return: OAuth section as dict
@@ -163,7 +164,7 @@ class Config:
             self.LOGGER.error(f'{uri_type} {uri} does not exist in blacklist')
         self.save_config(c)
 
-    def get_presets(self) -> dict:
+    def get_presets(self) -> Union[SectionProxy, dict]:  # dict structure
         """
         Retrieve preset section from config
         :return: preset section as dict
@@ -209,7 +210,7 @@ class Config:
         else:
             self.LOGGER.error(f'preset {iden} does not exist in config')
 
-    def get_devices(self) -> dict:
+    def get_devices(self) -> Union[SectionProxy, dict]:  # dict structure
         """
         Retrieve device section from config
         :return: device section as dict
@@ -257,7 +258,7 @@ class Config:
         else:
             self.LOGGER.error(f'device {iden} does not exist in config')
 
-    def get_playlists(self) -> dict:
+    def get_playlists(self) -> Union[SectionProxy, dict]:  # dict structure
         """
         Retrieve playlist section from config
         :return: playlist section as dict

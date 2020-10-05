@@ -54,7 +54,7 @@ api = API()
 sp_oauth = SpotifyOAuth()
 rec = Recommendation()
 headers = {}
-args = None
+args = argparse.Namespace()
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -261,7 +261,7 @@ def check_if_show_or_episode(uri: str) -> bool:
     uri_type = uri.split(":")[1] if ':' in uri else uri
     uri_name = uri if ':' in uri else 'currently playing'
     if re.match(SHOW_EPI_RE, uri) or uri == 'episode' or uri == 'show':
-        logger.warning(f'{uri_type}s can not exist in a playlists ({uri_name})')
+        logger.warning(f'{uri_type}s can not exist in a playlist ({uri_name})')
         return True
     return False
 
