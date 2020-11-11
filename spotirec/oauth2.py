@@ -44,7 +44,8 @@ class SpotifyOAuth:
             return None
         return creds
 
-    def is_token_expired(self, token_expire: int) -> bool:
+    @staticmethod
+    def is_token_expired(token_expire: int) -> bool:
         """
         Check if token is about to expire - add 30 sec to current time to ensure it doesn't
         expire during run.
@@ -113,7 +114,8 @@ class SpotifyOAuth:
         self.LOGGER.debug(f'url: {self.OAUTH_AUTH_URL}?{parse.urlencode(params)}')
         return f'{self.OAUTH_AUTH_URL}?{parse.urlencode(params)}'
 
-    def parse_response_code(self, url: str) -> str:
+    @staticmethod
+    def parse_response_code(url: str) -> str:
         """
         Extract code from response url after authorization by user.
         :url: url retrieved after user authorized access
