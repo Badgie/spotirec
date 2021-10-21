@@ -13,8 +13,9 @@ class Recommendation:
     def __init__(self, t=TIME, preset=None):
         if preset is None:
             preset = {}
-        self.limit = preset.pop('limit', 100)
-        self.limit_original = preset.pop('limit', self.limit)
+        limit = preset.pop('limit', 100)
+        self.limit = limit if limit <= 100 else 100
+        self.limit_original = limit
         self.created_at = time.ctime(time.time())
         self.based_on = preset.pop('based_on', 'top genres')
         self.seed = preset.pop('seed', '')
@@ -56,7 +57,7 @@ class Recommendation:
         :param init: should only be true when updated by -l arg
         """
         self.LOGGER.verbose('updating limit')
-        self.limit = limit
+        self.limit = limit if limit <= 100 else 100
         self.rec_params['limit'] = str(self.limit)
         if init:
             self.limit_original = limit

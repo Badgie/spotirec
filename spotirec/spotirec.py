@@ -127,8 +127,8 @@ spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for de
     rec_options_group = arg_parser.add_argument_group(
         title='Recommendation options',
         description='These may only appear when creating a playlist')
-    rec_options_group.add_argument('-l', metavar='LIMIT', nargs=1, type=int, choices=range(1, 101),
-                                   help='amount of tracks to add (default: 100, max: 100)')
+    rec_options_group.add_argument('-l', metavar='LIMIT', nargs=1, type=int,
+                                   help='amount of tracks to add (default: 100, sensible max: 700)')
     rec_options_group.add_argument('--tune', metavar='ATTR', nargs='+', type=str,
                                    help='specify tunable attribute(s)')
     rec_options_group.add_argument('--play', metavar='DEVICE', nargs=1,
@@ -178,7 +178,7 @@ def setup_config_dir():
 
 def check_scope_permissions():
     oauth = conf.get_oauth()
-    if len(oauth.keys()) != 6:
+    if 'scope' not in oauth.keys():
         logger.error('missing oauth config, authorizing...')
         authorize()
         sys.exit(0)
@@ -937,7 +937,7 @@ def transfer_playback(device_id):
     api.transfer_playback(device, headers)
 
 
-def filter_recommendations(data: json) -> list:
+def filter_recommendations(data: json, cur_tracks: list) -> list:
     """
     Filter blacklisted artists and tracks from recommendations.
     :param data: recommendations as json object.
@@ -952,6 +952,8 @@ def filter_recommendations(data: json) -> list:
         # then skip - otherwise add to valid tracks
         if any(x['uri'] == s for s in blacklist['tracks'].keys()) or len(
                 set(blacklist['artists'].keys()) & set(y['uri'] for y in x['artists'])) > 0:
+            continue
+        elif x['uri'] in cur_tracks:
             continue
         else:
             valid_tracks.append(x['uri'])
@@ -997,7 +999,7 @@ def recommend():
     if args.save_preset:
         save_preset(args.save_preset[0])
     # Filter blacklisted artists and tracks from recommendations
-    tracks = filter_recommendations(api.get_recommendations(rec.rec_params, headers))
+    tracks = filter_recommendations(api.get_recommendations(rec.rec_params, headers), [])
     # If no tracks are left, notify an error and exit
     if len(tracks) == 0:
         logger.error('received zero tracks with your options - adjust and try again')
@@ -1009,12 +1011,21 @@ def recommend():
     # Filter recommendations until length of track list matches limit preference
     while len(tracks) < rec.limit_original:
         rec.update_limit(rec.limit_original - len(tracks))
-        tracks += filter_recommendations(api.get_recommendations(rec.rec_params, headers))
+        tracks += filter_recommendations(api.get_recommendations(rec.rec_params, headers), tracks)
+
+    def add_tracks():
+        n_requests = math.ceil(len(tracks) / 100)
+        for i in range(n_requests):
+            lower = i * 100
+            upper = (i + 1) * 100
+            _tracks = tracks[lower:None if upper > len(tracks) else upper]
+            api.add_to_playlist(_tracks, rec.playlist_id, headers=headers)
 
     def create_new_playlist():
         rec.playlist_id = api.create_playlist(rec.playlist_name, rec.playlist_description(),
                                               headers, cache_id=True)
-        api.add_to_playlist(tracks, rec.playlist_id, headers=headers)
+
+        add_tracks()
 
     # Create playlist and add tracks
     if args.preserve:
@@ -1024,7 +1035,7 @@ def recommend():
         try:
             rec.playlist_id = conf.get_playlists()['spotirec-default']['uri'].split(':')[2]
             assert api.check_if_playlist_exists(rec.playlist_id, headers) is True
-            api.replace_playlist_tracks(rec.playlist_id, tracks, headers=headers)
+            add_tracks()
             api.update_playlist_details(rec.playlist_name, rec.playlist_description(),
                                         rec.playlist_id, headers=headers)
         except (KeyError, AssertionError):
