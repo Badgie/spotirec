@@ -15,9 +15,7 @@ class ConcertScraper(ScraperBase.ScraperBase):
         Checks if the url is a valid spotify concert url.
         """
         regex = r"[0-9a-zA-Z]{22}"
-        if self.is_file:
-            logger.debug('The url is a file, process as such')
-        elif url.startswith('https://open.spotify.com/concert/') and re.match(regex + r"(/|)$", url):
+        if url.startswith('https://open.spotify.com/concert/') and re.match(regex + r"(/|)$", url):
             logger.debug('Matches on a full url')
         elif re.search('^' + regex + "$", url):
             logger.debug('Matches on an identifier')
