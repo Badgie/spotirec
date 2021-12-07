@@ -1057,7 +1057,7 @@ def add_tracks_to_playlist():
         add_tracks()
 
     # Create playlist and add tracks
-    if args.preserve:
+    if args.preserve or args.concert:
         logger.info('preserving playlist and creating new default')
         create_new_playlist()
     else:
