@@ -1033,7 +1033,7 @@ def add_tracks_to_playlist():
         logger.error('received zero tracks with your options - adjust and try again')
         logger.log_file(crash=True)
         sys.exit(1)
-    if len(tracks) <= rec.limit_original / 2:
+    if len(tracks) <= rec.limit_original / 2 and not args.concert:
         logger.warning(f'only received {len(tracks)} different recommendations, you may receive '
                        f'duplicates of these (this might take a few seconds)')
     # Filter recommendations until length of track list matches limit preference
@@ -1050,14 +1050,22 @@ def add_tracks_to_playlist():
             _tracks = tracks[lower:None if upper > len(tracks) else upper]
             api.add_to_playlist(_tracks, rec.playlist_id, headers=headers)
 
-    def create_new_playlist():
+    def create_new_playlist(save_name=None):
         rec.playlist_id = api.create_playlist(rec.playlist_name, rec.playlist_description(args.concert is not None),
-                                              headers, cache_id=True)
+                                              headers, cache_id=True, save_name=save_name)
 
         add_tracks()
 
     # Create playlist and add tracks
-    if args.preserve or args.concert:
+    if args.concert:
+        def transform_to_parsable_name(input: str) -> str:
+            return re.sub('[^0-9a-z ]+', '', input.lower()).replace(' ', '-')
+        if transform_to_parsable_name(rec.playlist_name) in list(conf.get_playlists().keys()):
+            logger.error(f'playlist for the concert already exists.')
+            sys.exit(1)
+        create_new_playlist(save_name=transform_to_parsable_name(rec.playlist_name))
+
+    elif args.preserve:
         logger.info('preserving playlist and creating new default')
         create_new_playlist()
     else:
@@ -1073,8 +1081,9 @@ def add_tracks_to_playlist():
             create_new_playlist()
     # Generate and upload dank-ass image
     add_image_to_playlist(tracks)
-    # Print seed selection
-    rec.print_selection()
+    if not args.concert:
+        # Print seed selection
+        rec.print_selection()
     # Start playing on input device if auto-play is present
     if rec.auto_play:
         api.play(rec.playback_device['id'], f'spotify:playlist:{rec.playlist_id}', headers)
