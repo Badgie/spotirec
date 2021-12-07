@@ -1,3 +1,5 @@
 bottle>=0.12.17
 requests>=2.22.0
 Pillow>=6.2.1
+setuptools~=58.1.0
+beautifulsoup4~=4.10.0

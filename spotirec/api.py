@@ -84,6 +84,17 @@ class API:
                                     'spotirec-default')
         return playlist['id']
 
+    def get_top_tacks_from_artist(self, artist_id: str, headers) -> list:
+        response = requests.get(f'{self.URL_BASE}/artists/{artist_id}/top-tracks?market={self.get_user_country(headers)}',
+                                headers=headers)
+        self.error_handle('artist top tracks', 200, 'GET', response=response)
+        return [x['id'] for x in json.loads(response.content.decode('utf-8'))['tracks']]
+
+    def get_user_country(self, headers):
+        response = requests.get(f'{self.URL_BASE}/me', headers=headers)
+        self.error_handle('user info', 200, 'GET', response=response)
+        return json.loads(response.content.decode('utf-8'))['country']
+
     def upload_image(self, playlist_id: str, data: str, img_headers: dict):
         """
         Upload the generated image to the playlist

@@ -1,0 +1,81 @@
+{
+  "artists": {
+    "href": "https://api.spotify.com/v1/search?query=LIVL%C3%98S&type=artist&offset=0&limit=20",
+    "items": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/3upLnjEfkXlcb8IddTLQUA"
+        },
+        "followers": {
+          "href": "None",
+          "total": 2816
+        },
+        "genres": [
+          "danish death metal",
+          "danish metal"
+        ],
+        "href": "https://api.spotify.com/v1/artists/3upLnjEfkXlcb8IddTLQUA",
+        "id": "3upLnjEfkXlcb8IddTLQUA",
+        "images": [
+          {
+            "height": 640,
+            "url": "https://i.scdn.co/image/ab6761610000e5ebba0eda07c5a1246b4c724977",
+            "width": 640
+          },
+          {
+            "height": 320,
+            "url": "https://i.scdn.co/image/ab67616100005174ba0eda07c5a1246b4c724977",
+            "width": 320
+          },
+          {
+            "height": 160,
+            "url": "https://i.scdn.co/image/ab6761610000f178ba0eda07c5a1246b4c724977",
+            "width": 160
+          }
+        ],
+        "name": "LIVLØS",
+        "popularity": 26,
+        "type": "artist",
+        "uri": "spotify:artist:3upLnjEfkXlcb8IddTLQUA"
+      },
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/6EsU43JcL88IcD1seD8tzl"
+        },
+        "followers": {
+          "href": "None",
+          "total": 368
+        },
+        "genres": [],
+        "href": "https://api.spotify.com/v1/artists/6EsU43JcL88IcD1seD8tzl",
+        "id": "6EsU43JcL88IcD1seD8tzl",
+        "images": [
+          {
+            "height": 640,
+            "url": "https://i.scdn.co/image/ab6761610000e5ebc07cf3be67dd0e6c1c6e48a6",
+            "width": 640
+          },
+          {
+            "height": 320,
+            "url": "https://i.scdn.co/image/ab67616100005174c07cf3be67dd0e6c1c6e48a6",
+            "width": 320
+          },
+          {
+            "height": 160,
+            "url": "https://i.scdn.co/image/ab6761610000f178c07cf3be67dd0e6c1c6e48a6",
+            "width": 160
+          }
+        ],
+        "name": "Livløst",
+        "popularity": 7,
+        "type": "artist",
+        "uri": "spotify:artist:6EsU43JcL88IcD1seD8tzl"
+      }
+    ],
+    "limit": 20,
+    "next": "None",
+    "offset": 0,
+    "previous": "None",
+    "total": 2
+  }
+}
