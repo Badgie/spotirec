@@ -16,6 +16,8 @@ from pathlib import Path
 
 __version__ = '1.3.1'
 
+from .scrapers import Concerts
+
 PORTS = [8000, 8001, 8002, 8003, 8004, 8005, 8006, 8007, 8008, 8009]
 CONFIG_PATH = f'{Path.home()}/.config/spotirec'
 TUNING_FILE = f'{Path.home()}/.config/spotirec/tuning-opts'
@@ -99,6 +101,9 @@ spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for de
                              help='base recommendations on custom seed genres')
     mutex_group.add_argument('-c', action='store_true',
                              help='base recommendations on a custom seed')
+    mutex_group.add_argument('--concert', metavar='URL', nargs=1, type=str,
+                             help='create a recommendation playlist based on a concert artists.'
+                                  'Will get a few top tracks pr. artist')
     rec_scheme_group.add_argument('--preserve', action='store_true',
                                   help='preserve previous playlist and create new')
 
@@ -127,8 +132,8 @@ spotirec is released under GPL-3.0 and comes with ABSOLUTELY NO WARRANTY, for de
     rec_options_group = arg_parser.add_argument_group(
         title='Recommendation options',
         description='These may only appear when creating a playlist')
-    rec_options_group.add_argument('-l', metavar='LIMIT', nargs=1, type=int, choices=range(1, 101),
-                                   help='amount of tracks to add (default: 100, max: 100)')
+    rec_options_group.add_argument('-l', metavar='LIMIT', nargs=1, type=int,
+                                   help='amount of tracks to add (default: 100, sensible max: 700)')
     rec_options_group.add_argument('--tune', metavar='ATTR', nargs='+', type=str,
                                    help='specify tunable attribute(s)')
     rec_options_group.add_argument('--play', metavar='DEVICE', nargs=1,
@@ -178,7 +183,7 @@ def setup_config_dir():
 
 def check_scope_permissions():
     oauth = conf.get_oauth()
-    if len(oauth.keys()) != 6:
+    if 'scope' not in oauth.keys():
         logger.error('missing oauth config, authorizing...')
         authorize()
         sys.exit(0)
@@ -449,6 +454,16 @@ def check_tune_validity(tune: str):
         logger.error(f'tune value {value} does not match attribute {key} data type requirements')
         logger.log_file(crash=True)
         sys.exit(1)
+
+
+def filter_list_only_artist(li: list, artist_id: str) -> list:
+    """
+    Filter list to only contain items with a specific artist.
+    :param li: list of items
+    :param artist_id: the id of the artist to filter by
+    :return: list of items with artist
+    """
+    return [x for x in li if x['artists'][0]['id'] == artist_id]
 
 
 def filter_list_duplicates(li: list) -> list:
@@ -937,7 +952,7 @@ def transfer_playback(device_id):
     api.transfer_playback(device, headers)
 
 
-def filter_recommendations(data: json) -> list:
+def filter_recommendations(data: json, cur_tracks: list) -> list:
     """
     Filter blacklisted artists and tracks from recommendations.
     :param data: recommendations as json object.
@@ -952,6 +967,8 @@ def filter_recommendations(data: json) -> list:
         # then skip - otherwise add to valid tracks
         if any(x['uri'] == s for s in blacklist['tracks'].keys()) or len(
                 set(blacklist['artists'].keys()) & set(y['uri'] for y in x['artists'])) > 0:
+            continue
+        elif x['uri'] in cur_tracks:
             continue
         else:
             valid_tracks.append(x['uri'])
@@ -997,35 +1014,66 @@ def recommend():
     if args.save_preset:
         save_preset(args.save_preset[0])
     # Filter blacklisted artists and tracks from recommendations
-    tracks = filter_recommendations(api.get_recommendations(rec.rec_params, headers))
+    tracks = filter_recommendations(api.get_recommendations(rec.rec_params, headers), [])
+    return tracks
+
+
+def add_tracks_to_playlist():
+    tracks = []
+    if args.concert:
+        scraped = Concerts.ConcertScraper(args.concert[0], logger).run()
+        rec.based_on = rec.playlist_name = scraped[1]
+        for all_artist_tracks in [api.get_top_tacks_from_artist(_id, headers) for name, _id in scraped[0].items()]:
+            for track in list(all_artist_tracks):
+                tracks.append('spotify:track:{}'.format(track))
+    else:
+        tracks = recommend()
     # If no tracks are left, notify an error and exit
     if len(tracks) == 0:
         logger.error('received zero tracks with your options - adjust and try again')
         logger.log_file(crash=True)
         sys.exit(1)
-    if len(tracks) <= rec.limit_original / 2:
+    if len(tracks) <= rec.limit_original / 2 and not args.concert:
         logger.warning(f'only received {len(tracks)} different recommendations, you may receive '
                        f'duplicates of these (this might take a few seconds)')
     # Filter recommendations until length of track list matches limit preference
-    while len(tracks) < rec.limit_original:
-        rec.update_limit(rec.limit_original - len(tracks))
-        tracks += filter_recommendations(api.get_recommendations(rec.rec_params, headers))
+    if not args.concert:
+        while len(tracks) < rec.limit_original:
+            rec.update_limit(rec.limit_original - len(tracks))
+            tracks += filter_recommendations(api.get_recommendations(rec.rec_params, headers), tracks)
 
-    def create_new_playlist():
-        rec.playlist_id = api.create_playlist(rec.playlist_name, rec.playlist_description(),
-                                              headers, cache_id=True)
-        api.add_to_playlist(tracks, rec.playlist_id, headers=headers)
+    def add_tracks():
+        n_requests = math.ceil(len(tracks) / 100)
+        for i in range(n_requests):
+            lower = i * 100
+            upper = (i + 1) * 100
+            _tracks = tracks[lower:None if upper > len(tracks) else upper]
+            api.add_to_playlist(_tracks, rec.playlist_id, headers=headers)
+
+    def create_new_playlist(save_name=None):
+        rec.playlist_id = api.create_playlist(rec.playlist_name, rec.playlist_description(args.concert is not None),
+                                              headers, cache_id=True, save_name=save_name)
+
+        add_tracks()
 
     # Create playlist and add tracks
-    if args.preserve:
+    if args.concert:
+        def transform_to_parsable_name(input: str) -> str:
+            return re.sub('[^0-9a-z ]+', '', input.lower()).replace(' ', '-')
+        if transform_to_parsable_name(rec.playlist_name) in list(conf.get_playlists().keys()):
+            logger.error(f'playlist for the concert already exists.')
+            sys.exit(1)
+        create_new_playlist(save_name=transform_to_parsable_name(rec.playlist_name))
+
+    elif args.preserve:
         logger.info('preserving playlist and creating new default')
         create_new_playlist()
     else:
         try:
             rec.playlist_id = conf.get_playlists()['spotirec-default']['uri'].split(':')[2]
             assert api.check_if_playlist_exists(rec.playlist_id, headers) is True
-            api.replace_playlist_tracks(rec.playlist_id, tracks, headers=headers)
-            api.update_playlist_details(rec.playlist_name, rec.playlist_description(),
+            add_tracks()
+            api.update_playlist_details(rec.playlist_name, rec.playlist_description(args.concert is not None),
                                         rec.playlist_id, headers=headers)
         except (KeyError, AssertionError):
             logger.info('playlist has either been deleted, or made private, creating new '
@@ -1033,8 +1081,9 @@ def recommend():
             create_new_playlist()
     # Generate and upload dank-ass image
     add_image_to_playlist(tracks)
-    # Print seed selection
-    rec.print_selection()
+    if not args.concert:
+        # Print seed selection
+        rec.print_selection()
     # Start playing on input device if auto-play is present
     if rec.auto_play:
         api.play(rec.playback_device['id'], f'spotify:playlist:{rec.playlist_id}', headers)
@@ -1130,6 +1179,7 @@ def parse():
     if args.play:
         rec.auto_play = True
         rec.playback_device = get_device(args.play[0])
+    # Get parse_seed_info based on
 
     if args.a:
         logger.info(f'basing recommendations off your top {args.a} artist(s)')
@@ -1181,13 +1231,18 @@ def parse():
             sys.exit(1)
         seeds = [x for x in user_input.strip(' ').split() if not check_if_show_or_episode(x)]
         parse_seed_info(seeds)
+    elif args.concert:
+        pass
     else:
         logger.info(f'basing recommendations off your top {args.n} genres')
         add_top_genres_seed(args.n)
 
     if args.l:
         rec.update_limit(args.l[0], init=True)
-    logger.info(f'the playlist will contain {rec.limit} tracks')
+    elif args.concert:
+        logger.info(f'the playlist will contain at max 10 tracks pr. artist attending the concert')
+    else:
+        logger.info(f'the playlist will contain {rec.limit} tracks')
 
     if args.tune:
         for x in args.tune:

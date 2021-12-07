@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import time
+
 from . import log
 
 
@@ -13,8 +14,9 @@ class Recommendation:
     def __init__(self, t=TIME, preset=None):
         if preset is None:
             preset = {}
-        self.limit = preset.pop('limit', 100)
-        self.limit_original = preset.pop('limit', self.limit)
+        limit = preset.pop('limit', 100)
+        self.limit = limit if limit <= 100 else 100
+        self.limit_original = limit
         self.created_at = time.ctime(time.time())
         self.based_on = preset.pop('based_on', 'top genres')
         self.seed = preset.pop('seed', '')
@@ -34,20 +36,24 @@ class Recommendation:
                     'id': self.playlist_id, 'auto play': self.auto_play,
                     'device': self.playback_device})
 
-    def playlist_description(self) -> str:
+    def playlist_description(self, concert: bool) -> str:
         """
         Create playlist description string to be insterted into playlist. Description contains
         date and time of creation, recommendation method, and seed.
         :return: description string
         """
         self.LOGGER.verbose('generating playlist description')
-        desc = f'Created by Spotirec - {self.created_at} - based on {self.based_on} - seed: '
-        seeds = ' | '.join(
-            f'{str(x["name"])}'
-            f'{" - " + ", ".join(str(y) for y in x["artists"]) if x["type"] == "track" else ""}'
-            for x in self.seed_info.values())
-        self.LOGGER.debug(f'description: {desc}{seeds}')
-        return f'{desc}{seeds}'
+        desc = f'Created by Spotirec {self.created_at} - based on {self.based_on}'
+
+        if not concert:
+            desc += f' - seed: '
+            seeds = ' | '.join(
+                f'{str(x["name"])}'
+                f'{" - " + ", ".join(str(y) for y in x["artists"]) if x["type"] == "track" else ""}'
+                for x in self.seed_info.values())
+            self.LOGGER.debug(f'description: {desc}{seeds}')
+            desc += seeds
+        return desc
 
     def update_limit(self, limit: int, init=False):
         """
@@ -56,7 +62,7 @@ class Recommendation:
         :param init: should only be true when updated by -l arg
         """
         self.LOGGER.verbose('updating limit')
-        self.limit = limit
+        self.limit = limit if limit <= 100 else 100
         self.rec_params['limit'] = str(self.limit)
         if init:
             self.limit_original = limit
@@ -92,7 +98,7 @@ class Recommendation:
                                                                       for x in data_dict['artists']]
             except KeyError:
                 pass
-            self.LOGGER.debug(f'data: {self.seed_info[len(self.seed_info)-1]}')
+            self.LOGGER.debug(f'data: {self.seed_info[len(self.seed_info) - 1]}')
 
     def create_seed(self):
         """

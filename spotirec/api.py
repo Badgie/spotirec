@@ -2,6 +2,7 @@
 import json
 import requests
 import sys
+
 from . import conf as sp_conf, log
 
 
@@ -62,10 +63,11 @@ class API:
         self.error_handle('user info', 200, 'GET', response=response)
         return json.loads(response.content.decode('utf-8'))['id']
 
-    def create_playlist(self, playlist_name: str, playlist_description: str, headers: dict,
+    def create_playlist(self, playlist_name: str, playlist_description: str, headers: dict, save_name: str = None,
                         cache_id=False) -> str:
         """
         Creates playlist on user's account.
+        :param save_name: if set, the playlist will be saved locally with that name
         :param cache_id: whether playlist id should be saved as default or not
         :param playlist_name: name of the playlist
         :param playlist_description: description of the playlist
@@ -81,8 +83,19 @@ class API:
         playlist = json.loads(response.content.decode('utf-8'))
         if cache_id:
             self.CONF.save_playlist({'name': playlist['name'], 'uri': playlist['uri']},
-                                    'spotirec-default')
+                                    f'{save_name}' if save_name else 'spotirec-default')
         return playlist['id']
+
+    def get_top_tacks_from_artist(self, artist_id: str, headers) -> list:
+        response = requests.get(f'{self.URL_BASE}/artists/{artist_id}/top-tracks?market={self.get_user_country(headers)}',
+                                headers=headers)
+        self.error_handle('artist top tracks', 200, 'GET', response=response)
+        return [x['id'] for x in json.loads(response.content.decode('utf-8'))['tracks']]
+
+    def get_user_country(self, headers):
+        response = requests.get(f'{self.URL_BASE}/me', headers=headers)
+        self.error_handle('user info', 200, 'GET', response=response)
+        return json.loads(response.content.decode('utf-8'))['country']
 
     def upload_image(self, playlist_id: str, data: str, img_headers: dict):
         """

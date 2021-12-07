@@ -83,7 +83,7 @@ class TestRecommendation(SpotirecTestCase):
         Testing playlist_description()
         """
         description = 'Created by Spotirec - ' + self.timestamp + ' - based on top genres - seed: '
-        self.assertEqual(self.rec.playlist_description(), description)
+        self.assertEqual(self.rec.playlist_description(False), description)
 
     @ordered
     def test_update_limit(self):
