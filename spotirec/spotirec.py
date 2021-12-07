@@ -1042,8 +1042,6 @@ def add_tracks_to_playlist():
             rec.update_limit(rec.limit_original - len(tracks))
             tracks += filter_recommendations(api.get_recommendations(rec.rec_params, headers), tracks)
 
-    print(tracks)
-
     def add_tracks():
         n_requests = math.ceil(len(tracks) / 100)
         for i in range(n_requests):
