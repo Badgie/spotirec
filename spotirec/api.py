@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import json
-import sys
 import requests
+import sys
 
 from . import conf as sp_conf, log
 
